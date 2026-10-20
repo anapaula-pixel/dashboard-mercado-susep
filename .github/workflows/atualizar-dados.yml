@@ -1,0 +1,57 @@
+name: Atualizar dados SUSEP
+
+on:
+  schedule:
+    # Toda segunda-feira, 9h (Brasília). A SUSEP atualiza a base semanalmente;
+    # o commit só acontece quando os números mudam.
+    - cron: "0 12 * * 1"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: atualizar-dados
+  cancel-in-progress: false
+
+jobs:
+  atualizar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Baixar base do SES e gerar dados
+        run: python scripts/build_data.py
+
+      - name: Salvar se houver mudança
+        run: |
+          python - <<'EOF'
+          import json, subprocess, sys
+          novo = json.load(open("docs/data/ses.json", encoding="utf-8"))
+          try:
+              antigo = json.loads(subprocess.check_output(["git", "show", "HEAD:docs/data/ses.json"]).decode("utf-8"))
+          except Exception:
+              antigo = None
+          for d in (novo, antigo):
+              if d: d.pop("gerado", None)
+          mudou = novo != antigo
+          print("Mudou:", mudou)
+          open("mudou.txt", "w").write("1" if mudou else "0")
+          EOF
+          if [ "$(cat mudou.txt)" = "1" ]; then
+            ULTIMO=$(python -c "import json;print(json.load(open('docs/data/ses.json'))['meses'][-1])")
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/data/ses.json
+            git commit -m "Dados SUSEP atualizados (até ${ULTIMO})"
+            git push
+          else
+            git checkout -- docs/data/ses.json 2>/dev/null || true
+            echo "Sem mudanças nos dados."
+          fi
+          rm -f mudou.txt
