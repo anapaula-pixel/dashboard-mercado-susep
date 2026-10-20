@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mercado Akad</title>
+<meta name="description" content="Dados de mercado dos ramos em que a Akad Seguros atua, a partir do SES/SUSEP.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect width=%2232%22 height=%2232%22 rx=%227%22 fill=%22%23DA0A5B%22/%3E%3Cpath d=%22M9 23V9h4v5l5-5h5l-7 7 7 7h-5l-5-5v5z%22 fill=%22%23fff%22/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=Poppins:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topo">
+  <div class="topo-in">
+    <div class="marca">
+      <span class="selo" aria-hidden="true">akad</span>
+      <div>
+        <h1>Mercado Akad</h1>
+        <p class="sub" id="fonte-resumo">Carregando dados do SES/SUSEP…</p>
+      </div>
+    </div>
+    <nav class="abas" role="tablist" aria-label="Visões do dashboard">
+      <button role="tab" id="tab-geral" aria-selected="true" data-aba="geral">Visão geral</button>
+      <button role="tab" id="tab-linhas" aria-selected="false" data-aba="linhas">Linhas de produto</button>
+      <button role="tab" id="tab-conc" aria-selected="false" data-aba="conc">Concorrentes</button>
+      <button role="tab" id="tab-uf" aria-selected="false" data-aba="uf">Por estado</button>
+    </nav>
+  </div>
+</header>
+
+<div class="filtros" id="filtros">
+  <div class="filtros-in">
+    <div class="campo">
+      <label for="f-periodo">Período</label>
+      <select id="f-periodo">
+        <option value="ytd">Acumulado do ano</option>
+        <option value="12m">Últimos 12 meses</option>
+        <option value="ano">Ano fechado</option>
+        <option value="custom">Personalizado</option>
+      </select>
+    </div>
+    <div class="campo" id="c-ano" hidden>
+      <label for="f-ano">Ano</label>
+      <select id="f-ano"></select>
+    </div>
+    <div class="campo" id="c-de" hidden>
+      <label for="f-de">De</label>
+      <select id="f-de"></select>
+    </div>
+    <div class="campo" id="c-ate" hidden>
+      <label for="f-ate">Até</label>
+      <select id="f-ate"></select>
+    </div>
+    <div class="campo">
+      <label for="f-visao">Concorrentes por</label>
+      <select id="f-visao">
+        <option value="cia">Seguradora</option>
+        <option value="grupo">Grupo econômico</option>
+      </select>
+    </div>
+    <p class="periodo-txt" id="periodo-txt" aria-live="polite"></p>
+  </div>
+</div>
+
+<main id="conteudo">
+  <section id="aba-geral" class="aba" role="tabpanel" aria-labelledby="tab-geral"></section>
+  <section id="aba-linhas" class="aba" role="tabpanel" aria-labelledby="tab-linhas" hidden></section>
+  <section id="aba-conc" class="aba" role="tabpanel" aria-labelledby="tab-conc" hidden></section>
+  <section id="aba-uf" class="aba" role="tabpanel" aria-labelledby="tab-uf" hidden></section>
+</main>
+
+<footer class="rodape">
+  <p id="rodape-txt">Fonte: SUSEP, Sistema de Estatísticas (SES). Valores em reais correntes, sem correção pela inflação.</p>
+</footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
