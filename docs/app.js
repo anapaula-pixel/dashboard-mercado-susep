@@ -33,6 +33,9 @@
     ufMetrica: "share",
     ufSel: null,
     rankOrd: { col: "pe", dir: -1 },
+    geralOrd: "share",
+    geralTab: null,
+    geralSel: null,
   };
   let IDX = null;        // índices derivados
 
@@ -357,13 +360,90 @@
   }
 
   /* ---------- Visão geral ---------- */
-  function renderGeral() {
-    const P = periodo();
-    const el = $("#aba-geral");
+  // Textos de ajuda contextual (abrem no "?" ao lado de cada indicador)
+  const AJUDA = {
+    premio: "Prêmio emitido: valor das apólices emitidas no período, antes de descontar resseguro. É a medida de tamanho usada para participação e ranking.",
+    share: "Participação de mercado: prêmio emitido da Akad dividido pelo prêmio emitido de todas as seguradoras na mesma linha e no mesmo período.",
+    pp: "Variação em pontos percentuais (p.p.): diferença entre a participação atual e a do mesmo período do ano anterior. Ex.: de 10% para 12% = +2 p.p.",
+    cresc: "Crescimento: variação percentual do prêmio emitido contra o mesmo período do ano anterior. A Akad pode crescer e ainda perder participação, se o mercado crescer mais.",
+    pos: "Posição: lugar da Akad no ranking de prêmio emitido entre as seguradoras com prêmio positivo na linha e no período. \"de N\" é o número dessas seguradoras.",
+    mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
+    sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho. Mede custo de sinistros, não tamanho. O mix de ramos da Akad é diferente do mercado, então compare com cuidado.",
+    lider: "Linhas de produto em que a Akad tem o maior prêmio emitido no período.",
+    ref: "Seguradora de referência: a líder da linha. Quando a Akad lidera, aparece a vice-líder.",
+    vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
+    universo: "A Akad é acompanhada em 14 linhas de produto, que somam 22 ramos SUSEP. Os indicadores do topo somam todos os 22 ramos.",
+  };
+  const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
+  function ligarAjuda() {
+    if (ligarAjuda.ok) return;
+    ligarAjuda.ok = true;
+    const abrir = (b) => {
+      const r = b.getBoundingClientRect();
+      mostrarTip(`<div style="max-width:260px">${esc(AJUDA[b.dataset.ajuda] || "")}</div>`, { clientX: r.left, clientY: r.bottom });
+    };
+    document.addEventListener("mouseover", (e) => { const b = e.target.closest?.(".ajuda"); if (b) abrir(b); });
+    document.addEventListener("mouseout", (e) => { if (e.target.closest?.(".ajuda")) esconderTip(); });
+    document.addEventListener("focusin", (e) => { const b = e.target.closest?.(".ajuda"); if (b) abrir(b); });
+    document.addEventListener("focusout", (e) => { if (e.target.closest?.(".ajuda")) esconderTip(); });
+    document.addEventListener("click", (e) => { const b = e.target.closest?.(".ajuda"); if (b) { e.preventDefault(); e.stopPropagation(); abrir(b); } }, true);
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") esconderTip(); });
+  }
+
+  // Participação com distinção entre zero, valor muito pequeno e ausência
+  function pctPart(x) {
+    if (x == null || !isFinite(x)) return "–";
+    if (x > 0 && x < 0.05) return "< 0,1%";
+    return pct(x);
+  }
+  // Variação em p.p. com seta e sinal (não depende só de cor)
+  function ppSeta(x) {
+    if (x == null || !isFinite(x)) return '<span class="var zero" title="Sem base de comparação">–</span>';
+    const a = Math.abs(x);
+    const d = a > 0 && a < 0.05 ? 2 : 1;
+    const v = a.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+    if (a < 0.005) return `<span class="var zero"><span aria-hidden="true">=</span> 0,0 p.p.</span>`;
+    return x > 0
+      ? `<span class="var up"><span aria-hidden="true">▲</span> +${v} p.p.</span>`
+      : `<span class="var down"><span aria-hidden="true">▼</span> −${v} p.p.</span>`;
+  }
+  // Crescimento em tom neutro: crescer não é sempre bom nem cair sempre ruim
+  function crescNeutro(x) {
+    if (x == null || !isFinite(x)) return '<span class="neutro zero" title="Sem base de comparação">–</span>';
+    if (x > 999) return '<span class="neutro" title="Base de comparação muito pequena">> +999%</span>';
+    const s = x > 0 ? "+" : x < 0 ? "−" : "";
+    return `<span class="neutro">${s}${nf1.format(Math.abs(x))}%</span>`;
+  }
+  function movHtml(pos, posP) {
+    if (!pos) return '<span class="mov zero">–</span>';
+    if (!posP) return '<span class="mov zero" title="Sem prêmio no período anterior">novo</span>';
+    const d = posP - pos;
+    if (d === 0) return '<span class="mov zero" title="Mesma posição"><span aria-hidden="true">=</span></span>';
+    return d > 0
+      ? `<span class="mov up" title="Subiu ${d} posição(ões)"><span aria-hidden="true">▲</span>${d}</span>`
+      : `<span class="mov down" title="Caiu ${-d} posição(ões)"><span aria-hidden="true">▼</span>${-d}</span>`;
+  }
+  function vsMercado(ac, mc) {
+    if (ac == null || mc == null || !isFinite(ac) || !isFinite(mc)) return "";
+    const g = ac - mc;
+    if (Math.abs(g) < 0.05) return '<span class="vs">igual ao mercado</span>';
+    return `<span class="vs">${g > 0 ? "acima" : "abaixo"} do mercado</span>`;
+  }
+  // Próxima execução do workflow: segunda-feira 12:00 UTC (9h em Brasília)
+  function proximaVerificacao() {
+    const agora = new Date();
+    const d = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate(), 12, 0, 0));
+    let add = (1 - d.getUTCDay() + 7) % 7;
+    if (add === 0 && agora >= d) add = 7;
+    d.setUTCDate(d.getUTCDate() + add);
+    return d;
+  }
+  const fmtDataHora = (d) => d.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+  function dadosGeral(P) {
     const RT = resumo(IDX.todos, P);
     const ak = infoEnt(RT, AKAD);
     const sinM = RT.tc[1] > 0 ? (RT.tc[2] / RT.tc[1]) * 100 : null;
-
     const linhas = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
@@ -372,66 +452,277 @@
       const ref = lider === AKAD ? vice : lider;
       const refInfo = ref ? infoEnt(R, ref) : null;
       return { l, R, a, lider, ref, refInfo, mercado: R.tc[0], mercadoP: R.tp[0], n: R.rk.length,
-        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null };
+        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null,
+        temAkad: a.pe > 0, dPos: a.pos && a.posP ? a.posP - a.pos : null };
     });
     const lidera = linhas.filter((x) => x.a.pos === 1);
     const top3 = linhas.filter((x) => x.a.pos && x.a.pos <= 3);
     const comDelta = linhas.filter((x) => x.a.dShare != null && x.a.pe > 0);
     const ganhos = [...comDelta].sort((p, q) => q.a.dShare - p.a.dShare).slice(0, 3).filter((x) => x.a.dShare > 0);
     const perdas = [...comDelta].sort((p, q) => p.a.dShare - q.a.dShare).slice(0, 3).filter((x) => x.a.dShare < 0);
+    return { RT, ak, sinM, linhas, lidera, top3, ganhos, perdas, comPremio: linhas.filter((x) => x.temAkad).length };
+  }
 
-    const ordenadas = [...linhas].sort((p, q) => (p.a.pos || 999) - (q.a.pos || 999) || (q.a.share || 0) - (p.a.share || 0));
+  function abrirLinha(id) {
+    S.linhaSel = id;
+    S.geralSel = id;
+    irPara("linhas");
+  }
 
-    el.innerHTML = `
-      <div class="cab-aba">
-        <div>
-          <h2>Onde a Akad está no mercado</h2>
-          <p>Prêmio emitido nos ${D.ramos.length} ramos acompanhados, ${periodoLabel(P.a, P.b)}${P.pa != null ? `, comparado com ${periodoLabel(P.pa, P.pb)}` : ""}.</p>
+  function renderGeral() {
+    ligarAjuda();
+    const P = periodo();
+    const el = $("#aba-geral");
+    const G = dadosGeral(P);
+    const { RT, ak, sinM, linhas, lidera, top3, ganhos, perdas } = G;
+    const nL = IDX.linhas.length, nR = D.ramos.length;
+    const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
+    const visao = S.visao === "grupo" ? "Grupo econômico" : "Seguradora";
+    const gerado = new Date(D.gerado);
+    window.__geral = G; // usado na verificação automática
+
+    const contexto = `
+      <div class="ctx" role="region" aria-label="Contexto da análise">
+        <dl class="ctx-lista">
+          <div><dt>Analisando</dt><dd>${per}</dd></div>
+          <div><dt>Comparado com</dt><dd>${perP || "sem período anterior na base"}</dd></div>
+          <div><dt>Concorrentes por</dt><dd>${visao}</dd></div>
+          <div><dt>Universo ${ajuda("universo", "universo")}</dt><dd>${nL} linhas de produto · ${nR} ramos SUSEP</dd></div>
+        </dl>
+        <dl class="ctx-lista ctx-dados">
+          <div><dt>Dados SUSEP até</dt><dd>${mesLabel(D.meses.length - 1, true)}</dd></div>
+          <div><dt>Atualizado em</dt><dd>${gerado.toLocaleDateString("pt-BR")}</dd></div>
+          <div><dt>Próxima verificação</dt><dd>${fmtDataHora(proximaVerificacao())}</dd></div>
+        </dl>
+      </div>`;
+
+    if (!(RT.tc[0] > 0)) {
+      el.innerHTML = `${contexto}<div class="vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro acima.</p></div>`;
+      return;
+    }
+
+    // A. Panorama
+    const crescA = ak.cresc, crescMerc = cresc(RT.tc[0], RT.tp[0]);
+    let frase = "";
+    if (crescA != null && crescMerc != null && ak.dShare != null) {
+      const fa = `O prêmio da Akad ${crescA >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescA))}%`;
+      const fm = `o mercado ${crescMerc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescMerc))}%`;
+      const fim = Math.abs(ak.dShare) < 0.05
+        ? (Math.abs(crescA - crescMerc) < 0.5 ? "Os dois andaram no mesmo ritmo, e a participação ficou estável."
+          : `A Akad teve desempenho ${crescA > crescMerc ? "acima" : "abaixo"} do mercado, mas a diferença quase não mexeu na participação.`)
+        : ak.dShare > 0 ? "A Akad teve desempenho acima do mercado, por isso ganhou participação."
+        : "A Akad teve desempenho abaixo do mercado, por isso perdeu participação.";
+      frase = `${fa} e ${fm}. ${fim}`;
+    }
+    const maxHero = Math.max(ak.share || 0, ak.shareP || 0) || 1;
+    const panorama = `
+      <section class="pan" aria-labelledby="h-pan">
+        <h2 id="h-pan" class="sec-tit">Panorama do mercado</h2>
+        <div class="pan-grade">
+          <div class="pan-hero">
+            <span class="rot">Participação da Akad ${ajuda("share", "participação de mercado")}</span>
+            <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
+            ${ak.shareP != null ? `
+            <div class="hero-comp" aria-hidden="true">
+              <div class="hc-l"><span>${perP}</span><span class="hc-t"><i style="width:${(ak.shareP / maxHero) * 100}%" class="hc-ant"></i></span><b>${pct(ak.shareP, 2)}</b></div>
+              <div class="hc-l"><span>${per}</span><span class="hc-t"><i style="width:${((ak.share || 0) / maxHero) * 100}%" class="hc-at"></i></span><b>${pct(ak.share, 2)}</b></div>
+            </div>` : ""}
+            ${frase ? `<p class="hero-frase">${frase}</p>` : ""}
+            <p class="hero-sub">${ak.pos ? `${ak.pos}º lugar no somatório dos ${nR} ramos` : "Sem prêmio no período"} ${ajuda("pos", "posição")}</p>
+          </div>
+          <div class="pan-kpis">
+            <div class="mk">
+              <span class="rot">Prêmio emitido Akad ${ajuda("premio", "prêmio emitido")}</span>
+              <span class="mk-val">${reais(ak.pe)}</span>
+              <span class="mk-det">${crescNeutro(ak.cresc)} contra ${perP || "o ano anterior"} ${ajuda("cresc", "crescimento")}</span>
+            </div>
+            <div class="mk">
+              <span class="rot">Prêmio emitido do mercado</span>
+              <span class="mk-val">${reais(RT.tc[0])}</span>
+              <span class="mk-det">${crescNeutro(crescMerc)} contra ${perP || "o ano anterior"}</span>
+            </div>
+            <div class="mk">
+              <span class="rot">Liderança ${ajuda("lider", "liderança")}</span>
+              <span class="mk-val">${lidera.length} ${lidera.length === 1 ? "linha" : "linhas"}</span>
+              <span class="mk-det">de ${nL} acompanhadas · Akad tem prêmio em ${G.comPremio} · top 3 em ${top3.length}</span>
+            </div>
+          </div>
+          <div class="pan-tec">
+            <span class="rot">Indicador técnico</span>
+            <span><b>Sinistralidade</b> ${ajuda("sin", "sinistralidade")} Akad <b>${pct(ak.sin)}</b> · mercado <b>${pct(sinM)}</b></span>
+            <span class="nota">O mix de ramos do mercado é diferente do da Akad.</span>
+          </div>
         </div>
-      </div>
-      <div class="kpis">
-        <div class="kpi destaque"><span class="rot">Prêmio emitido Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Mercado dos ramos</span><span class="val">${reais(RT.tc[0])}</span><span class="det">${varHtml(cresc(RT.tc[0], RT.tp[0]))} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Participação da Akad</span><span class="val">${pct(ak.share, 2)}</span><span class="det">${ppHtml(ak.dShare)} · ${ak.pos ? ak.pos + "º lugar no somatório" : ""}</span></div>
-        <div class="kpi"><span class="rot">Liderança</span><span class="val">${lidera.length} de ${linhas.length} linhas</span><span class="det">Akad no top 3 em ${top3.length} linhas</span></div>
-        <div class="kpi"><span class="rot">Sinistralidade</span><span class="val">${pct(ak.sin)}</span><span class="det">Mercado: ${pct(sinM)}. O mix de ramos do mercado é diferente do da Akad.</span></div>
-      </div>
+      </section>`;
 
-      <div class="destaques">
-        <div class="dest"><h3>Linhas em que a Akad lidera</h3><ul>${lidera.length ? lidera.map((x) => `<li><span>${esc(x.l.nome)}</span><b>${pct(x.a.share)}</b></li>`).join("") : '<li class="nota">Nenhuma no período</li>'}</ul></div>
-        <div class="dest"><h3>Maiores ganhos de participação</h3><ul>${ganhos.length ? ganhos.map((x) => `<li><span>${esc(x.l.nome)}</span>${ppHtml(x.a.dShare)}</li>`).join("") : '<li class="nota">Nenhum ganho no período</li>'}</ul></div>
-        <div class="dest"><h3>Maiores perdas de participação</h3><ul>${perdas.length ? perdas.map((x) => `<li><span>${esc(x.l.nome)}</span>${ppHtml(x.a.dShare)}</li>`).join("") : '<li class="nota">Nenhuma perda no período</li>'}</ul></div>
-      </div>
-
-      <div class="bloco">
-        <div class="bloco-cab">
-          <h2>Posição da Akad por linha de produto</h2>
-          <p class="nota">Clique numa linha para ver o detalhe. Participação = prêmio emitido da Akad ÷ mercado.</p>
+    // B. Movimentos
+    const item = (x, tipo) => `
+      <li><button type="button" class="mv-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(x.a.share)}, abrir detalhe">
+        <span class="mv-nome">${esc(x.l.nome)}</span>
+        <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b>` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
+        <span class="mv-var">${tipo === "lider" ? (x.n === 1 ? '<span class="nota">única seguradora</span>' : ppSeta(x.a.dShare)) : ppSeta(x.a.dShare)}</span>
+      </button></li>`;
+    const coluna = (tit, help, lst, tipo, vazio) => `
+      <div class="mv-col">
+        <h3>${tit} ${help}</h3>
+        ${lst.length ? `<ul>${lst.map((x) => item(x, tipo)).join("")}</ul>` : `<p class="mv-vazio">${vazio}</p>`}
+      </div>`;
+    const movimentos = `
+      <section class="movs" aria-labelledby="h-mov">
+        <h2 id="h-mov" class="sec-tit">Movimentos de participação</h2>
+        <div class="mv-grade">
+          ${coluna("Onde a Akad lidera", ajuda("lider", "liderança"), lidera, "lider", "A Akad não lidera nenhuma linha no período.")}
+          ${coluna("Maiores ganhos", ajuda("pp", "variação em pontos percentuais"), ganhos, "g", "Nenhuma linha ganhou participação no período.")}
+          ${coluna("Maiores perdas", "", perdas, "p", "Nenhuma linha perdeu participação no período.")}
         </div>
-        <div class="tab-wrap"><table>
-          <thead><tr>
-            <th>Linha</th><th>Posição Akad</th><th class="n">Participação</th><th class="n">Variação</th>
-            <th class="n">Prêmio Akad</th><th class="n">Cresc. Akad</th><th class="n">Mercado</th><th class="n">Cresc. mercado</th>
-            <th>${"Líder ou vice"}</th>
-          </tr></thead>
-          <tbody>${ordenadas.map((x) => `
-            <tr class="clic" data-linha="${x.l.id}">
-              <td class="nome"><b>${esc(x.l.nome)}</b><span class="sub">${x.l.ramos.join(", ")}</span></td>
-              <td>${chipPos(x.a.pos, x.n)}${deltaPos(x.a.pos, x.a.posP)}</td>
-              <td class="n">${pct(x.a.share)}</td>
-              <td class="n">${ppHtml(x.a.dShare)}</td>
-              <td class="n">${x.a.pe > 0 ? reais(x.a.pe) : "–"}</td>
-              <td class="n">${varHtml(x.a.cresc)}</td>
-              <td class="n">${reais(x.mercado)}</td>
-              <td class="n">${varHtml(x.crescM)}</td>
-              <td>${x.ref ? `${esc(nomeEnt(x.ref))} <span class="sub">${x.lider === AKAD ? "vice" : "líder"} · ${pct(x.refInfo.share)}</span>` : "–"}</td>
+      </section>`;
+
+    // C. Barras horizontais de participação
+    const ord = S.geralOrd || "share";
+    const comA = linhas.filter((x) => x.temAkad);
+    const semA = linhas.filter((x) => !x.temAkad);
+    const cmp = {
+      share: (p, q) => (q.a.share || 0) - (p.a.share || 0),
+      ganho: (p, q) => (q.a.dShare ?? -1e9) - (p.a.dShare ?? -1e9),
+      perda: (p, q) => (p.a.dShare ?? 1e9) - (q.a.dShare ?? 1e9),
+      pos: (p, q) => (p.a.pos || 999) - (q.a.pos || 999) || (q.a.share || 0) - (p.a.share || 0),
+    }[ord];
+    const barrasLinhas = [...comA.sort(cmp), ...semA];
+    // Escala sem distorção: linhas com ~100% (monopólio, como DPEM) não definem o eixo
+    const base = [];
+    linhas.forEach((x) => { if (x.a.share != null && x.a.share < 99.5) base.push(x.a.share); if (x.a.shareP != null && x.a.shareP < 99.5) base.push(x.a.shareP); });
+    const passoEsc = niceMax((Math.max(1, ...base) * 1.05) / 4);
+    const escMax = passoEsc * 4;
+    const W = (v) => Math.min(100, (v / escMax) * 100);
+    const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
+    const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ord === k}">${rot}</button>`;
+    const barRow = (x) => {
+      const a = x.a;
+      const est = a.share != null && a.share >= escMax;
+      const estP = a.shareP != null && a.shareP >= escMax;
+      const sel = S.geralSel === x.l.id ? " sel" : "";
+      if (!x.temAkad) {
+        return `<li><button type="button" class="pb sem${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: Akad sem prêmio no período. Abrir detalhe">
+          <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
+          <span class="pb-track"><span class="pb-semtxt">Akad sem prêmio no período${x.n ? ` · ${x.n} seguradoras com prêmio` : " · sem dados de mercado"}</span></span>
+          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-pos"><span class="chip">sem prêmio</span></span>
+        </button></li>`;
+      }
+      return `<li><button type="button" class="pb${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, posição ${a.pos} de ${x.n}. Abrir detalhe">
+        <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
+        <span class="pb-track">
+          <span class="pb-fill${est ? " est" : ""}" style="width:${W(a.share || 0)}%"></span>
+          ${a.shareP != null ? `<span class="pb-ant${estP ? " est" : ""}" style="left:${W(a.shareP)}%" title="${perP}: ${pctPart(a.shareP)}"></span>` : ""}
+          ${est ? `<span class="pb-quebra">${x.n === 1 ? "única seguradora no ramo" : "fora da escala"}</span>` : ""}
+        </span>
+        <span class="pb-val">${pctPart(a.share)}</span>
+        <span class="pb-var">${ppSeta(a.dShare)}</span>
+        <span class="pb-pos">${chipPos(a.pos, x.n)} ${movHtml(a.pos, a.posP)}</span>
+      </button></li>`;
+    };
+    const grafico = `
+      <section class="pbar" aria-labelledby="h-pbar">
+        <div class="sec-cab">
+          <div>
+            <h2 id="h-pbar" class="sec-tit">Participação por linha de produto</h2>
+            <p class="nota">Barra = participação em ${per}. Traço = participação em ${perP || "período anterior (sem dados)"}. Clique numa linha para abrir o detalhe.</p>
+          </div>
+          <div class="ctrl-ord"><span class="rot">Ordenar por</span>
+            <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
+              ${ordBtn("share", "Participação")}${ordBtn("ganho", "Maior ganho")}${ordBtn("perda", "Maior perda")}${ordBtn("pos", "Posição")}
+            </div>
+          </div>
+        </div>
+        <div class="pb-cab" aria-hidden="true">
+          <span>Linha</span>
+          <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
+          <span class="n">Atual</span><span class="n">Variação</span><span>Posição</span>
+        </div>
+        <ul class="pb-lista">${barrasLinhas.map(barRow).join("")}</ul>
+        <p class="legenda-pb"><span class="lg-fill"></span> participação atual <span class="lg-ant"></span> participação no período de comparação · <span aria-hidden="true">▲▼</span> variação em p.p. · ▲▼ ao lado da posição = movimento no ranking</p>
+      </section>`;
+
+    // D. Tabela analítica
+    const T = S.geralTab || { col: "pos", dir: 1 };
+    const val = (x, c) => ({
+      nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.a.share, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
+      cresc: x.a.cresc, mercado: x.mercado, crescM: x.crescM, refShare: x.refInfo ? x.refInfo.share : null,
+    }[c]);
+    const tab = [...linhas].sort((p, q) => {
+      if (T.col === "nome") return p.l.nome.localeCompare(q.l.nome, "pt-BR") * T.dir;
+      const va = val(p, T.col), vb = val(q, T.col);
+      if (va == null && vb == null) return 0;
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      return (va - vb) * T.dir || ((q.a.share || 0) - (p.a.share || 0));
+    });
+    const th = (c, rot, cls = "", h = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${h}</th>`;
+    const tabela = `
+      <section class="tab-an" aria-labelledby="h-tab">
+        <div class="sec-cab">
+          <div>
+            <h2 id="h-tab" class="sec-tit">Tabela analítica</h2>
+            <p class="nota">Todas as linhas e indicadores. Clique no título de uma coluna para ordenar e no nome da linha para abrir o detalhe.</p>
+          </div>
+        </div>
+        <div class="tab-wrap"><table class="tg">
+          <thead>
+            <tr class="grupo">
+              <th rowspan="2" class="ord ${T.col === "nome" ? "" : ""}" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Linha</button></th>
+              <th colspan="2" class="g">Posição Akad ${ajuda("pos", "posição")}</th>
+              <th colspan="2" class="g">Participação ${ajuda("share", "participação")}</th>
+              <th colspan="2" class="g">Prêmio emitido Akad ${ajuda("cresc", "crescimento")}</th>
+              <th colspan="2" class="g">Mercado</th>
+              <th colspan="2" class="g">Referência ${ajuda("ref", "seguradora de referência")}</th>
+            </tr>
+            <tr>
+              ${th("pos", "Lugar", "n")}${th("mov", "Mov.", "n")}
+              ${th("share", "Atual", "n g1")}${th("dShare", "Var. p.p.", "n")}
+              ${th("pe", "Valor", "n g1")}${th("cresc", "Cresc.", "n")}
+              ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
+              <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}
+            </tr>
+          </thead>
+          <tbody>${tab.map((x) => `
+            <tr data-linha="${x.l.id}" class="${S.geralSel === x.l.id ? "sel" : ""}${x.temAkad ? "" : " semak"}">
+              <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
+              <td class="n">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
+              <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
+              <td class="n g1"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
+              <td class="n">${ppSeta(x.a.dShare)}</td>
+              <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
+              <td class="n">${crescNeutro(x.a.cresc)}${vsMercado(x.a.cresc, x.crescM)}</td>
+              <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
+              <td class="n">${crescNeutro(x.crescM)}</td>
+              <td class="g1">${x.ref ? `${esc(nomeEnt(x.ref))} <span class="sub">${x.lider === AKAD ? "vice-líder" : "líder"}</span>` : '<span class="sub-i">não há outra seguradora</span>'}</td>
+              <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>
             </tr>`).join("")}
           </tbody>
         </table></div>
-      </div>`;
-    el.querySelectorAll("tr[data-linha]").forEach((tr) => tr.addEventListener("click", () => {
-      S.linhaSel = tr.dataset.linha;
-      irPara("linhas");
+        <p class="nota leg-tab">– sem base de comparação ou não se aplica · "sem prêmio" = a Akad não emitiu prêmio positivo na linha no período · "&lt; 0,1%" = participação positiva, mas abaixo de 0,1% · crescimento em cinza neutro: crescer não é bom nem ruim por si só, o que indica ganho competitivo é a variação de participação.</p>
+      </section>`;
+
+    el.innerHTML = contexto + panorama + movimentos + grafico + tabela;
+
+    // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
+    el.querySelectorAll(".mv-item, .pb, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
+    el.querySelectorAll("tbody tr[data-linha]").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest("button")) abrirLinha(tr.dataset.linha); }));
+    // Destaque sincronizado entre gráfico e tabela
+    const hl = (id, on) => el.querySelectorAll(`[data-linha="${id}"]`).forEach((n) => n.classList.toggle("hl", on));
+    el.querySelectorAll(".pb, tbody tr[data-linha], .mv-item").forEach((n) => {
+      n.addEventListener("mouseenter", () => hl(n.dataset.linha, true));
+      n.addEventListener("mouseleave", () => hl(n.dataset.linha, false));
+      n.addEventListener("focusin", () => hl(n.dataset.linha, true));
+      n.addEventListener("focusout", () => hl(n.dataset.linha, false));
+    });
+    el.querySelectorAll(".ctrl-ord button").forEach((b) => b.addEventListener("click", () => { S.geralOrd = b.dataset.ord; renderGeral(); el.querySelector(`.ctrl-ord [data-ord="${b.dataset.ord}"]`)?.focus(); }));
+    el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
+      const c = thEl.dataset.col;
+      const padrao = c === "pos" || c === "nome" ? 1 : -1;
+      const atual = S.geralTab || { col: "pos", dir: 1 };
+      S.geralTab = { col: c, dir: atual.col === c ? -atual.dir : padrao };
+      renderGeral();
+      el.querySelector(`th[data-col="${c}"] button`)?.focus();
     }));
   }
 
