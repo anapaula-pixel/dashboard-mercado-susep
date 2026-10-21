@@ -469,6 +469,19 @@
     irPara("linhas");
   }
 
+  // Posição sempre no mesmo formato: "2º de 32"
+  function posChip(pos, n) {
+    if (!pos) return '<span class="pchip">sem prêmio</span>';
+    if (n === 1) return '<span class="pchip">única</span>';
+    return `<span class="pchip${pos === 1 ? " lider" : ""}">${pos}º <span>de ${n}</span>${pos === 1 ? " · líder" : ""}</span>`;
+  }
+  function vsTexto(ac, mc) {
+    if (ac == null || mc == null || !isFinite(ac) || !isFinite(mc)) return '<span class="vs0">–</span>';
+    const g = ac - mc;
+    if (Math.abs(g) < 0.05) return '<span class="vs0">igual</span>';
+    return g > 0 ? '<span class="vs0"><span aria-hidden="true">↑</span> acima</span>' : '<span class="vs0"><span aria-hidden="true">↓</span> abaixo</span>';
+  }
+
   function renderGeral() {
     ligarAjuda();
     const P = periodo();
@@ -477,27 +490,18 @@
     const { RT, ak, sinM, linhas, lidera, top3, ganhos, perdas } = G;
     const nL = IDX.linhas.length, nR = D.ramos.length;
     const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
-    const visao = S.visao === "grupo" ? "Grupo econômico" : "Seguradora";
+    const visao = S.visao === "grupo" ? "grupo econômico" : "seguradora";
     const gerado = new Date(D.gerado);
     window.__geral = G; // usado na verificação automática
 
     const contexto = `
       <div class="ctx" role="region" aria-label="Contexto da análise">
-        <dl class="ctx-lista">
-          <div><dt>Analisando</dt><dd>${per}</dd></div>
-          <div><dt>Comparado com</dt><dd>${perP || "sem período anterior na base"}</dd></div>
-          <div><dt>Concorrentes por</dt><dd>${visao}</dd></div>
-          <div><dt>Universo ${ajuda("universo", "universo")}</dt><dd>${nL} linhas de produto · ${nR} ramos SUSEP</dd></div>
-        </dl>
-        <dl class="ctx-lista ctx-dados">
-          <div><dt>Dados SUSEP até</dt><dd>${mesLabel(D.meses.length - 1, true)}</dd></div>
-          <div><dt>Atualizado em</dt><dd>${gerado.toLocaleDateString("pt-BR")}</dd></div>
-          <div><dt>Próxima verificação</dt><dd>${fmtDataHora(proximaVerificacao())}</dd></div>
-        </dl>
+        <p class="ctx-p"><b>${per}</b> comparado com <b>${perP || "sem período anterior na base"}</b> · concorrentes por ${visao} · ${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p>
+        <p class="ctx-p ctx-dados">Dados SUSEP até ${mesLabel(D.meses.length - 1, true)} · atualizado em ${gerado.toLocaleDateString("pt-BR")} · próxima verificação ${fmtDataHora(proximaVerificacao())}</p>
       </div>`;
 
     if (!(RT.tc[0] > 0)) {
-      el.innerHTML = `${contexto}<div class="vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro acima.</p></div>`;
+      el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro acima.</p></div>`;
       return;
     }
 
@@ -516,11 +520,11 @@
     }
     const maxHero = Math.max(ak.share || 0, ak.shareP || 0) || 1;
     const panorama = `
-      <section class="pan" aria-labelledby="h-pan">
+      <section class="card sec" aria-labelledby="h-pan">
         <h2 id="h-pan" class="sec-tit">Panorama do mercado</h2>
         <div class="pan-grade">
           <div class="pan-hero">
-            <span class="rot">Participação da Akad ${ajuda("share", "participação de mercado")}</span>
+            <span class="lbl">Participação da Akad ${ajuda("share", "participação de mercado")}</span>
             <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
             ${ak.shareP != null ? `
             <div class="hero-comp" aria-hidden="true">
@@ -532,25 +536,25 @@
           </div>
           <div class="pan-kpis">
             <div class="mk">
-              <span class="rot">Prêmio emitido Akad ${ajuda("premio", "prêmio emitido")}</span>
+              <span class="lbl">Prêmio emitido Akad ${ajuda("premio", "prêmio emitido")}</span>
               <span class="mk-val">${reais(ak.pe)}</span>
               <span class="mk-det">${crescNeutro(ak.cresc)} contra ${perP || "o ano anterior"} ${ajuda("cresc", "crescimento")}</span>
             </div>
             <div class="mk">
-              <span class="rot">Prêmio emitido do mercado</span>
+              <span class="lbl">Prêmio emitido do mercado</span>
               <span class="mk-val">${reais(RT.tc[0])}</span>
               <span class="mk-det">${crescNeutro(crescMerc)} contra ${perP || "o ano anterior"}</span>
             </div>
             <div class="mk">
-              <span class="rot">Liderança ${ajuda("lider", "liderança")}</span>
+              <span class="lbl">Liderança ${ajuda("lider", "liderança")}</span>
               <span class="mk-val">${lidera.length} ${lidera.length === 1 ? "linha" : "linhas"}</span>
               <span class="mk-det">de ${nL} acompanhadas · Akad tem prêmio em ${G.comPremio} · top 3 em ${top3.length}</span>
             </div>
-          </div>
-          <div class="pan-tec">
-            <span class="rot">Indicador técnico</span>
-            <span><b>Sinistralidade</b> ${ajuda("sin", "sinistralidade")} Akad <b>${pct(ak.sin)}</b> · mercado <b>${pct(sinM)}</b></span>
-            <span class="nota">O mix de ramos do mercado é diferente do da Akad.</span>
+            <div class="mk mk-tec">
+              <span class="lbl">Sinistralidade ${ajuda("sin", "sinistralidade")}<span class="tag">técnico</span></span>
+              <span class="mk-val">${pct(ak.sin)}</span>
+              <span class="mk-det">Mercado: ${pct(sinM)}. O mix de ramos do mercado é diferente do da Akad.</span>
+            </div>
           </div>
         </div>
       </section>`;
@@ -559,27 +563,28 @@
     const item = (x, tipo) => `
       <li><button type="button" class="mv-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(x.a.share)}, abrir detalhe">
         <span class="mv-nome">${esc(x.l.nome)}</span>
-        <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b>` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
-        <span class="mv-var">${tipo === "lider" ? (x.n === 1 ? '<span class="nota">única seguradora</span>' : ppSeta(x.a.dShare)) : ppSeta(x.a.dShare)}</span>
+        <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b> de participação` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
+        <span class="mv-var">${tipo === "lider" ? (x.n === 1 ? '<span class="vs0">única seguradora</span>' : ppSeta(x.a.dShare)) : ppSeta(x.a.dShare)}</span>
       </button></li>`;
-    const coluna = (tit, help, lst, tipo, vazio) => `
+    const coluna = (tit, lst, tipo, vazio) => `
       <div class="mv-col">
-        <h3>${tit} ${help}</h3>
+        <h3>${tit}</h3>
         ${lst.length ? `<ul>${lst.map((x) => item(x, tipo)).join("")}</ul>` : `<p class="mv-vazio">${vazio}</p>`}
       </div>`;
     const movimentos = `
-      <section class="movs" aria-labelledby="h-mov">
+      <section class="card sec" aria-labelledby="h-mov">
         <h2 id="h-mov" class="sec-tit">Movimentos de participação</h2>
         <div class="mv-grade">
-          ${coluna("Onde a Akad lidera", ajuda("lider", "liderança"), lidera, "lider", "A Akad não lidera nenhuma linha no período.")}
-          ${coluna("Maiores ganhos", ajuda("pp", "variação em pontos percentuais"), ganhos, "g", "Nenhuma linha ganhou participação no período.")}
-          ${coluna("Maiores perdas", "", perdas, "p", "Nenhuma linha perdeu participação no período.")}
+          ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhuma linha no período.")}
+          ${coluna("Maiores ganhos", ganhos, "g", "Nenhuma linha ganhou participação no período.")}
+          ${coluna("Maiores perdas", perdas, "p", "Nenhuma linha perdeu participação no período.")}
         </div>
       </section>`;
 
     // C. Barras horizontais de participação
     const ord = S.geralOrd || "share";
-    const comA = linhas.filter((x) => x.temAkad);
+    const disputa = linhas.filter((x) => x.temAkad && x.n > 1);
+    const semConc = linhas.filter((x) => x.temAkad && x.n === 1);
     const semA = linhas.filter((x) => !x.temAkad);
     const cmp = {
       share: (p, q) => (q.a.share || 0) - (p.a.share || 0),
@@ -587,16 +592,16 @@
       perda: (p, q) => (p.a.dShare ?? 1e9) - (q.a.dShare ?? 1e9),
       pos: (p, q) => (p.a.pos || 999) - (q.a.pos || 999) || (q.a.share || 0) - (p.a.share || 0),
     }[ord];
-    const barrasLinhas = [...comA.sort(cmp), ...semA];
-    // Escala sem distorção: linhas com ~100% (monopólio, como DPEM) não definem o eixo
+    disputa.sort(cmp);
+    // Escala definida só pelas linhas com concorrência (o 100% do DPEM não achata as demais)
     const base = [];
-    linhas.forEach((x) => { if (x.a.share != null && x.a.share < 99.5) base.push(x.a.share); if (x.a.shareP != null && x.a.shareP < 99.5) base.push(x.a.shareP); });
+    disputa.forEach((x) => { if (x.a.share != null) base.push(x.a.share); if (x.a.shareP != null) base.push(x.a.shareP); });
     const passoEsc = niceMax((Math.max(1, ...base) * 1.05) / 4);
     const escMax = passoEsc * 4;
     const W = (v) => Math.min(100, (v / escMax) * 100);
     const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
     const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ord === k}">${rot}</button>`;
-    const barRow = (x) => {
+    const barRow = (x, suave) => {
       const a = x.a;
       const est = a.share != null && a.share >= escMax;
       const estP = a.shareP != null && a.shareP >= escMax;
@@ -605,10 +610,10 @@
         return `<li><button type="button" class="pb sem${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: Akad sem prêmio no período. Abrir detalhe">
           <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
           <span class="pb-track"><span class="pb-semtxt">Akad sem prêmio no período${x.n ? ` · ${x.n} seguradoras com prêmio` : " · sem dados de mercado"}</span></span>
-          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-pos"><span class="chip">sem prêmio</span></span>
+          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-pos">${posChip(null)}</span>
         </button></li>`;
       }
-      return `<li><button type="button" class="pb${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, posição ${a.pos} de ${x.n}. Abrir detalhe">
+      return `<li><button type="button" class="pb${suave ? " suave" : ""}${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, posição ${a.pos} de ${x.n}. Abrir detalhe">
         <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
         <span class="pb-track">
           <span class="pb-fill${est ? " est" : ""}" style="width:${W(a.share || 0)}%"></span>
@@ -617,17 +622,18 @@
         </span>
         <span class="pb-val">${pctPart(a.share)}</span>
         <span class="pb-var">${ppSeta(a.dShare)}</span>
-        <span class="pb-pos">${chipPos(a.pos, x.n)} ${movHtml(a.pos, a.posP)}</span>
+        <span class="pb-pos">${posChip(a.pos, x.n)} ${movHtml(a.pos, a.posP)}</span>
       </button></li>`;
     };
+    const grupoExtra = (tit, lst, suave) => lst.length ? `<li class="pb-grupo" aria-hidden="true">${tit}</li>${lst.map((x) => barRow(x, suave)).join("")}` : "";
     const grafico = `
-      <section class="pbar" aria-labelledby="h-pbar">
+      <section class="card sec" aria-labelledby="h-pbar">
         <div class="sec-cab">
           <div>
             <h2 id="h-pbar" class="sec-tit">Participação por linha de produto</h2>
-            <p class="nota">Barra = participação em ${per}. Traço = participação em ${perP || "período anterior (sem dados)"}. Clique numa linha para abrir o detalhe.</p>
+            <p class="sec-sub">Barra: participação em ${per}. Marcador: ${perP || "sem período de comparação"}. Clique numa linha para abrir o detalhe.</p>
           </div>
-          <div class="ctrl-ord"><span class="rot">Ordenar por</span>
+          <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
             <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
               ${ordBtn("share", "Participação")}${ordBtn("ganho", "Maior ganho")}${ordBtn("perda", "Maior perda")}${ordBtn("pos", "Posição")}
             </div>
@@ -638,15 +644,20 @@
           <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
           <span class="n">Atual</span><span class="n">Variação</span><span>Posição</span>
         </div>
-        <ul class="pb-lista">${barrasLinhas.map(barRow).join("")}</ul>
-        <p class="legenda-pb"><span class="lg-fill"></span> participação atual <span class="lg-ant"></span> participação no período de comparação · <span aria-hidden="true">▲▼</span> variação em p.p. · ▲▼ ao lado da posição = movimento no ranking</p>
+        <ul class="pb-lista">
+          ${disputa.map((x) => barRow(x, false)).join("")}
+          ${grupoExtra("Sem concorrência no período", semConc, true)}
+          ${grupoExtra("Sem prêmio da Akad no período", semA, true)}
+        </ul>
+        <p class="legenda-pb"><span class="lg-fill"></span> participação atual <span class="lg-ant"></span> mesmo período do ano anterior · ▲▼ ao lado da posição: movimento no ranking</p>
       </section>`;
 
     // D. Tabela analítica
     const T = S.geralTab || { col: "pos", dir: 1 };
     const val = (x, c) => ({
       nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.a.share, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
-      cresc: x.a.cresc, mercado: x.mercado, crescM: x.crescM, refShare: x.refInfo ? x.refInfo.share : null,
+      cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
+      mercado: x.mercado, crescM: x.crescM, refShare: x.refInfo ? x.refInfo.share : null,
     }[c]);
     const tab = [...linhas].sort((p, q) => {
       if (T.col === "nome") return p.l.nome.localeCompare(q.l.nome, "pt-BR") * T.dir;
@@ -656,29 +667,29 @@
       if (vb == null) return -1;
       return (va - vb) * T.dir || ((q.a.share || 0) - (p.a.share || 0));
     });
-    const th = (c, rot, cls = "", h = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${h}</th>`;
+    const th = (c, rot, cls = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`;
     const tabela = `
-      <section class="tab-an" aria-labelledby="h-tab">
+      <section class="card sec" aria-labelledby="h-tab">
         <div class="sec-cab">
           <div>
             <h2 id="h-tab" class="sec-tit">Tabela analítica</h2>
-            <p class="nota">Todas as linhas e indicadores. Clique no título de uma coluna para ordenar e no nome da linha para abrir o detalhe.</p>
+            <p class="sec-sub">Todas as linhas e indicadores. Clique no título de uma coluna para ordenar e no nome da linha para abrir o detalhe.</p>
           </div>
         </div>
         <div class="tab-wrap"><table class="tg">
           <thead>
             <tr class="grupo">
-              <th rowspan="2" class="ord ${T.col === "nome" ? "" : ""}" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Linha</button></th>
-              <th colspan="2" class="g">Posição Akad ${ajuda("pos", "posição")}</th>
-              <th colspan="2" class="g">Participação ${ajuda("share", "participação")}</th>
-              <th colspan="2" class="g">Prêmio emitido Akad ${ajuda("cresc", "crescimento")}</th>
+              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Linha</button></th>
+              <th colspan="2" class="g">Posição Akad</th>
+              <th colspan="2" class="g">Participação</th>
+              <th colspan="3" class="g">Prêmio emitido Akad</th>
               <th colspan="2" class="g">Mercado</th>
               <th colspan="2" class="g">Referência ${ajuda("ref", "seguradora de referência")}</th>
             </tr>
             <tr>
               ${th("pos", "Lugar", "n")}${th("mov", "Mov.", "n")}
               ${th("share", "Atual", "n g1")}${th("dShare", "Var. p.p.", "n")}
-              ${th("pe", "Valor", "n g1")}${th("cresc", "Cresc.", "n")}
+              ${th("pe", "Valor", "n g1")}${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
               ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
               <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}
             </tr>
@@ -691,15 +702,16 @@
               <td class="n g1"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n">${ppSeta(x.a.dShare)}</td>
               <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
-              <td class="n">${crescNeutro(x.a.cresc)}${vsMercado(x.a.cresc, x.crescM)}</td>
+              <td class="n">${crescNeutro(x.a.cresc)}</td>
+              <td>${vsTexto(x.a.cresc, x.crescM)}</td>
               <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
               <td class="n">${crescNeutro(x.crescM)}</td>
-              <td class="g1">${x.ref ? `${esc(nomeEnt(x.ref))} <span class="sub">${x.lider === AKAD ? "vice-líder" : "líder"}</span>` : '<span class="sub-i">não há outra seguradora</span>'}</td>
+              <td class="g1 ref">${x.ref ? `${esc(nomeEnt(x.ref))} <span class="sub-i">${x.lider === AKAD ? "vice-líder" : "líder"}</span>` : '<span class="sub-i">não há outra seguradora</span>'}</td>
               <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>
             </tr>`).join("")}
           </tbody>
         </table></div>
-        <p class="nota leg-tab">– sem base de comparação ou não se aplica · "sem prêmio" = a Akad não emitiu prêmio positivo na linha no período · "&lt; 0,1%" = participação positiva, mas abaixo de 0,1% · crescimento em cinza neutro: crescer não é bom nem ruim por si só, o que indica ganho competitivo é a variação de participação.</p>
+        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo na linha no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado na linha · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>
       </section>`;
 
     el.innerHTML = contexto + panorama + movimentos + grafico + tabela;
@@ -707,7 +719,7 @@
     // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
     el.querySelectorAll(".mv-item, .pb, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
     el.querySelectorAll("tbody tr[data-linha]").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest("button")) abrirLinha(tr.dataset.linha); }));
-    // Destaque sincronizado entre gráfico e tabela
+    // Destaque sincronizado entre destaques, gráfico e tabela
     const hl = (id, on) => el.querySelectorAll(`[data-linha="${id}"]`).forEach((n) => n.classList.toggle("hl", on));
     el.querySelectorAll(".pb, tbody tr[data-linha], .mv-item").forEach((n) => {
       n.addEventListener("mouseenter", () => hl(n.dataset.linha, true));
@@ -1111,6 +1123,7 @@
   /* ---------- Navegação e filtros ---------- */
   function irPara(aba) {
     S.aba = aba;
+    document.body.dataset.aba = aba;
     document.querySelectorAll(".abas button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.aba === aba)));
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
     try { history.replaceState(null, "", "#" + aba); } catch (e) { /* ignora */ }
