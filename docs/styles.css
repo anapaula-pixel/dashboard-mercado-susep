@@ -546,3 +546,51 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 
 #aba-geral .sec-nota { margin: 0; font-size: .82rem; color: var(--g-label); display: inline-flex; align-items: center; gap: 4px; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Panorama v4: participação | vendas, e sinistros abaixo */
+#aba-geral .pz-grade { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); }
+#aba-geral .pz { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+#aba-geral .pz-part { padding-right: 32px; border-right: 1px solid var(--g-rule); }
+#aba-geral .pz-vendas { padding-left: 32px; }
+#aba-geral .pz-sin { border-top: 1px solid var(--g-rule); margin-top: 24px; padding-top: 22px; }
+#aba-geral .pz-tit { font-family: var(--font-body); font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--g-label); display: flex; align-items: center; gap: 6px; margin: 0 0 2px; }
+#aba-geral .hv-m { font-size: 2.4rem; }
+#aba-geral .pz-ant { margin: 0; font-size: .9rem; color: var(--ink-2); }
+#aba-geral .pz-ant b { color: var(--ink); font-weight: 600; }
+#aba-geral .pz-fatos { margin: 6px 0 0; display: grid; gap: 0; border-top: 1px solid var(--g-rule); }
+#aba-geral .pz-fatos > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--g-rule); }
+#aba-geral .pz-fatos dt { font-size: .84rem; color: var(--g-label); display: inline-flex; align-items: center; gap: 4px; }
+#aba-geral .pz-fatos dd { margin: 0; font-weight: 600; font-size: .9rem; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+#aba-geral .pz-cr { font-weight: 400; color: var(--g-label); margin-left: 6px; font-size: .82rem; }
+#aba-geral .pz-leg { margin: 8px 0 0; font-size: .8rem; color: var(--g-label); }
+#aba-geral .vh-lista { list-style: none; margin: 0; padding: 0; display: flex; gap: 6px; align-items: stretch; }
+#aba-geral .vh { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+#aba-geral .vh-cr { font-size: .72rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#aba-geral .vh-trilho { width: 100%; max-width: 44px; height: 120px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--axis); }
+#aba-geral .vh-trilho i { display: block; width: 100%; background: var(--g-bar); border-radius: 3px 3px 0 0; opacity: .55; }
+#aba-geral .vh.atual .vh-trilho i { background: var(--magenta); opacity: 1; }
+#aba-geral .vh-val { font-size: .72rem; color: var(--g-label); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#aba-geral .vh-rot { font-size: .76rem; font-weight: 600; color: var(--ink-2); white-space: nowrap; }
+#aba-geral .vh.atual .vh-rot, #aba-geral .vh.atual .vh-cr { color: var(--ink); }
+#aba-geral .sin-grade { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 16px 40px; align-items: start; }
+#aba-geral .sin-frase { margin: 0 0 6px; font-family: var(--font-display); font-size: 1.35rem; line-height: 1.35; color: var(--ink); font-weight: 500; }
+#aba-geral .sin-frase b { font-weight: 700; }
+#aba-geral .sin-comp { display: flex; flex-direction: column; }
+#aba-geral .sc-l { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-bottom: 1px solid var(--g-rule); font-size: .86rem; color: var(--g-label); }
+#aba-geral .sc-l b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+#aba-geral .sc-d b { font-weight: 700; }
+#aba-geral .sc-m { margin-top: 8px; border-top: 1px dashed var(--g-rule); }
+#aba-geral .sc-m b { color: var(--ink-2); font-weight: 500; }
+#aba-geral .sc-nota { margin: 6px 0 0; font-size: .76rem; color: var(--g-label); }
+@media (max-width: 1000px) {
+  #aba-geral .pz-grade, #aba-geral .sin-grade { grid-template-columns: minmax(0, 1fr); }
+  #aba-geral .pz-part { padding: 0 0 22px; border-right: 0; border-bottom: 1px solid var(--g-rule); }
+  #aba-geral .pz-vendas { padding: 22px 0 0; }
+}
+@media (max-width: 480px) {
+  #aba-geral .vh-lista { gap: 3px; }
+  #aba-geral .vh-cr, #aba-geral .vh-val { font-size: .6rem; letter-spacing: -.02em; }
+  #aba-geral .vh-seta { display: none; }
+  #aba-geral .vh-rot { font-size: .66rem; }
+  #aba-geral .hv-m { font-size: 2rem; }
+}
