@@ -357,10 +357,10 @@
     premio: "Prêmio emitido: valor das apólices emitidas no período, antes de descontar resseguro. É a medida de tamanho usada para participação e ranking.",
     share: "Participação de mercado: prêmio emitido da Akad dividido pelo prêmio emitido de todas as seguradoras na mesma linha e no mesmo período.",
     pp: "Variação em pontos percentuais (p.p.): diferença entre a participação atual e a do mesmo período do ano anterior. Ex.: de 10% para 12% = +2 p.p.",
-    cresc: "Crescimento: variação percentual do prêmio emitido contra o mesmo período do ano anterior. A Akad pode crescer e ainda perder participação, se o mercado crescer mais.",
+    cresc: "Crescimento: quanto o prêmio emitido da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
     pos: "Posição: lugar da Akad no ranking de prêmio emitido entre as seguradoras com prêmio positivo na linha e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
-    sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho. Mede custo de sinistros, não tamanho. O mix de ramos da Akad é diferente do mercado, então compare com cuidado.",
+    sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
     lider: "Linhas de produto em que a Akad tem o maior prêmio emitido no período.",
     ref: "Seguradora de referência: a líder da linha. Quando a Akad lidera, aparece a vice-líder.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
@@ -491,58 +491,94 @@
       return;
     }
 
-    // A. Panorama
-    const crescA = ak.cresc, crescMerc = cresc(RT.tc[0], RT.tp[0]);
+    // A. Panorama: participação, vendas da Akad e sinistros, cada um com sua comparação
+    const crescMerc = cresc(RT.tc[0], RT.tp[0]);
+
+    // A1. Participação (aqui sim compara com o mercado)
     let frase = "";
-    if (crescA != null && crescMerc != null && ak.dShare != null) {
-      const fa = `O prêmio da Akad ${crescA >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescA))}%`;
-      const fm = `o mercado ${crescMerc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescMerc))}%`;
+    if (ak.cresc != null && crescMerc != null && ak.dShare != null) {
+      const fa = `O prêmio da Akad ${ak.cresc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(ak.cresc))}%`;
+      const fm = `o do mercado ${crescMerc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescMerc))}%`;
       const fim = Math.abs(ak.dShare) < 0.05
-        ? (Math.abs(crescA - crescMerc) < 0.5 ? "Os dois andaram no mesmo ritmo, e a participação ficou estável."
-          : `A Akad teve desempenho ${crescA > crescMerc ? "acima" : "abaixo"} do mercado, mas a diferença quase não mexeu na participação.`)
-        : ak.dShare > 0 ? "A Akad teve desempenho acima do mercado, por isso ganhou participação."
-        : "A Akad teve desempenho abaixo do mercado, por isso perdeu participação.";
-      frase = `${fa} e ${fm}. ${fim}`;
+        ? "Por isso a participação ficou praticamente igual."
+        : ak.dShare > 0 ? "Como a Akad foi melhor que o mercado, a fatia dela aumentou."
+        : "Como a Akad foi pior que o mercado, a fatia dela diminuiu.";
+      frase = `${fa}, enquanto ${fm}. ${fim}`;
     }
-    const maxHero = Math.max(ak.share || 0, ak.shareP || 0) || 1;
-    const panorama = `
-      <section class="card sec" aria-labelledby="h-pan">
-        <div class="sec-cab"><h2 id="h-pan" class="sec-tit">Panorama do mercado</h2><p class="sec-nota">${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p></div>
-        <div class="pan-grade">
-          <div class="pan-hero">
-            <span class="lbl">Participação da Akad ${ajuda("share", "participação de mercado")}</span>
-            <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
-            ${ak.shareP != null ? `
-            <div class="hero-comp" aria-hidden="true">
-              <div class="hc-l"><span>${perP}</span><span class="hc-t"><i style="width:${(ak.shareP / maxHero) * 100}%" class="hc-ant"></i></span><b>${pct(ak.shareP, 2)}</b></div>
-              <div class="hc-l"><span>${per}</span><span class="hc-t"><i style="width:${((ak.share || 0) / maxHero) * 100}%" class="hc-at"></i></span><b>${pct(ak.share, 2)}</b></div>
-            </div>` : ""}
-            ${frase ? `<p class="hero-frase">${frase}</p>` : ""}
-            <p class="hero-sub">${ak.pos ? `${ak.pos}º lugar no somatório dos ${nR} ramos` : "Sem prêmio no período"} ${ajuda("pos", "posição")}</p>
+    const blocoPart = `
+      <div class="pz pz-part">
+        <h3 class="pz-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h3>
+        <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
+        <p class="pz-ant">${ak.shareP != null ? `Era <b>${pct(ak.shareP, 2)}</b> em ${perP}` : "Sem participação no período anterior para comparar"}</p>
+        ${frase ? `<p class="hero-frase">${frase}</p>` : ""}
+        <dl class="pz-fatos">
+          <div><dt>Mercado nos ${nR} ramos</dt><dd>${reais(RT.tc[0])} <span class="pz-cr">${crescNeutro(crescMerc)}</span></dd></div>
+          <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="pz-cr">era ${ak.posP}º</span>` : ""}</dd></div>
+          <div><dt>Liderança ${ajuda("lider", "liderança")}</dt><dd>${lidera.length} de ${nL} linhas <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
+        </dl>
+      </div>`;
+
+    // A2. Vendas da Akad: mesmo recorte de meses em cada ano, sem olhar o mercado
+    const hist = [];
+    for (let k = 0; P.a - 12 * k >= 0; k++) {
+      const a = P.a - 12 * k, b = P.b - 12 * k;
+      const m = agg(IDX.todos, a, b).get(AKAD);
+      hist.unshift({ a, b, v: m ? m[0] : 0 });
+    }
+    hist.forEach((h, i) => { h.cr = i > 0 ? cresc(h.v, hist[i - 1].v) : null; });
+    const mesmoAno = D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4);
+    const rotH = (h) => (mesmoAno ? D.meses[h.b].slice(0, 4) : `até ${mesLabel(h.b)}`);
+    const recorte = S.periodo === "12m" ? `12 meses até ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
+      : mesmoAno && !(D.meses[P.a].endsWith("01") && D.meses[P.b].endsWith("12")) ? `${MESES_PT[+D.meses[P.a].slice(4) - 1]} a ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
+      : mesmoAno ? "ano completo" : "mesmo intervalo de meses, ano a ano";
+    const maxH = Math.max(1, ...hist.map((h) => h.v));
+    const barrasH = hist.map((h, i) => {
+      const atual = i === hist.length - 1;
+      const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
+      return `<li class="vh${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
+        <span class="vh-cr${h.cr == null ? " zero" : ""}" aria-hidden="true">${h.cr == null ? "&nbsp;" : `<span class="vh-seta">${h.cr >= 0 ? "▲" : "▼"} </span>` + crTxt}</span>
+        <span class="vh-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i></span>
+        <span class="vh-val" aria-hidden="true">${reaisCurto(h.v)}</span>
+        <span class="vh-rot" aria-hidden="true">${rotH(h)}</span>
+      </li>`;
+    }).join("");
+    const blocoVendas = `
+      <div class="pz pz-vendas">
+        <h3 class="pz-tit">Vendas da Akad ${ajuda("premio", "prêmio emitido")}</h3>
+        <div class="hero-linha"><span class="hero-val hv-m">${reais(ak.pe)}</span><span class="hero-var">${crescNeutro(ak.cresc)} ${ajuda("cresc", "crescimento")}</span></div>
+        <p class="pz-ant">${ak.peP > 0 ? `Era <b>${reais(ak.peP)}</b> em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
+        <p class="pz-leg">Prêmio emitido e crescimento contra o ano anterior, ${recorte}</p>
+        <ol class="vh-lista" aria-label="Prêmio emitido da Akad por ano">${barrasH}</ol>
+      </div>`;
+
+    // A3. Sinistros: comparação principal com a própria Akad
+    const pAk = RT.prev.get(AKAD);
+    const sinP = pAk && pAk[1] > 0 ? (pAk[2] / pAk[1]) * 100 : null;
+    const em100 = (s) => (s == null ? "–" : `R$ ${nf0.format(s)}`);
+    const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
+    const blocoSin = `
+      <div class="pz pz-sin">
+        <h3 class="pz-tit">Sinistros ${ajuda("sin", "sinistralidade")}</h3>
+        <div class="sin-grade">
+          <div>
+            <p class="sin-frase">${ak.sin != null ? `A cada <b>R$ 100</b> de prêmio ganho, <b>${em100(ak.sin)}</b> viraram sinistro.` : "Sem prêmio ganho no período para calcular."}</p>
+            <p class="pz-ant">${sinP != null ? `Em ${perP} eram <b>${em100(sinP)}</b>, ${dSin == null || Math.abs(dSin) < 0.05 ? "praticamente o mesmo custo" : dSin > 0 ? "então o custo de sinistros aumentou" : "então o custo de sinistros diminuiu"}.` : "Sem período anterior para comparar."} Esse número se chama sinistralidade: <b>${pct(ak.sin)}</b>.</p>
           </div>
-          <div class="pan-kpis">
-            <div class="mk">
-              <span class="lbl">Prêmio emitido Akad ${ajuda("premio", "prêmio emitido")}</span>
-              <span class="mk-val">${reais(ak.pe)}</span>
-              <span class="mk-det">${crescNeutro(ak.cresc)} contra ${perP || "o ano anterior"} ${ajuda("cresc", "crescimento")}</span>
-            </div>
-            <div class="mk">
-              <span class="lbl">Prêmio emitido do mercado</span>
-              <span class="mk-val">${reais(RT.tc[0])}</span>
-              <span class="mk-det">${crescNeutro(crescMerc)} contra ${perP || "o ano anterior"}</span>
-            </div>
-            <div class="mk">
-              <span class="lbl">Liderança ${ajuda("lider", "liderança")}</span>
-              <span class="mk-val">${lidera.length} ${lidera.length === 1 ? "linha" : "linhas"}</span>
-              <span class="mk-det">de ${nL} acompanhadas · Akad tem prêmio em ${G.comPremio} · top 3 em ${top3.length}</span>
-            </div>
-            <div class="mk mk-tec">
-              <span class="lbl">Sinistralidade ${ajuda("sin", "sinistralidade")}<span class="tag">técnico</span></span>
-              <span class="mk-val">${pct(ak.sin)}</span>
-              <span class="mk-det">Mercado: ${pct(sinM)}. O mix de ramos do mercado é diferente do da Akad.</span>
-            </div>
+          <div class="sin-comp">
+            <div class="sc-l"><span>Akad, ${per}</span><b>${pct(ak.sin)}</b></div>
+            <div class="sc-l"><span>Akad, ${perP || "período anterior"}</span><b>${pct(sinP)}</b></div>
+            ${dSin != null ? `<div class="sc-l sc-d"><span>Diferença</span><b>${dSin > 0 ? "+" : dSin < 0 ? "−" : ""}${nf1.format(Math.abs(dSin))} p.p. ${Math.abs(dSin) < 0.05 ? "" : dSin > 0 ? "(pior)" : "(melhor)"}</b></div>` : ""}
+            <div class="sc-l sc-m"><span>Mercado, mesmos ramos</span><b>${pct(sinM)}</b></div>
+            <p class="sc-nota">O mercado vende outra mistura de ramos, então use como referência, não como meta.</p>
           </div>
         </div>
+      </div>`;
+
+    const panorama = `
+      <section class="card sec" aria-labelledby="h-pan">
+        <div class="sec-cab"><h2 id="h-pan" class="sec-tit">Panorama</h2><p class="sec-nota">${per} comparado com ${perP || "sem período anterior"} · ${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p></div>
+        <div class="pz-grade">${blocoPart}${blocoVendas}</div>
+        ${blocoSin}
       </section>`;
 
     // B. Movimentos
