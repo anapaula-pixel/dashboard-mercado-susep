@@ -12,63 +12,52 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<a class="pular" href="#conteudo">Pular para o conteúdo</a>
 <header class="topo">
   <div class="topo-in">
-    <div class="marca">
+    <a class="marca" href="#geral" aria-label="Mercado Akad, início">
       <span class="selo" aria-hidden="true">akad</span>
-      <div>
-        <h1>Mercado Akad</h1>
-        <p class="sub" id="fonte-resumo">Carregando dados do SES/SUSEP…</p>
-      </div>
-    </div>
-    <nav class="abas" role="tablist" aria-label="Visões do dashboard">
-      <button role="tab" id="tab-geral" aria-selected="true" data-aba="geral">Visão geral</button>
-      <button role="tab" id="tab-linhas" aria-selected="false" data-aba="linhas">Linhas de produto</button>
-      <button role="tab" id="tab-conc" aria-selected="false" data-aba="conc">Concorrentes</button>
-      <button role="tab" id="tab-uf" aria-selected="false" data-aba="uf">Por estado</button>
+      <span class="marca-nome">Mercado</span>
+    </a>
+    <nav class="nav" aria-label="Páginas do dashboard">
+      <a href="#geral" data-aba="geral" aria-current="page">Visão geral</a>
+      <a href="#linhas" data-aba="linhas">Linhas de produto</a>
+      <a href="#conc" data-aba="conc">Concorrentes</a>
+      <a href="#uf" data-aba="uf">Por estado</a>
     </nav>
   </div>
 </header>
 
-<div class="filtros" id="filtros">
+<div class="filtros" id="filtros" role="search" aria-label="Filtros">
   <div class="filtros-in">
-    <div class="campo">
-      <label for="f-periodo">Período</label>
-      <select id="f-periodo">
-        <option value="ytd">Acumulado do ano</option>
-        <option value="12m">Últimos 12 meses</option>
-        <option value="ano">Ano fechado</option>
-        <option value="custom">Personalizado</option>
-      </select>
+    <div class="fg fg-periodo">
+      <span class="fg-rot" id="rot-periodo">Período</span>
+      <button type="button" class="pp-btn" id="pp-btn" aria-haspopup="dialog" aria-expanded="false" aria-controls="pop-periodo" aria-labelledby="rot-periodo pp-main">
+        <span class="pp-ico" aria-hidden="true"><svg viewBox="0 0 16 16" width="16" height="16"><rect x="1.5" y="2.5" width="13" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M1.5 6.5h13M5 1v3M11 1v3" stroke="currentColor" stroke-width="1.4" fill="none"/></svg></span>
+        <span class="pp-txt"><span class="pp-main" id="pp-main">Carregando…</span><span class="pp-sub" id="pp-sub"></span></span>
+        <span class="cb-seta" aria-hidden="true"></span>
+      </button>
+      <div class="pop" id="pop-periodo" role="dialog" aria-label="Escolher período" hidden></div>
     </div>
-    <div class="campo" id="c-ano" hidden>
-      <label for="f-ano">Ano</label>
-      <select id="f-ano"></select>
+    <div class="fg" id="fg-conc" hidden>
+      <label class="fg-rot" for="cb-conc-in">Concorrente</label>
+      <div id="cb-conc" class="cb-host"></div>
     </div>
-    <div class="campo" id="c-de" hidden>
-      <label for="f-de">De</label>
-      <select id="f-de"></select>
+    <div class="fg" id="fg-linha" hidden>
+      <label class="fg-rot" for="cb-linha-in">Linha ou ramo</label>
+      <div id="cb-linha" class="cb-host"></div>
     </div>
-    <div class="campo" id="c-ate" hidden>
-      <label for="f-ate">Até</label>
-      <select id="f-ate"></select>
-    </div>
-    <div class="campo">
-      <label for="f-visao">Concorrentes por</label>
-      <select id="f-visao">
-        <option value="cia">Seguradora</option>
-        <option value="grupo">Grupo econômico</option>
-      </select>
-    </div>
-    <p class="periodo-txt" id="periodo-txt" aria-live="polite"></p>
+    <p class="fg-nota" id="fg-nota">Esta página reúne todas as linhas de produto.</p>
+    <p class="f-info" id="f-info" aria-live="polite"></p>
   </div>
 </div>
 
-<main id="conteudo">
-  <section id="aba-geral" class="aba" role="tabpanel" aria-labelledby="tab-geral"></section>
-  <section id="aba-linhas" class="aba" role="tabpanel" aria-labelledby="tab-linhas" hidden></section>
-  <section id="aba-conc" class="aba" role="tabpanel" aria-labelledby="tab-conc" hidden></section>
-  <section id="aba-uf" class="aba" role="tabpanel" aria-labelledby="tab-uf" hidden></section>
+<main id="conteudo" tabindex="-1">
+  <h1 class="sr">Mercado Akad: dados de mercado SUSEP</h1>
+  <section id="aba-geral" class="aba"></section>
+  <section id="aba-linhas" class="aba" hidden></section>
+  <section id="aba-conc" class="aba" hidden></section>
+  <section id="aba-uf" class="aba" hidden></section>
 </main>
 
 <footer class="rodape">
