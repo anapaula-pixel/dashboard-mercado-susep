@@ -25,11 +25,8 @@
     ano: null,
     de: null,
     ate: null,
-    visao: "cia",
-    linhaSel: "rcpro",
+    linha: "todas",
     concSel: null,
-    concLinha: "todas",
-    ufLinha: "todas",
     ufMetrica: "share",
     ufSel: null,
     rankOrd: { col: "pe", dir: -1 },
@@ -118,18 +115,13 @@
     montarEntidades();
   }
   function montarEntidades() {
-    // cia -> chave da entidade conforme a visão (seguradora ou grupo)
+    // concorrentes sempre por seguradora
     const chave = new Array(D.cias.length);
     const nome = new Map();
     D.cias.forEach((c, i) => {
-      const [cod, n, g] = c;
-      if (S.visao === "grupo" && g && cod !== AKAD) {
-        chave[i] = "g:" + g;
-        nome.set("g:" + g, nomeBonito(g));
-      } else {
-        chave[i] = cod;
-        nome.set(cod, cod === AKAD ? "Akad" : nomeBonito(n));
-      }
+      const [cod, n] = c;
+      chave[i] = cod;
+      nome.set(cod, cod === AKAD ? "Akad" : nomeBonito(n));
     });
     IDX.chave = chave;
     IDX.nome = nome;
@@ -464,7 +456,7 @@
   }
 
   function abrirLinha(id) {
-    S.linhaSel = id;
+    S.linha = id;
     S.geralSel = id;
     irPara("linhas");
   }
@@ -490,18 +482,12 @@
     const { RT, ak, sinM, linhas, lidera, top3, ganhos, perdas } = G;
     const nL = IDX.linhas.length, nR = D.ramos.length;
     const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
-    const visao = S.visao === "grupo" ? "grupo econômico" : "seguradora";
-    const gerado = new Date(D.gerado);
     window.__geral = G; // usado na verificação automática
 
-    const contexto = `
-      <div class="ctx" role="region" aria-label="Contexto da análise">
-        <p class="ctx-p"><b>${per}</b> comparado com <b>${perP || "sem período anterior na base"}</b> · concorrentes por ${visao} · ${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p>
-        <p class="ctx-p ctx-dados">Dados SUSEP até ${mesLabel(D.meses.length - 1, true)} · atualizado em ${gerado.toLocaleDateString("pt-BR")} · próxima verificação ${fmtDataHora(proximaVerificacao())}</p>
-      </div>`;
+    const contexto = "";
 
     if (!(RT.tc[0] > 0)) {
-      el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro acima.</p></div>`;
+      el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro de período.</p></div>`;
       return;
     }
 
@@ -521,7 +507,7 @@
     const maxHero = Math.max(ak.share || 0, ak.shareP || 0) || 1;
     const panorama = `
       <section class="card sec" aria-labelledby="h-pan">
-        <h2 id="h-pan" class="sec-tit">Panorama do mercado</h2>
+        <div class="sec-cab"><h2 id="h-pan" class="sec-tit">Panorama do mercado</h2><p class="sec-nota">${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p></div>
         <div class="pan-grade">
           <div class="pan-hero">
             <span class="lbl">Participação da Akad ${ajuda("share", "participação de mercado")}</span>
@@ -740,29 +726,19 @@
 
   /* ---------- Linhas de produto ---------- */
   function ramosDaSel(sel) {
+    if (sel === "todas") return IDX.todos;
     if (sel.startsWith("r:")) return [IDX.ramoIdx[sel.slice(2)]];
     return IDX.linhaPorId[sel].idx;
   }
   function nomeSel(sel) {
+    if (sel === "todas") return `Todos os ${D.ramos.length} ramos acompanhados`;
     if (sel.startsWith("r:")) { const c = sel.slice(2); return `${c} ${D.ramos[IDX.ramoIdx[c]][1]}`; }
     return IDX.linhaPorId[sel].nome;
   }
-  function opcoesLinhas(sel, comTodas) {
-    let h = comTodas ? `<option value="todas" ${sel === "todas" ? "selected" : ""}>Todos os ${D.ramos.length} ramos</option>` : "";
-    for (const l of IDX.linhas) {
-      h += `<option value="${l.id}" ${sel === l.id ? "selected" : ""}>${esc(l.nome)}</option>`;
-      if (l.ramos.length > 1) for (const c of l.ramos) {
-        const v = "r:" + c;
-        h += `<option value="${v}" ${sel === v ? "selected" : ""}>   ${c} ${esc(D.ramos[IDX.ramoIdx[c]][1])}</option>`;
-      }
-    }
-    return h;
-  }
-
   function renderLinhas() {
     const P = periodo();
     const el = $("#aba-linhas");
-    const ramos = ramosDaSel(S.linhaSel);
+    const ramos = ramosDaSel(S.linha);
     const R = resumo(ramos, P);
     const ak = infoEnt(R, AKAD);
     const sinM = R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null;
@@ -784,11 +760,8 @@
     el.innerHTML = `
       <div class="cab-aba">
         <div>
-          <h2>${esc(nomeSel(S.linhaSel))}</h2>
-          <p>${ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
-        </div>
-        <div class="ctrl">
-          <div class="campo"><label for="f-linha">Linha ou ramo</label><select id="f-linha">${opcoesLinhas(S.linhaSel, false)}</select></div>
+          <h2>${esc(nomeSel(S.linha))}</h2>
+          <p>${S.linha === "todas" ? `Soma das ${IDX.linhas.length} linhas de produto. Escolha uma linha ou ramo no filtro para ver o detalhe.` : ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
         </div>
       </div>
       <div class="kpis">
@@ -816,7 +789,7 @@
           <div class="bloco-cab"><h2>Ranking do período</h2><p class="nota">Clique num concorrente para ver o detalhe. Clique no título da coluna para ordenar.</p></div>
           <div class="tab-wrap"><table>
             <thead><tr>
-              <th class="n ord" data-col="pos">#</th><th>${S.visao === "grupo" ? "Grupo / seguradora" : "Seguradora"}</th>
+              <th class="n ord" data-col="pos">#</th><th>Seguradora</th>
               <th class="n ord" data-col="pe">Prêmio emitido</th><th class="n ord" data-col="share">Participação</th>
               <th class="n ord" data-col="dShare">Variação</th><th class="n ord" data-col="cresc">Crescimento</th>
               <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com">Desp. comercial</th>
@@ -847,10 +820,8 @@
     });
     el.querySelectorAll("tr.clic[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
       S.concSel = tr.dataset.ent;
-      S.concLinha = S.linhaSel;
       irPara("conc");
     }));
-    $("#f-linha").addEventListener("change", (e) => { S.linhaSel = e.target.value; renderLinhas(); });
 
     // gráficos
     const chaves = [AKAD, ...top];
@@ -898,7 +869,7 @@
     const ents = RT.rk.filter((k) => k !== AKAD);
     if (!S.concSel || !IDX.nome.has(S.concSel) || S.concSel === AKAD) S.concSel = concorrentePadrao(P) || ents[0];
     const k = S.concSel;
-    const ramosSel = S.concLinha === "todas" ? IDX.todos : ramosDaSel(S.concLinha);
+    const ramosSel = ramosDaSel(S.linha);
     const Rsel = resumo(ramosSel, P);
     const c = infoEnt(Rsel, k), a = infoEnt(Rsel, AKAD);
 
@@ -909,18 +880,12 @@
     const frente = porLinha.filter((x) => x.c.pe > 0 && x.a.pe > 0);
     const concFrente = frente.filter((x) => (x.c.pos || 999) < (x.a.pos || 999)).length;
 
-    // opções: concorrentes ordenados pelo prêmio nos ramos acompanhados
-    const opts = ents.map((e) => `<option value="${esc(e)}" ${e === k ? "selected" : ""}>${esc(nomeEnt(e))}</option>`).join("");
 
     el.innerHTML = `
       <div class="cab-aba">
         <div>
           <h2>${esc(nomeEnt(k))} × Akad</h2>
           <p>Como o concorrente está crescendo e onde disputa com a Akad, ${periodoLabel(P.a, P.b)}.</p>
-        </div>
-        <div class="ctrl">
-          <div class="campo"><label for="f-conc">Concorrente</label><select id="f-conc">${opts}</select></div>
-          <div class="campo"><label for="f-conc-linha">Linha ou ramo</label><select id="f-conc-linha">${opcoesLinhas(S.concLinha, true)}</select></div>
         </div>
       </div>
       <div class="kpis">
@@ -931,7 +896,7 @@
       </div>
       <div class="grade">
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Prêmio emitido, 12 meses móveis</h2><p class="nota">${esc(S.concLinha === "todas" ? `Todos os ${D.ramos.length} ramos acompanhados` : nomeSel(S.concLinha))}. Área sombreada = período selecionado.</p></div>
+          <div class="bloco-cab"><h2>Prêmio emitido, 12 meses móveis</h2><p class="nota">${esc(nomeSel(S.linha))}. Área sombreada = período selecionado.</p></div>
           <div class="graf" id="g-conc"></div>
         </div>
         <div class="bloco c12">
@@ -960,8 +925,6 @@
         </div>
       </div>`;
 
-    $("#f-conc").addEventListener("change", (e) => { S.concSel = e.target.value; renderConc(); });
-    $("#f-conc-linha").addEventListener("change", (e) => { S.concLinha = e.target.value; renderConc(); });
 
     const sm = serieMensal(ramosSel, [k, AKAD]);
     linhas($("#g-conc"), {
@@ -1013,7 +976,7 @@
   function renderUF() {
     const P = periodo();
     const el = $("#aba-uf");
-    const ramos = S.ufLinha === "todas" ? IDX.todos : ramosDaSel(S.ufLinha);
+    const ramos = ramosDaSel(S.linha);
     const cur = new Map(), prev = new Map();
     for (const ri of ramos) for (const r of IDX.ufmPorRamo[ri]) {
       const tgt = r[0] >= P.a && r[0] <= P.b ? cur : P.pa != null && r[0] >= P.pa && r[0] <= P.pb ? prev : null;
@@ -1059,7 +1022,6 @@
           <p>Prêmio direto por UF, ${periodoLabel(P.a, P.b)}. Akad tem ${pct(totM > 0 ? (totA / totM) * 100 : null)} do mercado destes ramos no país, por esta base.</p>
         </div>
         <div class="ctrl">
-          <div class="campo"><label for="f-uf-linha">Linha ou ramo</label><select id="f-uf-linha">${opcoesLinhas(S.ufLinha, true)}</select></div>
           <div class="campo"><label>Colorir por</label>
             <div class="seg-ctrl" role="group" aria-label="Métrica do mapa">
               <button type="button" data-m="share" aria-pressed="${met === "share"}">Participação Akad</button>
@@ -1106,7 +1068,6 @@
     });
     el.querySelectorAll("tr[data-uf]").forEach((tr) => tr.addEventListener("click", () => { S.ufSel = +tr.dataset.uf; renderUF(); }));
     el.querySelectorAll(".seg-ctrl button").forEach((b) => b.addEventListener("click", () => { S.ufMetrica = b.dataset.m; renderUF(); }));
-    $("#f-uf-linha").addEventListener("change", (e) => { S.ufLinha = e.target.value; renderUF(); });
 
     const det = $("#uf-detalhe");
     const ui = sel != null ? sel : ord[0].i;
@@ -1116,55 +1077,180 @@
     det.innerHTML = `
       <h3 style="font-size:1rem;margin-bottom:4px">${x.u}: maiores seguradoras em ${ano}${parc}</h3>
       <p class="nota" style="margin:0 0 10px">Mercado no período: ${reais(x.merc)} · Akad: ${reais(x.akad)} (${pct(x.share)})${akPos >= 0 ? ` · ${akPos + 1}º lugar no estado` : ""}</p>
-      ${t.length ? `<div class="tab-wrap"><table><thead><tr><th class="n">#</th><th>${S.visao === "grupo" ? "Grupo / seguradora" : "Seguradora"}</th><th class="n">Prêmio</th><th class="n">Part.</th></tr></thead>
+      ${t.length ? `<div class="tab-wrap"><table><thead><tr><th class="n">#</th><th>Seguradora</th><th class="n">Prêmio</th><th class="n">Part.</th></tr></thead>
       <tbody>${t.map((y, j) => `<tr class="${y.e === AKAD ? "akad" : ""}"><td class="n">${j + 1}</td><td class="nome">${esc(nomeEnt(y.e))}</td><td class="n">${reais(y.v)}</td><td class="n">${pct(y.s)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="vazio">Sem dados para este estado.</p>'}`;
   }
 
   /* ---------- Navegação e filtros ---------- */
+  const ABAS = ["geral", "linhas", "conc", "uf"];
+  // Quais filtros cada página usa (o período vale para todas)
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: ["conc", "linha"], uf: ["linha"] };
+
   function irPara(aba) {
     S.aba = aba;
     document.body.dataset.aba = aba;
-    document.querySelectorAll(".abas button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.aba === aba)));
+    document.querySelectorAll(".nav a").forEach((a) => {
+      if (a.dataset.aba === aba) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
+    });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
-    try { history.replaceState(null, "", "#" + aba); } catch (e) { /* ignora */ }
+    if (location.hash.slice(1) !== aba) { try { history.replaceState(null, "", "#" + aba); } catch (e) { /* ignora */ } }
     render();
     window.scrollTo({ top: 0 });
   }
   function render() {
-    const P = periodo();
-    $("#periodo-txt").innerHTML = `<b>${periodoLabel(P.a, P.b)}</b>${P.pa != null ? ` comparado com ${periodoLabel(P.pa, P.pb)}` : " (sem comparativo)"}`;
     esconderTip();
+    atualizarFiltros();
     ({ geral: renderGeral, linhas: renderLinhas, conc: renderConc, uf: renderUF })[S.aba]();
+  }
+
+  // Busca sem diferenciar acento e maiúscula
+  const norm = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+  /** Campo de seleção com busca (combobox acessível). */
+  function combo(host, cfg) {
+    const id = cfg.id;
+    const atual = () => cfg.opcoes.find((o) => o.v === cfg.valor());
+    host.innerHTML = `
+      <div class="cb">
+        <input id="${id}" class="cb-in" type="text" role="combobox" autocomplete="off" spellcheck="false"
+          aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-lista" placeholder="${esc(cfg.placeholder || "Buscar")}">
+        <span class="cb-seta" aria-hidden="true"></span>
+        <ul id="${id}-lista" class="cb-lista" role="listbox" hidden></ul>
+      </div>`;
+    const inp = host.querySelector("input"), lista = host.querySelector("ul");
+    let filtradas = [], ativo = -1, aberto = false;
+    const mostrarValor = () => { const o = atual(); inp.value = o ? o.t : ""; };
+    const desenhar = () => {
+      lista.innerHTML = filtradas.length
+        ? filtradas.map((o, i) => `<li id="${id}-op-${i}" role="option" class="cb-op${o.ind ? " ind" : ""}${o.v === cfg.valor() ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${o.v === cfg.valor()}" data-i="${i}"><span>${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`).join("")
+        : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
+      inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
+      const el = lista.querySelector(".ativo");
+      if (el) el.scrollIntoView({ block: "nearest" });
+    };
+    const filtrar = (q) => {
+      const n = norm(q.trim());
+      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "")).includes(n)) : cfg.opcoes.slice();
+      ativo = filtradas.findIndex((o) => o.v === cfg.valor());
+      if (ativo < 0 && filtradas.length) ativo = 0;
+      desenhar();
+    };
+    const abrir = () => { if (aberto) return; aberto = true; lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); filtrar(""); inp.select(); };
+    const fechar = () => { aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); mostrarValor(); };
+    const escolher = (o) => { if (!o) return; const mudou = o.v !== cfg.valor(); fechar(); inp.value = o.t; if (mudou) cfg.aoEscolher(o.v); };
+    inp.addEventListener("focus", abrir);
+    inp.addEventListener("click", abrir);
+    inp.addEventListener("input", () => { if (!aberto) abrir(); filtrar(inp.value); });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!aberto) abrir(); ativo = Math.min(filtradas.length - 1, ativo + 1); desenhar(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); ativo = Math.max(0, ativo - 1); desenhar(); }
+      else if (e.key === "Enter") { e.preventDefault(); if (aberto) escolher(filtradas[ativo]); else abrir(); }
+      else if (e.key === "Escape") { e.preventDefault(); fechar(); inp.blur(); }
+      else if (e.key === "Tab") { fechar(); }
+    });
+    inp.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== inp) fechar(); }, 120));
+    lista.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const li = e.target.closest("[data-i]");
+      if (li) escolher(filtradas[+li.dataset.i]);
+    });
+    mostrarValor();
+  }
+
+  function opcoesLinhaFiltro() {
+    const op = [{ v: "todas", t: `Todos os ${D.ramos.length} ramos`, sub: `${IDX.linhas.length} linhas de produto` }];
+    for (const l of IDX.linhas) {
+      op.push({ v: l.id, t: l.nome, sub: l.ramos.join(", ") });
+      if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: c, ind: true });
+    }
+    return op;
+  }
+
+  function atualizarFiltros() {
+    const usa = FILTROS_ABA[S.aba] || [];
+    $("#fg-linha").hidden = !usa.includes("linha");
+    $("#fg-conc").hidden = !usa.includes("conc");
+    $("#fg-nota").hidden = S.aba !== "geral";
+    // Período
+    const P = periodo();
+    $("#pp-main").textContent = periodoLabel(P.a, P.b);
+    $("#pp-sub").textContent = P.pa != null ? `vs. ${periodoLabel(P.pa, P.pb)}` : "sem comparativo";
+    document.querySelectorAll("#pop-periodo [data-p]").forEach((b) => {
+      const on = b.dataset.p === S.periodo && (S.periodo !== "ano" || b.dataset.ano === String(S.ano));
+      b.setAttribute("aria-pressed", String(on));
+    });
+    // Linha ou ramo
+    if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
+      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar linha, ramo ou código", aoEscolher: (v) => { S.linha = v; render(); } });
+    }
+    // Concorrente (lista ordenada pelo prêmio nos ramos acompanhados, no período)
+    if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
+      const RT = resumo(IDX.todos, P);
+      const ents = RT.rk.filter((k) => k !== AKAD);
+      if (!S.concSel || !IDX.nome.has(S.concSel) || S.concSel === AKAD) S.concSel = concorrentePadrao(P) || ents[0];
+      const opcoes = ents.map((k) => ({ v: k, t: nomeEnt(k), sub: `${RT.rk.indexOf(k) + 1}º · ${reais(RT.cur.get(k)[0])}` }));
+      if (S.concSel && !ents.includes(S.concSel)) opcoes.unshift({ v: S.concSel, t: nomeEnt(S.concSel), sub: "sem prêmio no período" });
+      combo($("#cb-conc"), { id: "cb-conc-in", opcoes, valor: () => S.concSel, placeholder: "Buscar seguradora", aoEscolher: (v) => { S.concSel = v; render(); } });
+    }
   }
 
   function montarFiltros() {
     const anos = [...new Set(D.meses.map((m) => m.slice(0, 4)))];
-    const ult = D.meses[D.meses.length - 1];
-    const anosFechados = anos.filter((y) => D.meses.includes(y + "12"));
-    S.ano = anosFechados[anosFechados.length - 1] || anos[anos.length - 1];
-    $("#f-ano").innerHTML = anos.slice().reverse().map((y) => `<option value="${y}" ${y === S.ano ? "selected" : ""}>${y}${D.meses.includes(y + "12") ? "" : " (parcial)"}</option>`).join("");
+    const ult = D.meses.length - 1;
+    const anoUlt = D.meses[ult].slice(0, 4);
+    const fechados = anos.filter((y) => D.meses.includes(y + "12"));
+    S.ano = fechados[fechados.length - 1] || anoUlt;
+    S.ate = ult; S.de = Math.max(0, ult - 11);
+    const mesUlt = MESES_PT[+D.meses[ult].slice(4) - 1];
     const optsMes = D.meses.map((m, i) => `<option value="${i}">${mesLabel(i, true)}</option>`).reverse().join("");
-    $("#f-de").innerHTML = optsMes; $("#f-ate").innerHTML = optsMes;
-    S.ate = D.meses.length - 1; S.de = Math.max(0, S.ate - 11);
-    $("#f-de").value = S.de; $("#f-ate").value = S.ate;
 
-    const sync = () => {
-      $("#c-ano").hidden = S.periodo !== "ano";
-      $("#c-de").hidden = S.periodo !== "custom";
-      $("#c-ate").hidden = S.periodo !== "custom";
-    };
-    $("#f-periodo").addEventListener("change", (e) => { S.periodo = e.target.value; sync(); render(); });
-    $("#f-ano").addEventListener("change", (e) => { S.ano = e.target.value; render(); });
-    $("#f-de").addEventListener("change", (e) => { S.de = +e.target.value; render(); });
-    $("#f-ate").addEventListener("change", (e) => { S.ate = +e.target.value; render(); });
-    $("#f-visao").addEventListener("change", (e) => { S.visao = e.target.value; montarEntidades(); S.concSel = null; render(); });
-    document.querySelectorAll(".abas button").forEach((b) => b.addEventListener("click", () => irPara(b.dataset.aba)));
-    sync();
+    $("#pop-periodo").innerHTML = `
+      <div class="pp-sec">
+        <h3>Atalhos</h3>
+        <div class="pp-chips">
+          <button type="button" data-p="ytd"><b>Acumulado de ${anoUlt}</b><small>jan a ${mesUlt}</small></button>
+          <button type="button" data-p="12m"><b>Últimos 12 meses</b><small>${mesLabel(Math.max(0, ult - 11))} a ${mesLabel(ult)}</small></button>
+        </div>
+      </div>
+      <div class="pp-sec">
+        <h3>Ano completo</h3>
+        <div class="pp-anos">${fechados.slice().reverse().map((y) => `<button type="button" data-p="ano" data-ano="${y}">${y}</button>`).join("")}</div>
+      </div>
+      <div class="pp-sec">
+        <h3>Personalizado</h3>
+        <div class="pp-custom">
+          <label>De <select id="pp-de">${optsMes}</select></label>
+          <label>Até <select id="pp-ate">${optsMes}</select></label>
+          <button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button>
+        </div>
+      </div>
+      <p class="pp-nota">A comparação é sempre com o mesmo período do ano anterior.</p>`;
+    $("#pp-de").value = S.de; $("#pp-ate").value = S.ate;
+
+    const btn = $("#pp-btn"), pop = $("#pop-periodo");
+    const abrir = () => { pop.hidden = false; btn.setAttribute("aria-expanded", "true"); (pop.querySelector('[aria-pressed="true"]') || pop.querySelector("button")).focus(); };
+    const fechar = (foco) => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (foco) btn.focus(); };
+    btn.addEventListener("click", () => (pop.hidden ? abrir() : fechar(false)));
+    document.addEventListener("click", (e) => { if (!pop.hidden && !e.target.closest("#pop-periodo") && !e.target.closest("#pp-btn")) fechar(false); });
+    pop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); fechar(true); } });
+    pop.querySelectorAll("[data-p]").forEach((b) => b.addEventListener("click", () => {
+      S.periodo = b.dataset.p;
+      if (b.dataset.ano) S.ano = b.dataset.ano;
+      fechar(true); render();
+    }));
+    $("#pp-aplicar").addEventListener("click", () => {
+      S.periodo = "custom"; S.de = +$("#pp-de").value; S.ate = +$("#pp-ate").value;
+      fechar(true); render();
+    });
+
+    document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); irPara(a.dataset.aba); }));
+    window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (ABAS.includes(h) && h !== S.aba) irPara(h); });
 
     const gerado = new Date(D.gerado);
-    $("#fonte-resumo").textContent = `Dados do SES/SUSEP até ${mesLabel(D.meses.length - 1, true)} · atualizado em ${gerado.toLocaleDateString("pt-BR")}`;
+    $("#f-info").innerHTML = `<span>Dados SUSEP até <b>${mesLabel(ult, true)}</b></span><span>Atualizado em ${gerado.toLocaleDateString("pt-BR")} · próxima verificação ${fmtDataHora(proximaVerificacao())}</span>`;
     $("#rodape-txt").innerHTML = `Fonte: SUSEP, Sistema de Estatísticas (SES), base completa. Valores em reais correntes, sem correção pela inflação. Nacional: prêmio emitido; por estado: prêmio direto (a SUSEP só publica esse por UF). Sinistralidade = sinistro ocorrido ÷ prêmio ganho. Dados mensais podem ser recarregados pela SUSEP. Base gerada em ${gerado.toLocaleString("pt-BR")}.`;
   }
+
 
   let tRes = null;
   window.addEventListener("resize", () => { clearTimeout(tRes); tRes = setTimeout(render, 150); });
