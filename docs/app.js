@@ -27,6 +27,7 @@
     ate: null,
     linha: "todas",
     concSels: null,
+    pilha: [],
     ufMetrica: "share",
     ufSel: null,
     rankOrd: { col: "pe", dir: -1 },
@@ -460,7 +461,22 @@
   function abrirLinha(id) {
     S.linha = id;
     S.geralSel = id;
-    irPara("linhas");
+    abrirDe("linhas");
+  }
+  // Navegação de detalhe: lembra de onde veio para mostrar "Voltar"
+  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", conc: "Concorrentes", uf: "Por estado" };
+  function abrirDe(destino) {
+    S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" && S.linha !== "todas" ? nomeSel(S.linha) : NOME_ABA[S.aba] });
+    try { history.pushState(null, "", "#" + destino); } catch (e) { /* ignora */ }
+    irPara(destino, true);
+  }
+  function voltar() {
+    const v = S.pilha.pop();
+    if (!v) return;
+    S.linha = v.linha;
+    try { history.replaceState(null, "", "#" + v.aba); } catch (e) { /* ignora */ }
+    irPara(v.aba, true);
+    requestAnimationFrame(() => window.scrollTo({ top: v.y }));
   }
 
   // Posição sempre no mesmo formato: "2º de 32"
@@ -578,8 +594,8 @@
 
     const panorama = `
       <div class="pan-cards">
-        <section class="card sec" aria-label="Participação de mercado">${blocoPart}</section>
         <section class="card sec" aria-label="Vendas da Akad">${blocoVendas}</section>
+        <section class="card sec" aria-label="Participação de mercado">${blocoPart}</section>
       </div>
       <section class="card sec" aria-label="Sinistros">${blocoSin}</section>`;
 
@@ -655,7 +671,8 @@
         <div class="sec-cab">
           <div>
             <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
-            <p class="sec-sub">Barra: participação em ${per}. Marcador: ${perP || "sem período de comparação"}. Clique num ramo para abrir o detalhe.</p>
+            <p class="sec-sub">Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe.</p>
+            <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
           </div>
           <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
             <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
@@ -673,7 +690,6 @@
           ${grupoExtra("Sem concorrência no período", semConc, true)}
           ${grupoExtra("Sem prêmio da Akad no período", semA, true)}
         </ul>
-        <p class="legenda-pb"><span class="lg-fill"></span> participação atual <span class="lg-ant"></span> mesmo período do ano anterior · ▲▼ ao lado da posição: movimento no ranking</p>
       </section>`;
 
     // D. Tabela analítica
@@ -858,7 +874,7 @@
     });
     el.querySelectorAll("tr.clic[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
       S.concSels = [tr.dataset.ent, ...(S.concSels || []).filter((x) => x !== tr.dataset.ent)].slice(0, MAX_CONC);
-      irPara("conc");
+      abrirDe("conc");
     }));
 
     // gráficos
@@ -1140,7 +1156,8 @@
   // Quais filtros cada página usa (o período vale para todas)
   const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: ["conc", "linha"], uf: ["linha"] };
 
-  function irPara(aba) {
+  function irPara(aba, manterVoltar) {
+    if (!manterVoltar) S.pilha = [];
     S.aba = aba;
     document.body.dataset.aba = aba;
     document.querySelectorAll(".nav a").forEach((a) => {
@@ -1154,6 +1171,10 @@
   function render() {
     esconderTip();
     atualizarFiltros();
+    const vt = $("#voltar");
+    const topo = S.pilha[S.pilha.length - 1];
+    vt.hidden = !(topo && topo.aba !== S.aba);
+    if (!vt.hidden) vt.innerHTML = `<span aria-hidden="true">←</span> Voltar para ${esc(topo.rotulo)}`;
     ({ geral: renderGeral, linhas: renderLinhas, conc: renderConc, uf: renderUF })[S.aba]();
   }
 
@@ -1399,7 +1420,13 @@
     });
 
     document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); irPara(a.dataset.aba); }));
-    window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (ABAS.includes(h) && h !== S.aba) irPara(h); });
+    window.addEventListener("hashchange", () => {
+      const h = location.hash.slice(1);
+      if (!ABAS.includes(h) || h === S.aba) return;
+      const topo = S.pilha[S.pilha.length - 1];
+      if (topo && topo.aba === h) voltar(); else irPara(h);
+    });
+    $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
 
     const gerado = new Date(D.gerado);
     montarStatus();
