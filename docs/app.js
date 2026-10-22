@@ -1095,6 +1095,15 @@
       return { i, u, merc: c[0], akad: c[1], share: sh, dShare: sh != null && shP != null ? sh - shP : null, crescM: cresc(c[0], p[0]), crescA: cresc(c[1], p[1]) };
     });
     const totM = linhasUF.reduce((s, x) => s + x.merc, 0);
+    // Por estado e ramo (todos os ramos acompanhados): o que mais se vende em cada UF
+    const ufRamo = D.ufs.map(() => new Map());
+    for (const l of IDX.linhas) for (const ri of l.idx) for (const r of IDX.ufmPorRamo[ri]) {
+      if (r[0] < P.a || r[0] > P.b) continue;
+      const m = ufRamo[r[2]]; const v = m.get(l.id) || [0, 0];
+      v[0] += r[3]; v[1] += r[4]; m.set(l.id, v);
+    }
+    const ramosDoUF = (i) => { const m = ufRamo[i]; const t = [...m.values()].reduce((a, v) => a + v[0], 0);
+      return [...m.entries()].filter(([, v]) => v[0] > 0).sort((a, b) => b[1][0] - a[1][0]).map(([id, v]) => ({ l: IDX.linhaPorId[id], v: v[0], ak: v[1], s: t > 0 ? (v[0] / t) * 100 : null, sa: v[0] > 0 && v[1] > 0 ? (v[1] / v[0]) * 100 : null })); };
     const totA = linhasUF.reduce((s, x) => s + x.akad, 0);
 
     // líder por UF (base anual do ano final)
@@ -1143,13 +1152,15 @@
           <div id="uf-detalhe"></div>
         </div>
       </div>
+      <div class="bloco" id="uf-ramos"></div>
       <div class="bloco">
         <div class="bloco-cab"><h2>Todos os estados</h2><p class="nota">Líder no estado com base em ${ano}${parc}. Clique numa UF para ver as maiores seguradoras.</p></div>
         <div class="tab-wrap"><table>
-          <thead><tr><th>UF</th><th class="n">Mercado</th><th class="n">Cresc. mercado</th><th class="n">Akad</th><th class="n">Cresc. Akad</th><th class="n">Part. Akad</th><th class="n">Variação</th><th>Líder no estado</th></tr></thead>
+          <thead><tr><th>UF</th><th class="n">Mercado</th><th class="n">Cresc. mercado</th><th class="n">Akad</th><th class="n">Cresc. Akad</th><th class="n">Part. Akad</th><th class="n">Variação</th><th>Ramo que mais vende</th><th>Líder no estado</th></tr></thead>
           <tbody>${ord.map((x) => { const t = topUF(x.i)[0]; return `<tr class="clic ${sel === x.i ? "akad" : ""}" data-uf="${x.i}">
             <td><b>${x.u}</b></td><td class="n">${reais(x.merc)}</td><td class="n">${varHtml(x.crescM)}</td><td class="n">${reais(x.akad)}</td><td class="n">${varHtml(x.crescA)}</td>
             <td class="n">${pct(x.share)}</td><td class="n">${ppHtml(x.dShare)}</td>
+            <td>${(() => { const rm = ramosDoUF(x.i)[0]; return rm ? `${esc(rm.l.nome)} <span class="sub">${pctPart(rm.s)} do estado</span>` : "–"; })()}</td>
             <td>${t ? `${esc(nomeEnt(t.e))} <span class="sub">${pct(t.s)}</span>` : "–"}</td></tr>`; }).join("")}</tbody>
         </table></div>
       </div>`;
@@ -1183,6 +1194,20 @@
       <p class="nota" style="margin:0 0 10px">Mercado no período: ${reais(x.merc)} · Akad: ${reais(x.akad)} (${pct(x.share)})${akPos >= 0 ? ` · ${akPos + 1}º lugar no estado` : ""}</p>
       ${t.length ? `<div class="tab-wrap"><table><thead><tr><th class="n">#</th><th>Seguradora</th><th class="n">Prêmio</th><th class="n">Part.</th></tr></thead>
       <tbody>${t.map((y, j) => `<tr class="${y.e === AKAD ? "akad" : ""}"><td class="n">${j + 1}</td><td class="nome">${esc(nomeEnt(y.e))}</td><td class="n">${reais(y.v)}</td><td class="n">${pct(y.s)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="vazio">Sem dados para este estado.</p>'}`;
+
+    // O que mais se vende no estado selecionado
+    const rr = ramosDoUF(ui).slice(0, 10);
+    const maxR = Math.max(1, ...rr.map((y) => y.v));
+    $("#uf-ramos").innerHTML = `
+      <div class="bloco-cab"><h2>O que mais se vende em ${x.u}</h2><p class="nota">Os ramos acompanhados com mais prêmio no estado, ${periodoLabel(P.a, P.b)}. Clique em outro estado no mapa para trocar.</p></div>
+      ${rr.length ? `<ol class="ur-lista">${rr.map((y, j) => `
+        <li class="ur">
+          <span class="ur-n">${j + 1}º</span>
+          <span class="ur-nome"><b>${esc(y.l.nome)}</b><small>${pctPart(y.s)} do que se vende no estado</small></span>
+          <span class="ur-barra" aria-hidden="true"><i style="width:${(y.v / maxR) * 100}%"></i></span>
+          <span class="ur-val">${reais(y.v)}</span>
+          <span class="ur-ak">${y.sa != null ? `Akad tem <b>${pctPart(y.sa)}</b>` : '<span class="vs0">Akad não vende</span>'}</span>
+        </li>`).join("")}</ol>` : '<p class="vazio">Sem dados para este estado.</p>'}`;
   }
 
   /* ---------- Navegação e filtros ---------- */
