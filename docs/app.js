@@ -459,23 +459,23 @@
   }
 
   function abrirLinha(id) {
-    S.linha = id;
     S.geralSel = id;
-    abrirDe("linhas");
+    abrirDe("linhas", () => { S.linha = id; });
   }
   // Navegação de detalhe: lembra de onde veio para mostrar "Voltar"
   const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", conc: "Concorrentes", uf: "Por estado" };
-  function abrirDe(destino) {
-    S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" && S.linha !== "todas" ? nomeSel(S.linha) : NOME_ABA[S.aba] });
+  function abrirDe(destino, antes) {
+    S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" ? (S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha)) : NOME_ABA[S.aba] });
+    if (antes) antes();
     try { history.pushState(null, "", "#" + destino); } catch (e) { /* ignora */ }
-    irPara(destino, true);
+    if (destino === S.aba) { render(); window.scrollTo({ top: 0 }); } else irPara(destino, true);
   }
   function voltar() {
     const v = S.pilha.pop();
     if (!v) return;
     S.linha = v.linha;
     try { history.replaceState(null, "", "#" + v.aba); } catch (e) { /* ignora */ }
-    irPara(v.aba, true);
+    if (v.aba === S.aba) render(); else irPara(v.aba, true);
     requestAnimationFrame(() => window.scrollTo({ top: v.y }));
   }
 
@@ -789,9 +789,43 @@
     if (sel.startsWith("r:")) { const c = sel.slice(2); return `${D.ramos[IDX.ramoIdx[c]][1]} (código ${c})`; }
     return IDX.linhaPorId[sel].nome;
   }
+  // Página "Todos os ramos": um card por ramo, com o que ele cobre e onde a Akad está
+  function renderCatalogo(el, P) {
+    const per = periodoLabel(P.a, P.b);
+    const cards = IDX.linhas.map((l) => {
+      const R = resumo(l.idx, P);
+      const a = infoEnt(R, AKAD);
+      const lider = R.rk[0];
+      const crM = cresc(R.tc[0], R.tp[0]);
+      const ak = a.pos
+        ? `<span class="rc-pos${a.pos === 1 ? " lider" : ""}">${a.pos}º <small>de ${R.rk.length}</small></span><span class="rc-sh">${pctPart(a.share)} do mercado</span>`
+        : `<span class="rc-sem">Akad sem prêmio no período</span>`;
+      return `<li><button type="button" class="rc" data-abrir="${l.id}" aria-label="${esc(l.nome)}, abrir detalhe">
+        <span class="rc-cab"><b>${esc(l.nome)}</b><small>Código SUSEP ${l.ramos.join(", ")}</small></span>
+        <span class="rc-desc">${esc(l.desc || "")}</span>
+        <span class="rc-dados">
+          <span class="rc-d"><small>Mercado</small><b>${R.tc[0] > 0 ? reais(R.tc[0]) : "sem prêmio"}</b>${crM != null ? `<i>${crescNeutro(crM)}</i>` : ""}</span>
+          <span class="rc-d"><small>Líder</small><b>${lider ? esc(lider === AKAD ? "Akad" : nomeEnt(lider)) : "–"}</b></span>
+          <span class="rc-d rc-akad"><small>Akad</small>${ak}</span>
+        </span>
+        <span class="rc-ir" aria-hidden="true">Ver detalhe →</span>
+      </button></li>`;
+    }).join("");
+    el.innerHTML = `
+      <div class="cab-aba">
+        <div>
+          <h2>Todos os ramos</h2>
+          <p>Os ${IDX.linhas.length} ramos da SUSEP em que a Akad atua, ${per}. Clique num ramo para ver o detalhe.</p>
+        </div>
+      </div>
+      <ul class="rc-grade">${cards}</ul>`;
+    el.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => { abrirDe("linhas", () => { S.linha = b.dataset.abrir; }); }));
+  }
+
   function renderLinhas() {
     const P = periodo();
     const el = $("#aba-linhas");
+    if (S.linha === "todas") return renderCatalogo(el, P);
     const ramos = ramosDaSel(S.linha);
     const R = resumo(ramos, P);
     const ak = infoEnt(R, AKAD);
@@ -1173,7 +1207,7 @@
     atualizarFiltros();
     const vt = $("#voltar");
     const topo = S.pilha[S.pilha.length - 1];
-    vt.hidden = !(topo && topo.aba !== S.aba);
+    vt.hidden = !(topo && (topo.aba !== S.aba || topo.linha !== S.linha));
     if (!vt.hidden) vt.innerHTML = `<span aria-hidden="true">←</span> Voltar para ${esc(topo.rotulo)}`;
     ({ geral: renderGeral, linhas: renderLinhas, conc: renderConc, uf: renderUF })[S.aba]();
   }
@@ -1419,12 +1453,17 @@
       fechar(true); render();
     });
 
-    document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); irPara(a.dataset.aba); }));
-    window.addEventListener("hashchange", () => {
+    document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (a.dataset.aba === "linhas") S.linha = "todas"; // pelo menu, Ramos abre a visão de todos os ramos
+      irPara(a.dataset.aba);
+    }));
+    // Voltar do navegador: desfaz o último "abrir detalhe"; senão, segue o endereço
+    window.addEventListener("popstate", () => {
       const h = location.hash.slice(1);
-      if (!ABAS.includes(h) || h === S.aba) return;
       const topo = S.pilha[S.pilha.length - 1];
-      if (topo && topo.aba === h) voltar(); else irPara(h);
+      if (topo && topo.aba === h) voltar();
+      else if (ABAS.includes(h) && h !== S.aba) irPara(h);
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
 
