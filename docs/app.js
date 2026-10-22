@@ -802,20 +802,26 @@
     const cards = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
-      const lider = R.rk[0];
       const crM = cresc(R.tc[0], R.tp[0]);
-      const ak = a.pos
-        ? `<span class="rc-pos${a.pos === 1 ? " lider" : ""}">${a.pos}º <small>de ${R.rk.length}</small></span><span class="rc-sh">${pctPart(a.share)} do mercado</span>`
-        : `<span class="rc-sem">Akad sem prêmio no período</span>`;
-      return `<li><button type="button" class="rc" data-abrir="${l.id}" aria-label="${esc(l.nome)}, abrir detalhe">
-        <span class="rc-cab"><b>${esc(l.nome)}</b><small>Código SUSEP ${l.ramos.join(", ")}</small></span>
+      const ref = R.rk[0] === AKAD ? R.rk[1] : R.rk[0];
+      const r = ref ? infoEnt(R, ref) : null;
+      const tend = !a.pos ? "sem" : a.dShare == null ? "neutro" : a.dShare >= 0.05 ? "sobe" : a.dShare <= -0.05 ? "cai" : "neutro";
+      const selo = { sobe: "Ganhando participação", cai: "Perdendo participação", neutro: "Participação estável", sem: "Akad sem prêmio" }[tend];
+      const seloCurto = { sobe: "Ganhando", cai: "Perdendo", neutro: "Estável", sem: "Sem prêmio" }[tend];
+      const escala = Math.max(a.share || 0, r ? r.share || 0 : 0, 0.0001);
+      const barra = (nome, sh, cls) => `<span class="rc-b ${cls}"><span class="rc-bn">${esc(nome)}</span><span class="rc-bt"><i style="width:${Math.max(sh ? 1.5 : 0, ((sh || 0) / escala) * 100)}%"></i></span><span class="rc-bv">${pctPart(sh)}</span></span>`;
+      return `<li><button type="button" class="rc rc-${tend}" data-abrir="${l.id}" aria-label="${esc(l.nome)}: ${selo}. Abrir detalhe">
+        <span class="rc-topo"><b class="rc-nome">${esc(l.nome)}</b><span class="rc-cod">${l.ramos.join(", ")}</span></span>
         <span class="rc-desc">${esc(l.desc || "")}</span>
-        <span class="rc-dados">
-          <span class="rc-d"><small>Mercado</small><b>${R.tc[0] > 0 ? reais(R.tc[0]) : "sem prêmio"}</b>${crM != null ? `<i>${crescNeutro(crM)}</i>` : ""}</span>
-          <span class="rc-d"><small>Líder</small><b>${lider ? esc(lider === AKAD ? "Akad" : nomeEnt(lider)) : "–"}</b></span>
-          <span class="rc-d rc-akad"><small>Akad</small>${ak}</span>
+        <span class="rc-akad">
+          <span class="rc-posw"><span class="rc-rot">Posição da Akad</span><span class="rc-pos">${a.pos ? `${a.pos}º<small> de ${R.rk.length}</small>` : "–"}</span></span>
+          <span class="rc-tend">${a.pos === 1 ? '<span class="rc-lider">Lidera</span>' : ""}<span class="rc-selo" title="${selo} contra o mesmo período do ano anterior">${tend === "sobe" ? "▲ " : tend === "cai" ? "▼ " : ""}${seloCurto}${a.dShare != null && tend !== "sem" && tend !== "neutro" ? ` <b>${a.dShare > 0 ? "+" : "−"}${nf1.format(Math.abs(a.dShare))} p.p.</b>` : ""}</span></span>
         </span>
-        <span class="rc-ir" aria-hidden="true">Ver detalhe →</span>
+        <span class="rc-barras">
+          ${barra("Akad", a.share, "ak")}
+          ${r ? barra(nomeEnt(ref) + (R.rk[0] === AKAD ? " (2º)" : " (líder)"), r.share, "ref") : '<span class="rc-sozinha">Única seguradora no ramo</span>'}
+        </span>
+        <span class="rc-rodape"><span class="rc-merc">Mercado <b>${R.tc[0] > 0 ? reais(R.tc[0]) : "sem prêmio"}</b>${crM != null ? ` <i>${crescNeutro(crM)}</i>` : ""}</span><span class="rc-ir" aria-hidden="true">Detalhe →</span></span>
       </button></li>`;
     }).join("");
     el.innerHTML = `
