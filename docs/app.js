@@ -366,7 +366,7 @@
     ref: "Seguradora de referência: a líder do ramo. Quando a Akad lidera, aparece a vice-líder.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
-    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Toda segunda-feira, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
+    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     universo: "Os ramos da SUSEP em que a Akad atua, cada um com seu código oficial. Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -375,7 +375,8 @@
     ligarAjuda.ok = true;
     const abrir = (b) => {
       const r = b.getBoundingClientRect();
-      mostrarTip(`<div style="max-width:260px">${esc(AJUDA[b.dataset.ajuda] || "")}</div>`, { clientX: r.left, clientY: r.bottom });
+      const extra = b.dataset.lista ? `<div class="tip-lista">${b.dataset.lista.split("|").map((x) => `<div>${esc(x)}</div>`).join("")}</div>` : "";
+      mostrarTip(`<div style="max-width:280px">${esc(AJUDA[b.dataset.ajuda] || "")}${extra}</div>`, { clientX: r.left, clientY: r.bottom });
     };
     document.addEventListener("mouseover", (e) => { const b = e.target.closest?.(".ajuda"); if (b) abrir(b); });
     document.addEventListener("mouseout", (e) => { if (e.target.closest?.(".ajuda")) esconderTip(); });
@@ -424,13 +425,11 @@
     if (Math.abs(g) < 0.05) return '<span class="vs">igual ao mercado</span>';
     return `<span class="vs">${g > 0 ? "acima" : "abaixo"} do mercado</span>`;
   }
-  // Próxima execução do workflow: segunda-feira 12:00 UTC (9h em Brasília)
+  // Próxima execução do workflow: todo dia 12:00 UTC (9h em Brasília)
   function proximaVerificacao() {
     const agora = new Date();
     const d = new Date(Date.UTC(agora.getUTCFullYear(), agora.getUTCMonth(), agora.getUTCDate(), 12, 0, 0));
-    let add = (1 - d.getUTCDay() + 7) % 7;
-    if (add === 0 && agora >= d) add = 7;
-    d.setUTCDate(d.getUTCDate() + add);
+    if (agora >= d) d.setUTCDate(d.getUTCDate() + 1);
     return d;
   }
   const fmtDataHora = (d) => d.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
@@ -502,7 +501,13 @@
     const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
     window.__geral = G; // usado na verificação automática
 
-    const contexto = "";
+    const contexto = `
+      <div class="cab-aba cab-geral">
+        <div>
+          <h2>Visão geral</h2>
+          <p>Como a Akad está no mercado de seguros, somando os <b>${nL} ramos da SUSEP</b> em que ela atua ${ajuda("universo", "ramos acompanhados")}. Os números vêm das estatísticas oficiais da SUSEP e comparam ${per} com ${perP || "o período anterior"}.</p>
+        </div>
+      </div>`;
 
     if (!(RT.tc[0] > 0)) {
       el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro de período.</p></div>`;
@@ -532,7 +537,7 @@
         <dl class="pz-fatos">
           <div><dt>Mercado nos ${nL} ramos</dt><dd>${reais(RT.tc[0])} <span class="pz-cr">${crescNeutro(crescMerc)}</span></dd></div>
           <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="pz-cr">era ${ak.posP}º</span>` : ""}</dd></div>
-          <div><dt>Liderança ${ajuda("lider", "liderança")}</dt><dd>${lidera.length} de ${nL} ramos <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
+          <div><dt>Liderança <button type="button" class="ajuda" data-ajuda="lider" data-lista="${esc(lidera.length ? lidera.map((x) => `${x.l.nome}: ${pctPart(x.a.share)} do mercado`).join("|") : "Nenhum ramo no período")}" aria-label="O que é liderança? Ramos: ${esc(lidera.map((x) => x.l.nome).join(", ") || "nenhum")}">?</button></dt><dd>${lidera.length} de ${nL} ramos <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
         </dl>
       </div>`;
 
@@ -565,8 +570,12 @@
         <h2 class="pz-tit">Vendas da Akad ${ajuda("premio", "prêmio emitido")}</h2>
         <div class="hero-linha"><span class="hero-val hv-m">${reais(ak.pe)}</span><span class="hero-var">${crescNeutro(ak.cresc)} ${ajuda("cresc", "crescimento")}</span></div>
         <p class="pz-ant">${ak.peP > 0 ? `Era <b>${reais(ak.peP)}</b> em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
-        <p class="pz-leg">Prêmio emitido e crescimento contra o ano anterior, ${recorte}</p>
+        <div class="vh-cab">
+          <span class="vh-tit">Histórico de vendas</span>
+          <span class="vh-recorte">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}</span>
+        </div>
         <ol class="vh-lista" aria-label="Prêmio emitido da Akad por ano">${barrasH}</ol>
+        <p class="vh-leg"><span><i class="vh-sw atual"></i>Período atual</span><span><i class="vh-sw"></i>Anos anteriores</span><span><b>▲▼</b> crescimento contra o ano anterior</span></p>
       </div>`;
 
     // A3. Sinistros: comparação principal com a própria Akad
@@ -586,8 +595,6 @@
             <div class="sc-l"><span>Akad, ${per}</span><b>${pct(ak.sin)}</b></div>
             <div class="sc-l"><span>Akad, ${perP || "período anterior"}</span><b>${pct(sinP)}</b></div>
             ${dSin != null ? `<div class="sc-l sc-d"><span>Diferença</span><b>${dSin > 0 ? "+" : dSin < 0 ? "−" : ""}${nf1.format(Math.abs(dSin))} p.p. ${Math.abs(dSin) < 0.05 ? "" : dSin > 0 ? "(pior)" : "(melhor)"}</b></div>` : ""}
-            <div class="sc-l sc-m"><span>Mercado, mesmos ramos</span><b>${pct(sinM)}</b></div>
-            <p class="sc-nota">O mercado vende outra mistura de ramos, então use como referência, não como meta.</p>
           </div>
         </div>
       </div>`;
@@ -1372,7 +1379,7 @@
     const usa = FILTROS_ABA[S.aba] || [];
     $("#fg-linha").hidden = !usa.includes("linha");
     $("#fg-conc").hidden = !usa.includes("conc");
-    $("#fg-nota").hidden = S.aba !== "geral";
+    $("#fg-nota").hidden = true; // o contexto da Visão geral fica no cabeçalho da página
     // Período
     const P = periodo();
     $("#pp-main").textContent = periodoLabel(P.a, P.b);
@@ -1399,7 +1406,7 @@
   // Selo no topo: até que mês vão os dados, quando consultamos a SUSEP e quando é a próxima consulta
   function ultimaVerificacao() {
     const d = proximaVerificacao();
-    d.setUTCDate(d.getUTCDate() - 7);
+    d.setUTCDate(d.getUTCDate() - 1);
     return d;
   }
   function desenharStatus(ultima, falhou) {
