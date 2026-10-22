@@ -367,7 +367,7 @@
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Toda segunda-feira, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
-    universo: "A Akad é acompanhada em 14 ramos, que correspondem a 22 códigos da SUSEP (alguns ramos, como Garantia e Transporte, têm mais de um código). Os indicadores do topo somam todos eles.",
+    universo: "Os ramos da SUSEP em que a Akad atua, cada um com seu código oficial. Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
   function ligarAjuda() {
@@ -815,7 +815,7 @@
       <div class="cab-aba">
         <div>
           <h2>${esc(nomeSel(S.linha))}</h2>
-          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos (${D.ramos.length} códigos SUSEP). Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP: " : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
+          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP: " : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
         </div>
       </div>
       <div class="kpis">
@@ -1301,7 +1301,7 @@
   }
 
   function opcoesLinhaFiltro() {
-    const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: `${D.ramos.length} códigos SUSEP` }];
+    const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" }];
     for (const l of IDX.linhas) {
       op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") });
       if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true });
