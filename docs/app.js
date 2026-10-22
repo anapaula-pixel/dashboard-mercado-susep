@@ -363,7 +363,7 @@
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
     sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
     lider: "Ramos em que a Akad tem o maior prêmio emitido no período.",
-    ref: "Seguradora de referência: a líder do ramo. Quando a Akad lidera, aparece a vice-líder.",
+    ref: "A maior seguradora do ramo sem contar a Akad. Na maioria dos ramos é a líder; quando a Akad lidera, aparece quem vem logo atrás dela.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
@@ -731,7 +731,7 @@
               <th colspan="2" class="g">Participação</th>
               <th colspan="3" class="g">Prêmio emitido Akad</th>
               <th colspan="2" class="g">Mercado</th>
-              <th colspan="2" class="g">Referência ${ajuda("ref", "seguradora de referência")}</th>
+              <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>
             </tr>
             <tr>
               ${th("pos", "Lugar", "n")}${th("mov", "Mov.", "n")}
@@ -753,7 +753,7 @@
               <td>${vsTexto(x.a.cresc, x.crescM)}</td>
               <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
               <td class="n">${crescNeutro(x.crescM)}</td>
-              <td class="g1 ref">${x.ref ? `${esc(nomeEnt(x.ref))} <span class="sub-i">${x.lider === AKAD ? "vice-líder" : "líder"}</span>` : '<span class="sub-i">não há outra seguradora</span>'}</td>
+              <td class="g1 ref">${x.ref ? `${esc(nomeEnt(x.ref))}${x.lider === AKAD ? ' <span class="sub-i">atrás da Akad</span>' : ""}` : '<span class="sub-i">não há outra seguradora</span>'}</td>
               <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>
             </tr>`).join("")}
           </tbody>
