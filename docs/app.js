@@ -26,7 +26,7 @@
     de: null,
     ate: null,
     linha: "todas",
-    concSel: null,
+    concSels: null,
     ufMetrica: "share",
     ufSel: null,
     rankOrd: { col: "pe", dir: -1 },
@@ -364,6 +364,7 @@
     lider: "Ramos em que a Akad tem o maior prêmio emitido no período.",
     ref: "Seguradora de referência: a líder do ramo. Quando a Akad lidera, aparece a vice-líder.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
+    frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     universo: "A Akad é acompanhada em 14 ramos, que correspondem a 22 códigos da SUSEP (alguns ramos, como Garantia e Transporte, têm mais de um código). Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -855,7 +856,7 @@
       });
     });
     el.querySelectorAll("tr.clic[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
-      S.concSel = tr.dataset.ent;
+      S.concSels = [tr.dataset.ent, ...(S.concSels || []).filter((x) => x !== tr.dataset.ent)].slice(0, MAX_CONC);
       irPara("conc");
     }));
 
@@ -888,113 +889,129 @@
   }
 
   /* ---------- Concorrentes ---------- */
-  function concorrentePadrao(P) {
+  const MAX_CONC = 4;
+  function concorrentesPadrao(P, n) {
     const cont = new Map();
     for (const l of IDX.linhas) {
       const R = resumo(l.idx, P);
       if (!R.cur.has(AKAD)) continue;
       R.rk.filter((k) => k !== AKAD).slice(0, 5).forEach((k, i) => cont.set(k, (cont.get(k) || 0) + 5 - i));
     }
-    return [...cont.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+    return [...cont.entries()].sort((a, b) => b[1] - a[1]).slice(0, n).map((x) => x[0]);
   }
+  const corEnt = (i) => (i === 0 ? css("--akad") : css(CORES_CONC[(i - 1) % CORES_CONC.length]));
+  const bolinha = (i) => `<i class="bol" style="background:${corEnt(i)}" aria-hidden="true"></i>`;
 
   function renderConc() {
+    ligarAjuda();
     const P = periodo();
     const el = $("#aba-conc");
-    const RT = resumo(IDX.todos, P);
-    const ents = RT.rk.filter((k) => k !== AKAD);
-    if (!S.concSel || !IDX.nome.has(S.concSel) || S.concSel === AKAD) S.concSel = concorrentePadrao(P) || ents[0];
-    const k = S.concSel;
+    const sel = S.concSels.filter((k) => k !== AKAD && IDX.nome.has(k));
+    const ents = [AKAD, ...sel];
     const ramosSel = ramosDaSel(S.linha);
     const Rsel = resumo(ramosSel, P);
-    const c = infoEnt(Rsel, k), a = infoEnt(Rsel, AKAD);
+    const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
 
-    const porLinha = IDX.linhas.map((l) => {
+    // por ramo, para a matriz e para "Akad à frente em"
+    const porRamo = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
-      return { l, c: infoEnt(R, k), a: infoEnt(R, AKAD), n: R.rk.length };
-    }).filter((x) => x.c.pe > 0 || x.a.pe > 0);
-    const frente = porLinha.filter((x) => x.c.pe > 0 && x.a.pe > 0);
-    const concFrente = frente.filter((x) => (x.c.pos || 999) < (x.a.pos || 999)).length;
+      return { l, n: R.rk.length, info: ents.map((k) => infoEnt(R, k)) };
+    }).filter((x) => x.info.some((i) => i.pe > 0));
+    const frenteDe = (j) => {
+      const ambos = porRamo.filter((x) => x.info[0].pe > 0 && x.info[j].pe > 0);
+      return { n: ambos.length, akad: ambos.filter((x) => x.info[0].pos < x.info[j].pos).length };
+    };
 
+    if (!sel.length) {
+      el.innerHTML = `<div class="card vazio-bloco"><h2>Escolha concorrentes</h2><p>Use o campo Concorrentes, no filtro acima, para escolher até ${MAX_CONC} seguradoras e comparar com a Akad.</p></div>`;
+      return;
+    }
 
+    const linhasTab = ents.map((k, i) => {
+      const x = infoEnt(Rsel, k);
+      const f = i > 0 ? frenteDe(i) : null;
+      return `<tr class="${i === 0 ? "akad" : ""}">
+        <td class="nome">${bolinha(i)}<b>${esc(nomeEnt(k))}</b></td>
+        <td class="n">${x.pe > 0 ? reais(x.pe) : "–"}</td>
+        <td class="n">${crescNeutro(x.cresc)}</td>
+        <td class="n">${pctPart(x.share)}</td>
+        <td class="n">${ppSeta(x.dShare)}</td>
+        <td>${chipPos(x.pos)}${deltaPos(x.pos, x.posP)}</td>
+        <td class="n">${f ? (f.n ? `<b>${f.akad}</b> de ${f.n}` : '<span class="vs0">sem disputa</span>') : '<span class="vs0">referência</span>'}</td>
+      </tr>`;
+    }).join("");
+
+    const cab = (t, a) => `<th class="n">${t}${a ? " " + ajuda(a[0], a[1]) : ""}</th>`;
     el.innerHTML = `
       <div class="cab-aba">
         <div>
-          <h2>${esc(nomeEnt(k))} × Akad</h2>
-          <p>Como o concorrente está crescendo e onde disputa com a Akad, ${periodoLabel(P.a, P.b)}.</p>
+          <h2>Akad × ${sel.length} ${sel.length === 1 ? "concorrente" : "concorrentes"}</h2>
+          <p>${esc(nomeSel(S.linha))} · ${per}${perP ? ` comparado com ${perP}` : ""}</p>
         </div>
       </div>
-      <div class="kpis">
-        <div class="kpi"><span class="rot">Prêmio ${esc(nomeEnt(k))}</span><span class="val">${reais(c.pe)}</span><span class="det">${varHtml(c.cresc)} contra o ano anterior</span></div>
-        <div class="kpi destaque"><span class="rot">Prêmio Akad</span><span class="val">${reais(a.pe)}</span><span class="det">${varHtml(a.cresc)} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Participação do concorrente</span><span class="val">${pct(c.share)}</span><span class="det">${ppHtml(c.dShare)} · Akad: ${pct(a.share)} (${ppHtml(a.dShare)})</span></div>
-        <div class="kpi"><span class="rot">Disputa direta</span><span class="val">${frente.length - concFrente} de ${frente.length}</span><span class="det">ramos em que a Akad está à frente</span></div>
-      </div>
-      <div class="grade">
-        <div class="bloco c12">
-          <div class="bloco-cab"><h2>Prêmio emitido, 12 meses móveis</h2><p class="nota">${esc(nomeSel(S.linha))}. Área sombreada = período selecionado.</p></div>
-          <div class="graf" id="g-conc"></div>
-        </div>
-        <div class="bloco c12">
-          <div class="bloco-cab"><h2>Ramo a ramo</h2><p class="nota">Só ramos em que pelo menos um dos dois tem prêmio no período.</p></div>
-          <div class="tab-wrap"><table>
-            <thead><tr>
-              <th>Ramo</th>
-              <th class="n">${esc(nomeEnt(k))}</th><th class="n">Cresc.</th><th class="n">Part.</th><th>Posição</th>
-              <th class="n">Akad</th><th class="n">Cresc.</th><th class="n">Part.</th><th>Posição</th>
-              <th>Quem está à frente</th>
-            </tr></thead>
-            <tbody>${porLinha.map((x) => {
-              const af = (x.a.pos || 999) < (x.c.pos || 999);
-              return `<tr>
-                <td class="nome"><b>${esc(x.l.nome)}</b></td>
-                <td class="n">${x.c.pe > 0 ? reais(x.c.pe) : "–"}</td><td class="n">${varHtml(x.c.cresc)}</td><td class="n">${pct(x.c.share)}</td><td>${chipPos(x.c.pos)}${deltaPos(x.c.pos, x.c.posP)}</td>
-                <td class="n">${x.a.pe > 0 ? reais(x.a.pe) : "–"}</td><td class="n">${varHtml(x.a.cresc)}</td><td class="n">${pct(x.a.share)}</td><td>${chipPos(x.a.pos)}${deltaPos(x.a.pos, x.a.posP)}</td>
-                <td>${!(x.c.pe > 0) ? "Só a Akad atua" : !(x.a.pe > 0) ? "Só o concorrente atua" : af ? '<span class="chip lider">Akad</span>' : '<span class="chip top">Concorrente</span>'}</td>
-              </tr>`;
-            }).join("")}</tbody>
-          </table></div>
-        </div>
-        <div class="bloco c12">
-          <div class="bloco-cab"><h2>Onde o concorrente vende</h2><p class="nota" id="nota-uf-conc"></p></div>
-          <div id="t-uf-conc"></div>
-        </div>
-      </div>`;
 
+      <section class="card cs">
+        <div class="cs-cab"><span class="cs-n">1</span><div><h2>Resumo no período</h2><p>Tamanho, crescimento e fatia de mercado de cada seguradora.</p></div></div>
+        <div class="tab-wrap"><table class="tc">
+          <thead><tr><th>Seguradora</th>${cab("Prêmio emitido", ["premio", "prêmio emitido"])}${cab("Crescimento", ["cresc", "crescimento"])}${cab("Participação", ["share", "participação"])}${cab("Var. participação", ["pp", "variação em pontos percentuais"])}<th>Posição ${ajuda("pos", "posição")}</th>${cab("Akad à frente em", ["frente", "Akad à frente"])}</tr></thead>
+          <tbody>${linhasTab}</tbody>
+        </table></div>
+      </section>
 
-    const sm = serieMensal(ramosSel, [k, AKAD]);
+      <section class="card cs">
+        <div class="cs-cab"><span class="cs-n">2</span><div><h2>Evolução do prêmio</h2><p>Cada ponto soma os 12 meses anteriores. A faixa azul é o período escolhido.</p></div></div>
+        <div class="graf" id="g-conc"></div>
+      </section>
+
+      <section class="card cs">
+        <div class="cs-cab"><span class="cs-n">3</span><div><h2>Posição em cada ramo</h2><p>Lugar no ranking do ramo e participação. Fundo destacado: melhor colocado entre os comparados.</p></div></div>
+        <div class="tab-wrap"><table class="tm">
+          <thead><tr><th>Ramo</th>${ents.map((k, i) => `<th class="tm-e">${bolinha(i)}${esc(nomeEnt(k))}</th>`).join("")}</tr></thead>
+          <tbody>${porRamo.map((x) => {
+            const posicoes = x.info.map((i) => i.pos || Infinity);
+            const melhor = Math.min(...posicoes);
+            return `<tr><td class="nome"><b>${esc(x.l.nome)}</b><span class="sub">${x.n} seguradoras</span></td>${x.info.map((i, j) => `
+              <td class="tm-c${i.pos && i.pos === melhor ? " melhor" : ""}">${i.pos ? `<b>${i.pos}º</b><span>${pctPart(i.share)}</span>` : '<span class="vs0">sem prêmio</span>'}</td>`).join("")}</tr>`;
+          }).join("")}</tbody>
+        </table></div>
+      </section>
+
+      <section class="card cs">
+        <div class="cs-cab"><span class="cs-n">4</span><div><h2>Participação por estado</h2><p id="nota-uf-conc"></p></div></div>
+        <div id="t-uf-conc"></div>
+      </section>`;
+
+    const sm = serieMensal(ramosSel, ents);
     linhas($("#g-conc"), {
-      series: [
-        { nome: nomeEnt(k), cor: css("--s1"), valores: movel12(Array.from(sm.ent.get(k))) },
-        { nome: "Akad", cor: css("--akad"), valores: movel12(Array.from(sm.ent.get(AKAD))), grossa: true },
-      ],
+      series: ents.map((k, i) => ({ nome: nomeEnt(k), cor: corEnt(i), valores: movel12(Array.from(sm.ent.get(k))), grossa: i === 0 })),
       banda: [P.a, P.b], inicio: 11, fmt: reais, fmtEixo: reaisCurto, rotulo: "Prêmio em 12 meses móveis",
       tituloTip: (i) => `12 meses até ${mesLabel(i, true)}`,
     });
 
-    // UF do concorrente (base anual do ano final do período)
+    // Estados (base anual do ano final do período)
     const ano = +D.meses[P.b].slice(0, 4);
     const ult = D.meses[D.meses.length - 1];
-    const parc = ano === +ult.slice(0, 4) && !ult.endsWith("12") ? ` (jan–${MESES_PT[+ult.slice(4) - 1]})` : "";
+    const parc = ano === +ult.slice(0, 4) && !ult.endsWith("12") ? ` (jan a ${MESES_PT[+ult.slice(4) - 1]})` : "";
+    const idx = new Map(ents.map((k, i) => [k, i]));
     const porUf = new Map();
     for (const ri of ramosSel) for (const r of IDX.ufaPorRamo[ri]) {
       if (r[0] !== ano) continue;
-      const e = IDX.chave[r[3]];
-      if (e !== k && e !== AKAD) {
-        const x = porUf.get(r[2]) || [0, 0, 0]; x[2] += r[4]; porUf.set(r[2], x); continue;
-      }
-      const x = porUf.get(r[2]) || [0, 0, 0];
-      if (e === k) x[0] += r[4]; else x[1] += r[4];
-      x[2] += r[4];
-      porUf.set(r[2], x);
+      let x = porUf.get(r[2]); if (!x) { x = { tot: 0, v: ents.map(() => 0) }; porUf.set(r[2], x); }
+      x.tot += r[4];
+      const j = idx.get(IDX.chave[r[3]]);
+      if (j != null) x.v[j] += r[4];
     }
-    const lst = [...porUf.entries()].filter(([, x]) => x[0] > 0).sort((p, q) => q[1][0] - p[1][0]).slice(0, 10);
-    const totC = [...porUf.values()].reduce((s, x) => s + x[0], 0);
-    $("#nota-uf-conc").textContent = `10 estados com mais prêmio direto do concorrente em ${ano}${parc}. Fonte: SES por UF.`;
-    $("#t-uf-conc").innerHTML = lst.length ? `<div class="tab-wrap"><table>
-      <thead><tr><th>UF</th><th class="n">${esc(nomeEnt(k))}</th><th class="n">% do concorrente</th><th class="n">Part. no estado</th><th class="n">Akad</th><th class="n">Part. Akad no estado</th></tr></thead>
-      <tbody>${lst.map(([u, x]) => `<tr><td><b>${D.ufs[u]}</b></td><td class="n">${reais(x[0])}</td><td class="n">${pct(totC > 0 ? (x[0] / totC) * 100 : null)}</td><td class="n">${pct(x[2] > 0 ? (x[0] / x[2]) * 100 : null)}</td><td class="n">${reais(x[1])}</td><td class="n">${pct(x[2] > 0 ? (x[1] / x[2]) * 100 : null)}</td></tr>`).join("")}</tbody>
-    </table></div>` : '<p class="vazio">Sem dados por estado para este concorrente.</p>';
+    const lst = [...porUf.entries()].filter(([, x]) => x.v.some((v) => v > 0))
+      .sort((p, q) => q[1].v.reduce((s, v) => s + v, 0) - p[1].v.reduce((s, v) => s + v, 0)).slice(0, 10);
+    $("#nota-uf-conc").textContent = `Fatia de cada seguradora no estado, em ${ano}${parc}. Os 10 estados onde o grupo comparado mais vende.`;
+    $("#t-uf-conc").innerHTML = lst.length ? `<div class="tab-wrap"><table class="tm">
+      <thead><tr><th>UF</th><th class="n">Mercado</th>${ents.map((k, i) => `<th class="tm-e">${bolinha(i)}${esc(nomeEnt(k))}</th>`).join("")}</tr></thead>
+      <tbody>${lst.map(([u, x]) => {
+        const sh = x.v.map((v) => (x.tot > 0 && v > 0 ? (v / x.tot) * 100 : null));
+        const m = Math.max(...sh.map((s) => s || 0));
+        return `<tr><td><b>${D.ufs[u]}</b></td><td class="n">${reais(x.tot)}</td>${sh.map((s) => `<td class="tm-c${s && s === m ? " melhor" : ""}">${s != null ? `<b>${pctPart(s)}</b>` : '<span class="vs0">–</span>'}</td>`).join("")}</tr>`;
+      }).join("")}</tbody>
+    </table></div>` : '<p class="vazio">Sem dados por estado para estas seguradoras.</p>';
   }
 
   /* ---------- Por estado ---------- */
@@ -1193,6 +1210,74 @@
     mostrarValor();
   }
 
+  /** Seleção múltipla com busca: chips + lista com caixas de marcar. */
+  function comboMulti(host, cfg) {
+    const id = cfg.id;
+    const nome = (v) => (cfg.opcoes.find((o) => o.v === v) || { t: v }).t;
+    const curto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
+    host.innerHTML = `
+      <div class="cbm">
+        <div class="cbm-chips"></div>
+        <div class="cb">
+          <input id="${id}" class="cb-in" type="text" role="combobox" autocomplete="off" spellcheck="false"
+            aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-lista" aria-describedby="${id}-lim">
+          <span class="cb-seta" aria-hidden="true"></span>
+          <ul id="${id}-lista" class="cb-lista" role="listbox" aria-multiselectable="true" hidden></ul>
+        </div>
+        <span id="${id}-lim" class="sr"></span>
+      </div>`;
+    const inp = host.querySelector("input"), lista = host.querySelector("ul"), chips = host.querySelector(".cbm-chips"), lim = host.querySelector(`#${id}-lim`);
+    let filtradas = [], ativo = -1, aberto = false;
+    const vals = () => cfg.valores() || [];
+    const cheio = () => vals().length >= cfg.max;
+    const desenharChips = () => {
+      chips.innerHTML = vals().map((v, i) => `<span class="cbm-chip"><i class="bol" style="background:${corEnt(i + 1)}" aria-hidden="true"></i><span title="${esc(nome(v))}">${esc(curto(nome(v)))}</span><button type="button" data-rm="${esc(v)}" aria-label="Remover ${esc(nome(v))}">×</button></span>`).join("");
+      inp.placeholder = cheio() ? `Limite de ${cfg.max}: remova uma para trocar` : (cfg.placeholder || "Buscar");
+      lim.textContent = `${vals().length} de ${cfg.max} selecionadas.`;
+    };
+    const desenhar = () => {
+      const on = new Set(vals());
+      lista.innerHTML = filtradas.length
+        ? filtradas.map((o, i) => { const sel = on.has(o.v), bloq = !sel && cheio();
+            return `<li id="${id}-op-${i}" role="option" class="cb-op cbm-op${sel ? " sel" : ""}${bloq ? " bloq" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${sel}" aria-disabled="${bloq}" data-i="${i}"><span><i class="cx" aria-hidden="true"></i>${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`; }).join("")
+        : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
+      inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
+      lista.querySelector(".ativo")?.scrollIntoView({ block: "nearest" });
+    };
+    const filtrar = (q) => {
+      const n = norm(q.trim());
+      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "")).includes(n)) : cfg.opcoes.slice();
+      ativo = filtradas.length ? 0 : -1;
+      desenhar();
+    };
+    const abrir = () => { if (aberto) return; aberto = true; lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); filtrar(""); };
+    const fechar = () => { aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); inp.value = ""; };
+    let pendente = false;
+    const aplicar = (v) => { pendente = true; cfg.aoMudar(v); desenharChips(); };
+    const alternar = (o) => {
+      if (!o) return;
+      const atual = vals();
+      if (atual.includes(o.v)) aplicar(atual.filter((x) => x !== o.v));
+      else if (!cheio()) aplicar([...atual, o.v]);
+      desenhar();
+    };
+    inp.addEventListener("focus", abrir);
+    inp.addEventListener("click", abrir);
+    inp.addEventListener("input", () => { if (!aberto) abrir(); filtrar(inp.value); });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!aberto) abrir(); ativo = Math.min(filtradas.length - 1, ativo + 1); desenhar(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); ativo = Math.max(0, ativo - 1); desenhar(); }
+      else if (e.key === "Enter") { e.preventDefault(); if (aberto) alternar(filtradas[ativo]); else abrir(); }
+      else if (e.key === "Escape") { e.preventDefault(); fechar(); inp.blur(); }
+      else if (e.key === "Backspace" && !inp.value && vals().length) { aplicar(vals().slice(0, -1)); if (aberto) desenhar(); }
+      else if (e.key === "Tab") { fechar(); }
+    });
+    inp.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== inp) { fechar(); if (pendente) { pendente = false; render(); } } }, 120));
+    lista.addEventListener("mousedown", (e) => { e.preventDefault(); const li = e.target.closest("[data-i]"); if (li) alternar(filtradas[+li.dataset.i]); });
+    chips.addEventListener("click", (e) => { const b = e.target.closest("[data-rm]"); if (b) { aplicar(vals().filter((x) => x !== b.dataset.rm)); document.getElementById(id)?.focus(); } });
+    desenharChips();
+  }
+
   function opcoesLinhaFiltro() {
     const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: `${D.ramos.length} códigos SUSEP` }];
     for (const l of IDX.linhas) {
@@ -1219,14 +1304,14 @@
     if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
       combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; render(); } });
     }
-    // Concorrente (lista ordenada pelo prêmio nos ramos acompanhados, no período)
+    // Concorrentes (lista ordenada pelo prêmio nos ramos acompanhados, no período)
     if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
       const RT = resumo(IDX.todos, P);
       const ents = RT.rk.filter((k) => k !== AKAD);
-      if (!S.concSel || !IDX.nome.has(S.concSel) || S.concSel === AKAD) S.concSel = concorrentePadrao(P) || ents[0];
+      if (!S.concSels) S.concSels = concorrentesPadrao(P, 3);
       const opcoes = ents.map((k) => ({ v: k, t: nomeEnt(k), sub: `${RT.rk.indexOf(k) + 1}º · ${reais(RT.cur.get(k)[0])}` }));
-      if (S.concSel && !ents.includes(S.concSel)) opcoes.unshift({ v: S.concSel, t: nomeEnt(S.concSel), sub: "sem prêmio no período" });
-      combo($("#cb-conc"), { id: "cb-conc-in", opcoes, valor: () => S.concSel, placeholder: "Buscar seguradora", aoEscolher: (v) => { S.concSel = v; render(); } });
+      for (const k of S.concSels) if (!ents.includes(k)) opcoes.unshift({ v: k, t: nomeEnt(k), sub: "sem prêmio no período" });
+      comboMulti($("#cb-conc"), { id: "cb-conc-in", opcoes, max: MAX_CONC, valores: () => S.concSels, placeholder: "Adicionar seguradora", aoMudar: (v) => { S.concSels = v; render(); } });
     }
   }
 
