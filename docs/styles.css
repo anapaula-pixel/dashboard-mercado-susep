@@ -668,3 +668,27 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 #aba-geral .legenda-topo .lg-i { display: inline-flex; align-items: center; gap: 8px; }
 #aba-geral .legenda-topo .lg-ant { margin-left: 0; }
 #aba-geral .legenda-topo b { font-size: .7rem; color: var(--ink); }
+
+/* Ramos: visão "Todos os ramos" */
+.rc-grade { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.rc-grade > li { display: flex; }
+.rc { width: 100%; display: flex; flex-direction: column; gap: 10px; text-align: left; cursor: pointer; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 18px 20px; color: var(--ink); }
+.rc:hover { border-color: var(--navy); box-shadow: 0 4px 14px rgba(13, 29, 52, .08); }
+.rc-cab { display: flex; flex-direction: column; gap: 2px; }
+.rc-cab b { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; }
+.rc-cab small { font-size: .74rem; color: var(--muted); }
+.rc-desc { font-size: .86rem; color: var(--ink-2); line-height: 1.45; flex: 1; }
+.rc-dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; border-top: 1px solid var(--grid); padding-top: 12px; }
+.rc-d { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rc-d small { font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+.rc-d b { font-size: .9rem; font-weight: 600; line-height: 1.3; }
+.rc-d i { font-style: normal; font-size: .76rem; color: var(--ink-2); }
+.rc-akad { grid-column: 1 / -1; flex-direction: row; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
+.rc-akad small { width: 100%; }
+.rc-pos { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; }
+.rc-pos small { font-family: var(--font-body); font-size: .78rem; color: var(--muted); text-transform: none; letter-spacing: 0; width: auto; font-weight: 400; }
+.rc-pos.lider { color: var(--akad); }
+.rc-sh { font-size: .84rem; color: var(--ink-2); }
+.rc-sem { font-size: .84rem; color: var(--muted); }
+.rc-ir { font-size: .8rem; font-weight: 600; color: var(--navy); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rc-ir { color: var(--mercado); } :root:not([data-theme="light"]) .rc:hover { border-color: var(--mercado); } }
