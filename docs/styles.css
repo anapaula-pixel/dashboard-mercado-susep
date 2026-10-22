@@ -664,3 +664,7 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 .voltar:hover { border-color: var(--navy); }
 .voltar span { color: var(--navy); font-size: 1rem; line-height: 1; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .voltar span { color: var(--mercado); } }
+#aba-geral .legenda-topo { margin: 10px 0 0; gap: 8px 20px; color: var(--ink-2); font-size: .82rem; }
+#aba-geral .legenda-topo .lg-i { display: inline-flex; align-items: center; gap: 8px; }
+#aba-geral .legenda-topo .lg-ant { margin-left: 0; }
+#aba-geral .legenda-topo b { font-size: .7rem; color: var(--ink); }
