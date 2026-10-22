@@ -1074,7 +1074,7 @@
     const k = 0.12 + 0.88 * Math.max(0, Math.min(1, t));
     const c = a.map((v, i) => Math.round(v + (b[i] - v) * k));
     const lum = (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) / 255;
-    return { bg: `rgb(${c.join(",")})`, fg: lum > 0.55 ? "#16202E" : "#FFFFFF" };
+    return { bg: `rgb(${c.join(",")})`, fg: lum > 0.55 ? "#212121" : "#FFFFFF" };
   }
 
   function renderUF() {
