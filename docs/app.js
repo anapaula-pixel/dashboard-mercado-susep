@@ -799,31 +799,48 @@
   // Página "Todos os ramos": um card por ramo, com o que ele cobre e onde a Akad está
   function renderCatalogo(el, P) {
     const per = periodoLabel(P.a, P.b);
-    const cards = IDX.linhas.map((l) => {
+    const curto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
+    const itens = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
       const crM = cresc(R.tc[0], R.tp[0]);
-      const ref = R.rk[0] === AKAD ? R.rk[1] : R.rk[0];
-      const r = ref ? infoEnt(R, ref) : null;
+      const lid = R.rk[0];
+      const ld = lid != null ? infoEnt(R, lid) : null;
       const tend = !a.pos ? "sem" : a.dShare == null ? "neutro" : a.dShare >= 0.05 ? "sobe" : a.dShare <= -0.05 ? "cai" : "neutro";
       const selo = { sobe: "Ganhando participação", cai: "Perdendo participação", neutro: "Participação estável", sem: "Akad sem prêmio" }[tend];
       const seloCurto = { sobe: "Ganhando", cai: "Perdendo", neutro: "Estável", sem: "Sem prêmio" }[tend];
-      const escala = Math.max(a.share || 0, r ? r.share || 0 : 0, 0.0001);
-      const barra = (nome, sh, cls) => `<span class="rc-b ${cls}"><span class="rc-bn">${esc(nome)}</span><span class="rc-bt"><i style="width:${Math.max(sh ? 1.5 : 0, ((sh || 0) / escala) * 100)}%"></i></span><span class="rc-bv">${pctPart(sh)}</span></span>`;
-      return `<li><button type="button" class="rc rc-${tend}" data-abrir="${l.id}" aria-label="${esc(l.nome)}: ${selo}. Abrir detalhe">
+      const akLidera = lid === AKAD;
+      const pp = a.dShare != null && tend !== "sem" && tend !== "neutro" ? ` <b>${a.dShare > 0 ? "+" : "−"}${nf1.format(Math.abs(a.dShare))} p.p.</b>` : "";
+      const html = `<li data-tend="${tend}" data-lider="${akLidera ? 1 : 0}" data-busca="${esc((l.nome + " " + l.ramos.join(" ")).toLowerCase())}"><button type="button" class="rc rc-${tend}" data-abrir="${l.id}" aria-label="${esc(l.nome)}: Akad em ${a.pos ? a.pos + "º" : "sem posição"}, ${selo}. Abrir detalhe">
         <span class="rc-topo"><b class="rc-nome">${esc(l.nome)}</b><span class="rc-cod">${l.ramos.join(", ")}</span></span>
-        <span class="rc-desc">${esc(l.desc || "")}</span>
-        <span class="rc-akad">
-          <span class="rc-posw"><span class="rc-rot">Posição da Akad</span><span class="rc-pos">${a.pos ? `${a.pos}º<small> de ${R.rk.length}</small>` : "–"}</span></span>
-          <span class="rc-tend">${a.pos === 1 ? '<span class="rc-lider">Lidera</span>' : ""}<span class="rc-selo" title="${selo} contra o mesmo período do ano anterior">${tend === "sobe" ? "▲ " : tend === "cai" ? "▼ " : ""}${seloCurto}${a.dShare != null && tend !== "sem" && tend !== "neutro" ? ` <b>${a.dShare > 0 ? "+" : "−"}${nf1.format(Math.abs(a.dShare))} p.p.</b>` : ""}</span></span>
-        </span>
-        <span class="rc-barras">
-          ${barra("Akad", a.share, "ak")}
-          ${r ? barra(nomeEnt(ref) + (R.rk[0] === AKAD ? " (2º)" : " (líder)"), r.share, "ref") : '<span class="rc-sozinha">Única seguradora no ramo</span>'}
+        <span class="rc-dados">
+          <span class="rc-col">
+            <span class="rc-rot">Posição da Akad</span>
+            <span class="rc-pos">${a.pos ? `${a.pos}º<small> de ${R.rk.length}</small>` : "–"}</span>
+            <span class="rc-sh">${a.pos ? `${pctPart(a.share)} do mercado` : "Sem prêmio no período"}</span>
+            ${tend === "sem" ? "" : `<span class="rc-selo" title="${selo} contra o mesmo período do ano anterior">${tend === "sobe" ? "▲ " : tend === "cai" ? "▼ " : ""}${seloCurto}${pp}</span>`}
+          </span>
+          <span class="rc-col rc-col-l">
+            <span class="rc-rot">Nº 1 do ramo</span>
+            ${ld ? `<span class="rc-ln${akLidera ? " ak" : ""}" title="${esc(nomeEnt(lid))}">${akLidera ? "Akad" : esc(curto(nomeEnt(lid)))}</span>
+            <span class="rc-sh">${pctPart(ld.share)} do mercado</span>
+            ${akLidera ? '<span class="rc-lider">Akad lidera</span>' : ""}` : '<span class="rc-sh">Sem prêmio no período</span>'}
+          </span>
         </span>
         <span class="rc-rodape"><span class="rc-merc">Mercado <b>${R.tc[0] > 0 ? reais(R.tc[0]) : "sem prêmio"}</b>${crM != null ? ` <i>${crescNeutro(crM)}</i>` : ""}</span><span class="rc-ir" aria-hidden="true">Detalhe →</span></span>
       </button></li>`;
-    }).join("");
+      return { tend, akLidera, html };
+    });
+    const conta = (f) => itens.filter(f).length;
+    const filtros = [
+      ["todos", "Todos", () => true],
+      ["lider", "Akad lidera", (x) => x.akLidera],
+      ["sobe", "Ganhando", (x) => x.tend === "sobe"],
+      ["cai", "Perdendo", (x) => x.tend === "cai"],
+      ["neutro", "Estável", (x) => x.tend === "neutro"],
+      ["sem", "Sem prêmio", (x) => x.tend === "sem"],
+    ].filter(([k, , f]) => k === "todos" || conta(f) > 0);
+    if (!filtros.some(([k]) => k === S.rcFiltro)) S.rcFiltro = "todos";
     el.innerHTML = `
       <div class="cab-aba">
         <div>
@@ -831,7 +848,32 @@
           <p>Os ${IDX.linhas.length} ramos da SUSEP em que a Akad atua, ${per}. Clique num ramo para ver o detalhe.</p>
         </div>
       </div>
-      <ul class="rc-grade">${cards}</ul>`;
+      <div class="rc-filtros">
+        <label class="rc-busca"><input type="search" id="rc-q" aria-label="Buscar ramo por nome ou código" placeholder="Buscar por nome ou código" value="${esc(S.rcBusca || "")}" autocomplete="off"></label>
+        <div class="seg-ctrl rc-seg" role="group" aria-label="Filtrar ramos">
+          ${filtros.map(([k, n, f]) => `<button type="button" data-f="${k}" aria-pressed="${S.rcFiltro === k}">${n} <span class="rc-n">${conta(f)}</span></button>`).join("")}
+        </div>
+      </div>
+      <ul class="rc-grade">${itens.map((x) => x.html).join("")}</ul>
+      <p class="rc-vazio" hidden>Nenhum ramo encontrado com esse filtro.</p>`;
+    const aplicar = () => {
+      const q = (S.rcBusca || "").trim().toLowerCase();
+      let n = 0;
+      el.querySelectorAll(".rc-grade > li").forEach((li) => {
+        const f = S.rcFiltro;
+        const okF = f === "todos" || (f === "lider" ? li.dataset.lider === "1" : li.dataset.tend === f);
+        const ok = okF && (!q || li.dataset.busca.includes(q));
+        li.hidden = !ok; if (ok) n++;
+      });
+      el.querySelector(".rc-vazio").hidden = n > 0;
+    };
+    el.querySelector("#rc-q").addEventListener("input", (e) => { S.rcBusca = e.target.value; aplicar(); });
+    el.querySelectorAll(".rc-seg button").forEach((b) => b.addEventListener("click", () => {
+      S.rcFiltro = b.dataset.f;
+      el.querySelectorAll(".rc-seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      aplicar();
+    }));
+    aplicar();
     el.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => { abrirDe("linhas", () => { S.linha = b.dataset.abrir; }); }));
   }
 
