@@ -811,3 +811,49 @@ body { color: var(--ink); }
 .rod-col a:hover { text-decoration: underline; }
 @media (max-width: 1000px) { .rod-in { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .rod-in { grid-template-columns: 1fr; } }
+
+/* Todos os ramos v2: borda colorida pela tendência da participação da Akad */
+.rc { gap: 12px; padding: 18px 20px 16px 22px; border-left: 4px solid #E0E0E0; position: relative; }
+.rc-sobe { border-left-color: #319C00; }
+.rc-cai { border-left-color: #FF7171; }
+.rc-neutro { border-left-color: #9E9E9E; }
+.rc-sem { border-left-color: #E0E0E0; border-left-style: dashed; }
+.rc-topo { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.rc-nome { font-family: var(--font-display); font-size: 1.05rem; font-weight: 600; line-height: 1.25; }
+.rc-cod { flex: none; font-size: .7rem; font-weight: 600; color: #616161; background: #F5F5F5; border-radius: 4px; padding: 2px 6px; font-variant-numeric: tabular-nums; }
+.rc-desc { font-size: .84rem; color: var(--ink-2); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; min-height: 2.9em; flex: 0 0 auto; }
+.rc-akad { display: flex; flex-wrap: nowrap; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.rc-posw { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rc-rot { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.rc-pos { font-family: var(--font-display); font-weight: 700; font-size: 1.6rem; line-height: 1; color: var(--ink); }
+.rc-pos small { font-family: var(--font-body); font-weight: 400; font-size: .8rem; color: var(--muted); }
+.rc-tend { flex: none; display: flex; align-items: center; gap: 6px; flex-wrap: nowrap; font-size: .75rem; }
+.rc-selo { color: var(--ink-2); background: #F5F5F5; border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+.rc-sobe .rc-selo { color: #319C00; background: #E5FFD9; }
+.rc-cai .rc-selo { color: #A00505; background: #FFEBEB; }
+.rc-selo b { font-weight: 700; }
+.rc-lider { white-space: nowrap; background: var(--magenta); color: #fff; border-radius: 4px; padding: 1px 6px; font-weight: 600; font-size: .7rem; }
+.rc-barras { display: grid; gap: 6px; }
+.rc-b { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) 52px; align-items: center; gap: 8px; font-size: .78rem; }
+.rc-bn { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+.rc-b.ak .rc-bn { color: var(--ink); font-weight: 600; }
+.rc-bt { height: 8px; background: #EEEEEE; border-radius: 4px; overflow: hidden; }
+.rc-bt i { display: block; height: 100%; border-radius: 4px; background: #BDBDBD; }
+.rc-b.ak .rc-bt i { background: var(--magenta); }
+.rc-bv { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.rc-sozinha { font-size: .78rem; color: var(--muted); }
+.rc-rodape { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 10px; border-top: 1px solid var(--grid); font-size: .78rem; color: var(--muted); }
+.rc-rodape b { color: var(--ink); font-weight: 600; }
+.rc-rodape i { font-style: normal; color: var(--ink-2); }
+.rc-ir { font-size: .78rem; white-space: nowrap; flex: none; }
+.rc-merc { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rc-sobe { background-image: linear-gradient(180deg, rgba(112,194,74,.07), rgba(112,194,74,0) 90px); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rc-cod { background: #424242; color: #E0E0E0; }
+  :root:not([data-theme="light"]) .rc-bt { background: #424242; }
+  :root:not([data-theme="light"]) .rc-bt i { background: #757575; }
+  :root:not([data-theme="light"]) .rc-b.ak .rc-bt i { background: var(--magenta); }
+  :root:not([data-theme="light"]) .rc-selo { background: #2b2b2b; }
+  :root:not([data-theme="light"]) .rc-sobe .rc-selo { color: #A9E88B; background: rgba(112,194,74,.15); }
+  :root:not([data-theme="light"]) .rc-cai .rc-selo { color: #FF7171; background: rgba(224,27,27,.15); }
+}
