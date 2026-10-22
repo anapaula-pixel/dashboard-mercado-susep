@@ -786,3 +786,15 @@ body { color: var(--ink); }
 .marca-susep { display: inline-block; margin-left: 4px; padding: 2px 6px; border-radius: 4px; background: #EBF1F7; color: #1C4173; font-size: .72rem; font-weight: 600; letter-spacing: .04em; vertical-align: 2px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .marca-susep { background: #424242; color: #DEE7F1; } }
 @media (max-width: 760px) { .logo { height: 28px; } }
+
+/* Vendas da Akad: cabeçalho e legenda do histórico */
+#aba-geral .vh-cab { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--g-rule); }
+#aba-geral .vh-tit { font-family: var(--font-display); font-weight: 600; font-size: .9rem; color: var(--ink); }
+#aba-geral .vh-recorte { font-size: .75rem; font-weight: 600; color: #1C4173; background: #EBF1F7; border-radius: 4px; padding: 3px 8px; }
+#aba-geral .vh-leg { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 4px 0 0; font-size: .76rem; color: var(--g-label); }
+#aba-geral .vh-leg span { display: inline-flex; align-items: center; gap: 6px; }
+#aba-geral .vh-leg b { font-size: .62rem; color: var(--ink-2); }
+#aba-geral .vh-sw { width: 10px; height: 10px; border-radius: 2px; background: var(--g-bar); opacity: .55; display: inline-block; }
+#aba-geral .vh-sw.atual { background: var(--magenta); opacity: 1; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-geral .vh-recorte { background: #424242; color: #DEE7F1; } }
+.tip-lista { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255, 255, 255, .25); display: grid; gap: 2px; font-weight: 600; }
