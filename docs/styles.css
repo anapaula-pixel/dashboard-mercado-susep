@@ -45,12 +45,12 @@
   :root:not([data-theme="light"]) {
     --bg: #1F1B1C;
     --surface: #212121;
-    --surface-2: #2C2C2C;
+    --surface-2: #424242;
     --ink: #F5F5F5;
     --ink-2: #E0E0E0;
     --muted: #BDBDBD;
     --line: #424242;
-    --grid: #333333;
+    --grid: #424242;
     --axis: #616161;
     --akad: #E3175E;
     --s1: #1A66FF;
@@ -62,10 +62,10 @@
     --ruim: #FF7171;
     --chip-top-bg: #424242;
     --chip-top-fg: #DEE7F1;
-    --chip-bg: #333333;
+    --chip-bg: #424242;
     --chip-fg: #E0E0E0;
     --chip-lider-bg: #E3175E;
-    --linha-akad: #3D1A27;
+    --linha-akad: #720028;
     --shadow: none;
     color-scheme: dark;
   }
@@ -73,12 +73,12 @@
 :root[data-theme="dark"] {
   --bg: #1F1B1C;
   --surface: #212121;
-  --surface-2: #2C2C2C;
+  --surface-2: #424242;
   --ink: #F5F5F5;
   --ink-2: #E0E0E0;
   --muted: #BDBDBD;
   --line: #424242;
-  --grid: #333333;
+  --grid: #424242;
   --axis: #616161;
   --akad: #E3175E;
   --s1: #1A66FF;
@@ -90,10 +90,10 @@
   --ruim: #FF7171;
   --chip-top-bg: #424242;
   --chip-top-fg: #DEE7F1;
-  --chip-bg: #333333;
+  --chip-bg: #424242;
   --chip-fg: #E0E0E0;
   --chip-lider-bg: #E3175E;
-  --linha-akad: #3D1A27;
+  --linha-akad: #720028;
   --shadow: none;
   color-scheme: dark;
 }
@@ -378,9 +378,9 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
   gap: 20px;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) #aba-geral { --g-up: #A9E88B; --g-down: #FF7171; --g-hover: #333333; --g-bar: #7C97B8; --g-track: #424242; --g-label: #BDBDBD; --g-rule: #424242; }
+  :root:not([data-theme="light"]) #aba-geral { --g-up: #A9E88B; --g-down: #FF7171; --g-hover: #424242; --g-bar: #7C97B8; --g-track: #424242; --g-label: #BDBDBD; --g-rule: #424242; }
 }
-:root[data-theme="dark"] #aba-geral { --g-up: #A9E88B; --g-down: #FF7171; --g-hover: #333333; --g-bar: #7C97B8; --g-track: #424242; --g-label: #BDBDBD; --g-rule: #424242; }
+:root[data-theme="dark"] #aba-geral { --g-up: #A9E88B; --g-down: #FF7171; --g-hover: #424242; --g-bar: #7C97B8; --g-track: #424242; --g-label: #BDBDBD; --g-rule: #424242; }
 
 #aba-geral .card { background: var(--surface); border: 1px solid var(--g-rule); border-radius: var(--r-md); padding: 24px 28px; min-width: 0; }
 #aba-geral .sec-tit { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink); margin: 0 0 18px; letter-spacing: -.01em; }
@@ -733,3 +733,50 @@ body { color: var(--ink); }
 /* Cards (AkaDS card: borda neutral-30, canto 8px, sem sombra) */
 .bloco, .kpi, .card, #aba-geral .card, #aba-conc .card, .rc { border-radius: 8px; }
 .rc:hover { box-shadow: var(--ds-shadow-1); }
+
+/* Topo branco com a logo da Akad (cores AkaDS) */
+.topo { background: var(--surface); color: var(--ink); border-bottom: 1px solid var(--line); }
+.marca { color: var(--ink); gap: 14px; }
+.logo { height: 26px; width: auto; color: var(--magenta); flex: none; display: block; }
+.marca-nome { font-size: 1rem; font-weight: 600; color: var(--ink); padding-left: 14px; border-left: 1px solid var(--line); line-height: 1.2; }
+.nav a { color: #616161; }
+.nav a:hover { color: var(--ink); background: #F5F5F5; }
+.nav a[aria-current="page"] { color: var(--ink); }
+.status { background: #F5F5F5; border-color: #E0E0E0; color: #616161; }
+.status b { color: #212121; }
+.st-item + .st-item::before { background: #BDBDBD; }
+.st-dot { background: #319C00; box-shadow: 0 0 0 3px #E5FFD9; }
+.st-dot.alerta { background: #E6A100; box-shadow: 0 0 0 3px #FFF3DA; }
+.status .st-ajuda { color: #616161; border-color: currentColor; }
+.filtros { border-top: 0; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav a { color: #BDBDBD; }
+  :root:not([data-theme="light"]) .nav a:hover { background: #424242; color: #FFFFFF; }
+  :root:not([data-theme="light"]) .status { background: #424242; border-color: #616161; color: #E0E0E0; }
+  :root:not([data-theme="light"]) .status b { color: #FFFFFF; }
+  :root:not([data-theme="light"]) .status .st-ajuda { color: #E0E0E0; }
+}
+@media (max-width: 760px) { .logo { height: 22px; } .marca-nome { font-size: .9rem; padding-left: 12px; } }
+
+/* Por estado: o que mais se vende */
+.ur-lista { list-style: none; margin: 0; padding: 0; }
+.ur { display: grid; grid-template-columns: 32px minmax(160px, 1.3fr) minmax(120px, 2fr) 96px 150px; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--grid); }
+.ur-n { font-family: var(--font-display); font-weight: 600; color: var(--muted); font-size: .86rem; }
+.ur-nome { display: flex; flex-direction: column; min-width: 0; }
+.ur-nome b { font-weight: 600; }
+.ur-nome small { font-size: .76rem; color: var(--muted); }
+.ur-barra { height: 10px; background: #EEEEEE; border-radius: 4px; overflow: hidden; }
+.ur-barra i { display: block; height: 100%; background: var(--mercado); border-radius: 4px; }
+.ur-val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ur-ak { font-size: .82rem; color: var(--ink-2); }
+.ur-ak b { color: var(--akad); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ur-barra { background: #424242; } }
+@media (max-width: 760px) {
+  .ur { grid-template-columns: 28px 1fr auto; grid-template-areas: "n nome val" "n barra barra" "n ak ak"; gap: 4px 10px; }
+  .ur-n { grid-area: n; } .ur-nome { grid-area: nome; } .ur-barra { grid-area: barra; } .ur-val { grid-area: val; } .ur-ak { grid-area: ak; }
+}
+
+/* Selo de atualização na barra de filtros, alinhado à direita */
+.filtros .status { margin-left: auto; align-self: center; margin-top: 18px; }
+@media (max-width: 1180px) { .filtros .status { order: 0; margin-bottom: 0; } }
+@media (max-width: 760px) { .filtros .status { margin: 0; max-width: 100%; width: 100%; } }
