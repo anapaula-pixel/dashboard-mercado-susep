@@ -365,6 +365,7 @@
     ref: "Seguradora de referência: a líder do ramo. Quando a Akad lidera, aparece a vice-líder.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
+    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Toda segunda-feira, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     universo: "A Akad é acompanhada em 14 ramos, que correspondem a 22 códigos da SUSEP (alguns ramos, como Garantia e Transporte, têm mais de um código). Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -1315,6 +1316,39 @@
     }
   }
 
+  // Selo no topo: até que mês vão os dados, quando consultamos a SUSEP e quando é a próxima consulta
+  function ultimaVerificacao() {
+    const d = proximaVerificacao();
+    d.setUTCDate(d.getUTCDate() - 7);
+    return d;
+  }
+  function desenharStatus(ultima, falhou) {
+    const ult = D.meses.length - 1;
+    const prox = proximaVerificacao();
+    const dia = (d) => d.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(".", "");
+    const hora = (d) => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    $("#status").innerHTML = `
+      <span class="st-item st-dado"><i class="st-dot${falhou ? " alerta" : ""}" aria-hidden="true"></i>Dados até <b>${mesLabel(ult, true)}</b></span>
+      <span class="st-item">${falhou ? "Última consulta com erro em" : "Consultado na SUSEP em"} <b>${dia(ultima)}</b></span>
+      <span class="st-item">Próxima consulta <b>${dia(prox)}, ${hora(prox)}</b></span>
+      <button type="button" class="ajuda st-ajuda" data-ajuda="status" aria-label="Como funciona a atualização?">?</button>`;
+  }
+  function montarStatus() {
+    ligarAjuda();
+    const gerado = new Date(D.gerado);
+    const base = ultimaVerificacao();
+    desenharStatus(gerado > base ? gerado : base, false);
+    // Consulta real: última execução do robô no GitHub (se a API responder)
+    fetch("https://api.github.com/repos/anapaula-pixel/dashboard-mercado-susep/actions/workflows/atualizar-dados.yml/runs?per_page=1&status=completed", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        const run = j && j.workflow_runs && j.workflow_runs[0];
+        if (!run) return;
+        desenharStatus(new Date(run.updated_at), run.conclusion !== "success");
+      })
+      .catch(() => {});
+  }
+
   function montarFiltros() {
     const anos = [...new Set(D.meses.map((m) => m.slice(0, 4)))];
     const ult = D.meses.length - 1;
@@ -1368,7 +1402,7 @@
     window.addEventListener("hashchange", () => { const h = location.hash.slice(1); if (ABAS.includes(h) && h !== S.aba) irPara(h); });
 
     const gerado = new Date(D.gerado);
-    $("#f-info").innerHTML = `<span>Dados SUSEP até <b>${mesLabel(ult, true)}</b></span><span>Atualizado em ${gerado.toLocaleDateString("pt-BR")} · próxima verificação ${fmtDataHora(proximaVerificacao())}</span>`;
+    montarStatus();
     $("#rodape-txt").innerHTML = `Fonte: SUSEP, Sistema de Estatísticas (SES), base completa. Valores em reais correntes, sem correção pela inflação. Nacional: prêmio emitido; por estado: prêmio direto (a SUSEP só publica esse por UF). Sinistralidade = sinistro ocorrido ÷ prêmio ganho. Dados mensais podem ser recarregados pela SUSEP. Base gerada em ${gerado.toLocaleString("pt-BR")}.`;
   }
 
