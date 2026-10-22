@@ -355,16 +355,16 @@
   // Textos de ajuda contextual (abrem no "?" ao lado de cada indicador)
   const AJUDA = {
     premio: "Prêmio emitido: valor das apólices emitidas no período, antes de descontar resseguro. É a medida de tamanho usada para participação e ranking.",
-    share: "Participação de mercado: prêmio emitido da Akad dividido pelo prêmio emitido de todas as seguradoras na mesma linha e no mesmo período.",
+    share: "Participação de mercado: prêmio emitido da Akad dividido pelo prêmio emitido de todas as seguradoras no mesmo ramo e no mesmo período.",
     pp: "Variação em pontos percentuais (p.p.): diferença entre a participação atual e a do mesmo período do ano anterior. Ex.: de 10% para 12% = +2 p.p.",
     cresc: "Crescimento: quanto o prêmio emitido da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
-    pos: "Posição: lugar da Akad no ranking de prêmio emitido entre as seguradoras com prêmio positivo na linha e no período. \"de N\" é o número dessas seguradoras.",
+    pos: "Posição: lugar da Akad no ranking de prêmio emitido entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
     sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
-    lider: "Linhas de produto em que a Akad tem o maior prêmio emitido no período.",
-    ref: "Seguradora de referência: a líder da linha. Quando a Akad lidera, aparece a vice-líder.",
+    lider: "Ramos em que a Akad tem o maior prêmio emitido no período.",
+    ref: "Seguradora de referência: a líder do ramo. Quando a Akad lidera, aparece a vice-líder.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
-    universo: "A Akad é acompanhada em 14 linhas de produto, que somam 22 ramos SUSEP. Os indicadores do topo somam todos os 22 ramos.",
+    universo: "A Akad é acompanhada em 14 ramos, que correspondem a 22 códigos da SUSEP (alguns ramos, como Garantia e Transporte, têm mais de um código). Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
   function ligarAjuda() {
@@ -507,14 +507,14 @@
     }
     const blocoPart = `
       <div class="pz pz-part">
-        <h3 class="pz-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h3>
+        <h2 class="pz-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h2>
         <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
         <p class="pz-ant">${ak.shareP != null ? `Era <b>${pct(ak.shareP, 2)}</b> em ${perP}` : "Sem participação no período anterior para comparar"}</p>
         ${frase ? `<p class="hero-frase">${frase}</p>` : ""}
         <dl class="pz-fatos">
-          <div><dt>Mercado nos ${nR} ramos</dt><dd>${reais(RT.tc[0])} <span class="pz-cr">${crescNeutro(crescMerc)}</span></dd></div>
+          <div><dt>Mercado nos ${nL} ramos</dt><dd>${reais(RT.tc[0])} <span class="pz-cr">${crescNeutro(crescMerc)}</span></dd></div>
           <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="pz-cr">era ${ak.posP}º</span>` : ""}</dd></div>
-          <div><dt>Liderança ${ajuda("lider", "liderança")}</dt><dd>${lidera.length} de ${nL} linhas <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
+          <div><dt>Liderança ${ajuda("lider", "liderança")}</dt><dd>${lidera.length} de ${nL} ramos <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
         </dl>
       </div>`;
 
@@ -544,7 +544,7 @@
     }).join("");
     const blocoVendas = `
       <div class="pz pz-vendas">
-        <h3 class="pz-tit">Vendas da Akad ${ajuda("premio", "prêmio emitido")}</h3>
+        <h2 class="pz-tit">Vendas da Akad ${ajuda("premio", "prêmio emitido")}</h2>
         <div class="hero-linha"><span class="hero-val hv-m">${reais(ak.pe)}</span><span class="hero-var">${crescNeutro(ak.cresc)} ${ajuda("cresc", "crescimento")}</span></div>
         <p class="pz-ant">${ak.peP > 0 ? `Era <b>${reais(ak.peP)}</b> em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
         <p class="pz-leg">Prêmio emitido e crescimento contra o ano anterior, ${recorte}</p>
@@ -558,7 +558,7 @@
     const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
     const blocoSin = `
       <div class="pz pz-sin">
-        <h3 class="pz-tit">Sinistros ${ajuda("sin", "sinistralidade")}</h3>
+        <h2 class="pz-tit">Sinistros ${ajuda("sin", "sinistralidade")}</h2>
         <div class="sin-grade">
           <div>
             <p class="sin-frase">${ak.sin != null ? `A cada <b>R$ 100</b> de prêmio ganho, <b>${em100(ak.sin)}</b> viraram sinistro.` : "Sem prêmio ganho no período para calcular."}</p>
@@ -575,11 +575,11 @@
       </div>`;
 
     const panorama = `
-      <section class="card sec" aria-labelledby="h-pan">
-        <div class="sec-cab"><h2 id="h-pan" class="sec-tit">Panorama</h2><p class="sec-nota">${per} comparado com ${perP || "sem período anterior"} · ${nL} linhas de produto, ${nR} ramos SUSEP ${ajuda("universo", "universo de linhas")}</p></div>
-        <div class="pz-grade">${blocoPart}${blocoVendas}</div>
-        ${blocoSin}
-      </section>`;
+      <div class="pan-cards">
+        <section class="card sec" aria-label="Participação de mercado">${blocoPart}</section>
+        <section class="card sec" aria-label="Vendas da Akad">${blocoVendas}</section>
+      </div>
+      <section class="card sec" aria-label="Sinistros">${blocoSin}</section>`;
 
     // B. Movimentos
     const item = (x, tipo) => `
@@ -597,9 +597,9 @@
       <section class="card sec" aria-labelledby="h-mov">
         <h2 id="h-mov" class="sec-tit">Movimentos de participação</h2>
         <div class="mv-grade">
-          ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhuma linha no período.")}
-          ${coluna("Maiores ganhos", ganhos, "g", "Nenhuma linha ganhou participação no período.")}
-          ${coluna("Maiores perdas", perdas, "p", "Nenhuma linha perdeu participação no período.")}
+          ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhum ramo no período.")}
+          ${coluna("Maiores ganhos", ganhos, "g", "Nenhum ramo ganhou participação no período.")}
+          ${coluna("Maiores perdas", perdas, "p", "Nenhum ramo perdeu participação no período.")}
         </div>
       </section>`;
 
@@ -652,8 +652,8 @@
       <section class="card sec" aria-labelledby="h-pbar">
         <div class="sec-cab">
           <div>
-            <h2 id="h-pbar" class="sec-tit">Participação por linha de produto</h2>
-            <p class="sec-sub">Barra: participação em ${per}. Marcador: ${perP || "sem período de comparação"}. Clique numa linha para abrir o detalhe.</p>
+            <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
+            <p class="sec-sub">Barra: participação em ${per}. Marcador: ${perP || "sem período de comparação"}. Clique num ramo para abrir o detalhe.</p>
           </div>
           <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
             <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
@@ -662,7 +662,7 @@
           </div>
         </div>
         <div class="pb-cab" aria-hidden="true">
-          <span>Linha</span>
+          <span>Ramo</span>
           <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
           <span class="n">Atual</span><span class="n">Variação</span><span>Posição</span>
         </div>
@@ -695,13 +695,13 @@
         <div class="sec-cab">
           <div>
             <h2 id="h-tab" class="sec-tit">Tabela analítica</h2>
-            <p class="sec-sub">Todas as linhas e indicadores. Clique no título de uma coluna para ordenar e no nome da linha para abrir o detalhe.</p>
+            <p class="sec-sub">Todos os ramos e indicadores. Clique no título de uma coluna para ordenar e no nome do ramo para abrir o detalhe.</p>
           </div>
         </div>
         <div class="tab-wrap"><table class="tg">
           <thead>
             <tr class="grupo">
-              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Linha</button></th>
+              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
               <th colspan="2" class="g">Posição Akad</th>
               <th colspan="2" class="g">Participação</th>
               <th colspan="3" class="g">Prêmio emitido Akad</th>
@@ -733,7 +733,7 @@
             </tr>`).join("")}
           </tbody>
         </table></div>
-        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo na linha no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado na linha · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>
+        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>
       </section>`;
 
     el.innerHTML = contexto + panorama + movimentos + grafico + tabela;
@@ -767,8 +767,8 @@
     return IDX.linhaPorId[sel].idx;
   }
   function nomeSel(sel) {
-    if (sel === "todas") return `Todos os ${D.ramos.length} ramos acompanhados`;
-    if (sel.startsWith("r:")) { const c = sel.slice(2); return `${c} ${D.ramos[IDX.ramoIdx[c]][1]}`; }
+    if (sel === "todas") return `Todos os ${IDX.linhas.length} ramos acompanhados`;
+    if (sel.startsWith("r:")) { const c = sel.slice(2); return `${D.ramos[IDX.ramoIdx[c]][1]} (código ${c})`; }
     return IDX.linhaPorId[sel].nome;
   }
   function renderLinhas() {
@@ -797,7 +797,7 @@
       <div class="cab-aba">
         <div>
           <h2>${esc(nomeSel(S.linha))}</h2>
-          <p>${S.linha === "todas" ? `Soma das ${IDX.linhas.length} linhas de produto. Escolha uma linha ou ramo no filtro para ver o detalhe.` : ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
+          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos (${D.ramos.length} códigos SUSEP). Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP: " : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
         </div>
       </div>
       <div class="kpis">
@@ -928,7 +928,7 @@
         <div class="kpi"><span class="rot">Prêmio ${esc(nomeEnt(k))}</span><span class="val">${reais(c.pe)}</span><span class="det">${varHtml(c.cresc)} contra o ano anterior</span></div>
         <div class="kpi destaque"><span class="rot">Prêmio Akad</span><span class="val">${reais(a.pe)}</span><span class="det">${varHtml(a.cresc)} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Participação do concorrente</span><span class="val">${pct(c.share)}</span><span class="det">${ppHtml(c.dShare)} · Akad: ${pct(a.share)} (${ppHtml(a.dShare)})</span></div>
-        <div class="kpi"><span class="rot">Disputa direta</span><span class="val">${frente.length - concFrente} de ${frente.length}</span><span class="det">linhas em que a Akad está à frente</span></div>
+        <div class="kpi"><span class="rot">Disputa direta</span><span class="val">${frente.length - concFrente} de ${frente.length}</span><span class="det">ramos em que a Akad está à frente</span></div>
       </div>
       <div class="grade">
         <div class="bloco c12">
@@ -936,10 +936,10 @@
           <div class="graf" id="g-conc"></div>
         </div>
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Linha a linha</h2><p class="nota">Só linhas em que pelo menos um dos dois tem prêmio no período.</p></div>
+          <div class="bloco-cab"><h2>Ramo a ramo</h2><p class="nota">Só ramos em que pelo menos um dos dois tem prêmio no período.</p></div>
           <div class="tab-wrap"><table>
             <thead><tr>
-              <th>Linha</th>
+              <th>Ramo</th>
               <th class="n">${esc(nomeEnt(k))}</th><th class="n">Cresc.</th><th class="n">Part.</th><th>Posição</th>
               <th class="n">Akad</th><th class="n">Cresc.</th><th class="n">Part.</th><th>Posição</th>
               <th>Quem está à frente</th>
@@ -1194,10 +1194,10 @@
   }
 
   function opcoesLinhaFiltro() {
-    const op = [{ v: "todas", t: `Todos os ${D.ramos.length} ramos`, sub: `${IDX.linhas.length} linhas de produto` }];
+    const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: `${D.ramos.length} códigos SUSEP` }];
     for (const l of IDX.linhas) {
-      op.push({ v: l.id, t: l.nome, sub: l.ramos.join(", ") });
-      if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: c, ind: true });
+      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") });
+      if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true });
     }
     return op;
   }
@@ -1217,7 +1217,7 @@
     });
     // Linha ou ramo
     if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
-      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar linha, ramo ou código", aoEscolher: (v) => { S.linha = v; render(); } });
+      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; render(); } });
     }
     // Concorrente (lista ordenada pelo prêmio nos ramos acompanhados, no período)
     if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
