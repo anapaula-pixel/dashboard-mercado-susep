@@ -1501,7 +1501,34 @@
 
     const gerado = new Date(D.gerado);
     montarStatus();
-    $("#rodape-txt").innerHTML = `Fonte: SUSEP, Sistema de Estatísticas (SES), base completa. Valores em reais correntes, sem correção pela inflação. Nacional: prêmio emitido; por estado: prêmio direto (a SUSEP só publica esse por UF). Sinistralidade = sinistro ocorrido ÷ prêmio ganho. Dados mensais podem ser recarregados pela SUSEP. Base gerada em ${gerado.toLocaleString("pt-BR")}.`;
+    $(".rodape").innerHTML = `
+      <div class="rod-in">
+        <div class="rod-marca">
+          <b>Inteligência de Mercado SUSEP</b>
+          <span>Painel da Akad Seguros com dados públicos do mercado de seguros.</span>
+        </div>
+        <div class="rod-col">
+          <h2>Fonte</h2>
+          <p>SUSEP, Sistema de Estatísticas (SES), base completa.</p>
+          <p><a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">Abrir o SES no site da SUSEP <span aria-hidden="true">↗</span></a></p>
+        </div>
+        <div class="rod-col">
+          <h2>Como ler os números</h2>
+          <ul>
+            <li>Valores em reais correntes, sem correção pela inflação.</li>
+            <li>Nacional: prêmio emitido. Por estado: prêmio direto (a SUSEP só publica esse por UF).</li>
+            <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho.</li>
+          </ul>
+        </div>
+        <div class="rod-col">
+          <h2>Atualização</h2>
+          <ul>
+            <li>Dados até ${mesLabel(ult, true)}.</li>
+            <li>Base gerada em ${gerado.toLocaleString("pt-BR")}.</li>
+            <li>Consulta automática todos os dias às 9h. A SUSEP pode recarregar meses anteriores.</li>
+          </ul>
+        </div>
+      </div>`;
   }
 
 
