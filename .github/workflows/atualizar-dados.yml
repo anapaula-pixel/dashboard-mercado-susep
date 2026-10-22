@@ -2,9 +2,8 @@ name: Atualizar dados SUSEP
 
 on:
   schedule:
-    # Toda segunda-feira, 9h (Brasília). A SUSEP atualiza a base semanalmente;
-    # o commit só acontece quando os números mudam.
-    - cron: "0 12 * * 1"
+    # Todos os dias, 9h (Brasília). O commit só acontece quando os números mudam.
+    - cron: "0 12 * * *"
   workflow_dispatch: {}
 
 permissions:
