@@ -39,10 +39,6 @@ RAMOS = {
     "0622": "Transporte Internacional",
     "0654": "RCTR-C",
     "0655": "RC-DC",
-    "0638": "RCTF-C (ferroviário)",
-    "0632": "RCTR-VI-C (viagem internacional)",
-    "0652": "RCTA-C (aéreo)",
-    "0656": "RCA-C (aquaviário)",
     "0659": "RC-V",
     "0775": "Garantia Segurado - Setor Público",
     "0776": "Garantia Segurado - Setor Privado",
@@ -52,7 +48,7 @@ RAMOS = {
     "1377": "Prestamista (individual)",
 }
 
-# Linhas de produto da Akad (agrupam os ramos)
+# Ramos exibidos no painel: um por código SUSEP, sem agrupar
 LINHAS = [
     {"id": "rcpro", "nome": "RC Profissional", "ramos": ["0378"]},
     {"id": "do", "nome": "RC Executivos (D&O)", "ramos": ["0310"]},
@@ -61,13 +57,17 @@ LINHAS = [
     {"id": "rno", "nome": "Riscos Nomeados e Operacionais", "ramos": ["0196"]},
     {"id": "equip", "nome": "Equipamentos", "ramos": ["0171"]},
     {"id": "eng", "nome": "Engenharia", "ramos": ["0167"]},
-    {"id": "transp", "nome": "Transporte (embarcador)", "ramos": ["0621", "0622"]},
-    {"id": "rctr", "nome": "RC Transportador", "ramos": ["0654", "0655", "0638", "0632", "0652", "0656"]},
+    {"id": "transpnac", "nome": "Transporte Nacional", "ramos": ["0621"]},
+    {"id": "transpint", "nome": "Transporte Internacional", "ramos": ["0622"]},
+    {"id": "rctrc", "nome": "RCTR-C", "ramos": ["0654"]},
+    {"id": "rcdc", "nome": "RC-DC", "ramos": ["0655"]},
     {"id": "rcv", "nome": "RC-V", "ramos": ["0659"]},
-    {"id": "gar", "nome": "Garantia", "ramos": ["0775", "0776"]},
+    {"id": "garpub", "nome": "Garantia Setor Público", "ramos": ["0775"]},
+    {"id": "garpriv", "nome": "Garantia Setor Privado", "ramos": ["0776"]},
     {"id": "dpem", "nome": "DPEM", "ramos": ["1457"]},
     {"id": "fianca", "nome": "Fiança Locatícia", "ramos": ["0746"]},
-    {"id": "prest", "nome": "Prestamista", "ramos": ["0977", "1377"]},
+    {"id": "prestcol", "nome": "Prestamista Coletivo", "ramos": ["0977"]},
+    {"id": "prestind", "nome": "Prestamista Individual", "ramos": ["1377"]},
 ]
 
 UFS = "AC,AL,AM,AP,BA,CE,DF,ES,GO,MA,MG,MS,MT,PA,PB,PE,PI,PR,RJ,RN,RO,RR,RS,SC,SE,SP,TO".split(",")
