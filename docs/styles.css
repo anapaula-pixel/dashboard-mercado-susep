@@ -594,3 +594,13 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
   #aba-geral .vh-rot { font-size: .66rem; }
   #aba-geral .hv-m { font-size: 2rem; }
 }
+
+/* Panorama v5: cards separados */
+#aba-geral .pan-cards { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 20px; }
+#aba-geral .pan-cards .pz-part, #aba-geral .pan-cards .pz-vendas { padding: 0; border: 0; }
+#aba-geral .pz-sin { border-top: 0; margin-top: 0; padding-top: 0; }
+#aba-geral .pz-tit { font-family: var(--font-display); font-size: 1.1rem; font-weight: 600; text-transform: none; letter-spacing: -.01em; color: var(--ink); margin: 0 0 6px; }
+@media (max-width: 1000px) {
+  #aba-geral .pan-cards { grid-template-columns: minmax(0, 1fr); }
+  #aba-geral .pan-cards .pz-part, #aba-geral .pan-cards .pz-vendas { padding: 0; border: 0; }
+}
