@@ -33,6 +33,7 @@
     rankOrd: { col: "pe", dir: -1 },
     geralOrd: "share",
     geralTab: null,
+    geralModo: "resumo",
     geralSel: null,
   };
   let IDX = null;        // índices derivados
@@ -636,7 +637,9 @@
         </div>
       </section>`;
 
-    // C. Barras horizontais de participação
+    // C. Participação por ramo: modo Resumo (barras) ou Detalhado (todos os indicadores)
+    const modo = S.geralModo === "detalhado" ? "detalhado" : "resumo";
+    const ORD_TAB = { share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 }, perda: { col: "dShare", dir: 1 }, ganhoRs: { col: "dPe", dir: -1 }, pos: { col: "pos", dir: 1 } };
     const ord = S.geralOrd || "share";
     const disputa = linhas.filter((x) => x.temAkad && x.n > 1);
     const semConc = linhas.filter((x) => x.temAkad && x.n === 1);
@@ -656,7 +659,6 @@
     const escMax = passoEsc * 4;
     const W = (v) => Math.min(100, (v / escMax) * 100);
     const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
-    const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ord === k}">${rot}</button>`;
     const barRow = (x, suave) => {
       const a = x.a;
       const est = a.share != null && a.share >= escMax;
@@ -683,20 +685,8 @@
       </button></li>`;
     };
     const grupoExtra = (tit, lst, suave) => lst.length ? `<li class="pb-grupo" aria-hidden="true">${tit}</li>${lst.map((x) => barRow(x, suave)).join("")}` : "";
-    const grafico = `
-      <section class="card sec" aria-labelledby="h-pbar">
-        <div class="sec-cab">
-          <div>
-            <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
-            <p class="sec-sub">Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe.</p>
-            <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
-          </div>
-          <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
-            <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
-              ${ordBtn("share", "Participação")}${ordBtn("ganho", "Ganho em p.p.")}${ordBtn("perda", "Perda em p.p.")}${ordBtn("ganhoRs", "Ganho em R$")}${ordBtn("pos", "Posição")}
-            </div>
-          </div>
-        </div>
+    const resumoHtml = `
+        <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
         <div class="pb-cab" aria-hidden="true">
           <span>Ramo</span>
           <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
@@ -706,11 +696,10 @@
           ${disputa.map((x) => barRow(x, false)).join("")}
           ${grupoExtra("Sem concorrência no período", semConc, true)}
           ${grupoExtra("Sem prêmio da Akad no período", semA, true)}
-        </ul>
-      </section>`;
+        </ul>`;
 
     // D. Tabela analítica
-    const T = S.geralTab || { col: "pos", dir: 1 };
+    const T = S.geralTab || ORD_TAB[ord];
     const val = (x, c) => ({
       nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.a.share, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
       dPe: x.dPe, cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
@@ -725,14 +714,7 @@
       return (va - vb) * T.dir || ((q.a.share || 0) - (p.a.share || 0));
     });
     const th = (c, rot, cls = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`;
-    const tabela = `
-      <section class="card sec" aria-labelledby="h-tab">
-        <div class="sec-cab">
-          <div>
-            <h2 id="h-tab" class="sec-tit">Tabela analítica</h2>
-            <p class="sec-sub">Todos os ramos e indicadores. Clique no título de uma coluna para ordenar e no nome do ramo para abrir o detalhe.</p>
-          </div>
-        </div>
+    const detalheHtml = `
         <div class="tab-wrap"><table class="tg">
           <thead>
             <tr class="grupo">
@@ -769,10 +751,35 @@
             </tr>`).join("")}
           </tbody>
         </table></div>
-        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>
+        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>`;
+
+    const ordAtivo = S.geralTab ? Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === S.geralTab.col && ORD_TAB[k].dir === S.geralTab.dir) : ord;
+    const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ordAtivo === k}">${rot}</button>`;
+    const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
+    const participacao = `
+      <section class="card sec" aria-labelledby="h-pbar">
+        <div class="sec-cab">
+          <div>
+            <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
+            <p class="sec-sub">${modo === "resumo"
+              ? "Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe."
+              : "Todos os indicadores de cada ramo: participação, prêmio da Akad, mercado e maior concorrente. Clique no título de uma coluna para ordenar."}</p>
+          </div>
+          <div class="pr-ctrls">
+            <div class="ctrl-ord"><span class="ctrl-rot">Ver</span>
+              <div class="seg-ctrl ctrl-modo" role="group" aria-label="Nível de detalhe">${modoBtn("resumo", "Resumo")}${modoBtn("detalhado", "Detalhado")}</div>
+            </div>
+            <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
+              <div class="seg-ctrl ctrl-sort" role="group" aria-label="Ordenar ramos">
+                ${ordBtn("share", "Participação")}${ordBtn("ganho", "Ganho em p.p.")}${ordBtn("perda", "Perda em p.p.")}${ordBtn("ganhoRs", "Ganho em R$")}${ordBtn("pos", "Posição")}
+              </div>
+            </div>
+          </div>
+        </div>
+        ${modo === "resumo" ? resumoHtml : detalheHtml}
       </section>`;
 
-    el.innerHTML = contexto + panorama + movimentos + grafico + tabela;
+    el.innerHTML = contexto + panorama + movimentos + participacao;
 
     // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
     el.querySelectorAll(".mv-item, .pb, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
@@ -785,12 +792,15 @@
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
       n.addEventListener("focusout", () => hl(n.dataset.linha, false));
     });
-    el.querySelectorAll(".ctrl-ord button").forEach((b) => b.addEventListener("click", () => { S.geralOrd = b.dataset.ord; renderGeral(); el.querySelector(`.ctrl-ord [data-ord="${b.dataset.ord}"]`)?.focus(); }));
+    el.querySelectorAll(".ctrl-sort button").forEach((b) => b.addEventListener("click", () => { S.geralOrd = b.dataset.ord; S.geralTab = null; renderGeral(); el.querySelector(`.ctrl-sort [data-ord="${b.dataset.ord}"]`)?.focus(); }));
+    el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
     el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
       const c = thEl.dataset.col;
       const padrao = c === "pos" || c === "nome" ? 1 : -1;
-      const atual = S.geralTab || { col: "pos", dir: 1 };
+      const atual = S.geralTab || ORD_TAB[S.geralOrd || "share"];
       S.geralTab = { col: c, dir: atual.col === c ? -atual.dir : padrao };
+      const k = Object.keys(ORD_TAB).find((o) => ORD_TAB[o].col === c && ORD_TAB[o].dir === S.geralTab.dir);
+      if (k) S.geralOrd = k;
       renderGeral();
       el.querySelector(`th[data-col="${c}"] button`)?.focus();
     }));
