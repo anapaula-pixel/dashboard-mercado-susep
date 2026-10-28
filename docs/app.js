@@ -393,6 +393,13 @@
     return pct(x);
   }
   // Variação em p.p. com seta e sinal (não depende só de cor)
+  function rsSeta(x) {
+    if (x == null || !isFinite(x)) return '<span class="var zero" title="Sem base de comparação">–</span>';
+    if (Math.abs(x) < 0.5) return '<span class="var zero"><span aria-hidden="true">=</span> R$ 0</span>';
+    return x > 0
+      ? `<span class="var up"><span aria-hidden="true">▲</span> +${reais(x)}</span>`
+      : `<span class="var down"><span aria-hidden="true">▼</span> −${reais(-x)}</span>`;
+  }
   function ppSeta(x) {
     if (x == null || !isFinite(x)) return '<span class="var zero" title="Sem base de comparação">–</span>';
     const a = Math.abs(x);
@@ -447,7 +454,8 @@
       const refInfo = ref ? infoEnt(R, ref) : null;
       return { l, R, a, lider, ref, refInfo, mercado: R.tc[0], mercadoP: R.tp[0], n: R.rk.length,
         crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null,
-        temAkad: a.pe > 0, dPos: a.pos && a.posP ? a.posP - a.pos : null };
+        temAkad: a.pe > 0, dPos: a.pos && a.posP ? a.posP - a.pos : null,
+        dPe: R.tp[0] > 0 && ((a.pe || 0) > 0 || (a.peP || 0) > 0) ? (a.pe || 0) - (a.peP || 0) : null };
     });
     const lidera = linhas.filter((x) => x.a.pos === 1);
     const top3 = linhas.filter((x) => x.a.pos && x.a.pos <= 3);
@@ -637,6 +645,7 @@
       share: (p, q) => (q.a.share || 0) - (p.a.share || 0),
       ganho: (p, q) => (q.a.dShare ?? -1e9) - (p.a.dShare ?? -1e9),
       perda: (p, q) => (p.a.dShare ?? 1e9) - (q.a.dShare ?? 1e9),
+      ganhoRs: (p, q) => (q.dPe ?? -1e12) - (p.dPe ?? -1e12),
       pos: (p, q) => (p.a.pos || 999) - (q.a.pos || 999) || (q.a.share || 0) - (p.a.share || 0),
     }[ord];
     disputa.sort(cmp);
@@ -657,10 +666,10 @@
         return `<li><button type="button" class="pb sem${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: Akad sem prêmio no período. Abrir detalhe">
           <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
           <span class="pb-track"><span class="pb-semtxt">Akad sem prêmio no período${x.n ? ` · ${x.n} seguradoras com prêmio` : " · sem dados de mercado"}</span></span>
-          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-pos">${posChip(null)}</span>
+          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-rs">${rsSeta(x.dPe)}</span><span class="pb-pos">${posChip(null)}</span>
         </button></li>`;
       }
-      return `<li><button type="button" class="pb${suave ? " suave" : ""}${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, posição ${a.pos} de ${x.n}. Abrir detalhe">
+      return `<li><button type="button" class="pb${suave ? " suave" : ""}${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, prêmio ${x.dPe == null ? "sem comparação" : (x.dPe >= 0 ? "aumentou " : "caiu ") + reais(Math.abs(x.dPe))}, posição ${a.pos} de ${x.n}. Abrir detalhe">
         <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
         <span class="pb-track">
           <span class="pb-fill${est ? " est" : ""}" style="width:${W(a.share || 0)}%"></span>
@@ -669,6 +678,7 @@
         </span>
         <span class="pb-val">${pctPart(a.share)}</span>
         <span class="pb-var">${ppSeta(a.dShare)}</span>
+        <span class="pb-rs">${rsSeta(x.dPe)}</span>
         <span class="pb-pos">${posChip(a.pos, x.n)} ${movHtml(a.pos, a.posP)}</span>
       </button></li>`;
     };
@@ -683,14 +693,14 @@
           </div>
           <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
             <div class="seg-ctrl" role="group" aria-label="Ordenar gráfico">
-              ${ordBtn("share", "Participação")}${ordBtn("ganho", "Maior ganho")}${ordBtn("perda", "Maior perda")}${ordBtn("pos", "Posição")}
+              ${ordBtn("share", "Participação")}${ordBtn("ganho", "Ganho em p.p.")}${ordBtn("perda", "Perda em p.p.")}${ordBtn("ganhoRs", "Ganho em R$")}${ordBtn("pos", "Posição")}
             </div>
           </div>
         </div>
         <div class="pb-cab" aria-hidden="true">
           <span>Ramo</span>
           <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
-          <span class="n">Atual</span><span class="n">Variação</span><span>Posição</span>
+          <span class="n">Atual</span><span class="n">Var. p.p.</span><span class="n">Var. R$</span><span>Posição</span>
         </div>
         <ul class="pb-lista">
           ${disputa.map((x) => barRow(x, false)).join("")}
@@ -703,7 +713,7 @@
     const T = S.geralTab || { col: "pos", dir: 1 };
     const val = (x, c) => ({
       nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.a.share, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
-      cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
+      dPe: x.dPe, cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
       mercado: x.mercado, crescM: x.crescM, refShare: x.refInfo ? x.refInfo.share : null,
     }[c]);
     const tab = [...linhas].sort((p, q) => {
@@ -729,14 +739,14 @@
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
               <th colspan="2" class="g">Posição Akad</th>
               <th colspan="2" class="g">Participação</th>
-              <th colspan="3" class="g">Prêmio emitido Akad</th>
+              <th colspan="4" class="g">Prêmio emitido Akad</th>
               <th colspan="2" class="g">Mercado</th>
               <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>
             </tr>
             <tr>
               ${th("pos", "Lugar", "n")}${th("mov", "Mov.", "n")}
               ${th("share", "Atual", "n g1")}${th("dShare", "Var. p.p.", "n")}
-              ${th("pe", "Valor", "n g1")}${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
+              ${th("pe", "Valor", "n g1")}${th("dPe", "Var. R$", "n")}${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
               ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
               <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}
             </tr>
@@ -749,6 +759,7 @@
               <td class="n g1"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n">${ppSeta(x.a.dShare)}</td>
               <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
+              <td class="n">${rsSeta(x.dPe)}</td>
               <td class="n">${crescNeutro(x.a.cresc)}</td>
               <td>${vsTexto(x.a.cresc, x.crescM)}</td>
               <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
