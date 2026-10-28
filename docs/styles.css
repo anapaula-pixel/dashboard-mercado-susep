@@ -456,7 +456,7 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 #aba-geral .seg-ctrl button:hover { background: var(--g-hover); }
 #aba-geral .seg-ctrl button[aria-pressed="true"] { background: var(--navy); color: #fff; }
 #aba-geral .pb-cab, #aba-geral .pb {
-  display: grid; grid-template-columns: minmax(180px, 1.1fr) minmax(160px, 2.4fr) 64px 104px minmax(130px, .9fr);
+  display: grid; grid-template-columns: minmax(170px, 1.1fr) minmax(140px, 2.2fr) 60px 100px 118px minmax(120px, .9fr);
   align-items: center; gap: 16px;
 }
 #aba-geral .pb-cab { font-size: .78rem; color: var(--g-label); font-weight: 600; padding: 0 10px 10px; border-bottom: 1px solid var(--g-rule); }
@@ -484,6 +484,7 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 #aba-geral .pb.sem .pb-nome b, #aba-geral .pb.suave .pb-nome b { color: var(--ink-2); }
 #aba-geral .pb-val { text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 #aba-geral .pb-var { text-align: right; font-size: .86rem; }
+#aba-geral .pb-rs { text-align: right; font-size: .86rem; white-space: nowrap; }
 #aba-geral .pb-pos { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 #aba-geral .pb-grupo { list-style: none; padding: 18px 10px 6px; font-size: .8rem; font-weight: 600; color: var(--g-label); border-bottom: 1px solid var(--g-rule); }
 #aba-geral .pchip { display: inline-flex; align-items: baseline; gap: 3px; font-size: .82rem; font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -532,7 +533,13 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
   #aba-geral .mk, #aba-geral .mk:nth-child(n+3) { padding: 14px 0; border-top: 1px solid var(--g-rule); }
   #aba-geral .mv-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; }
   #aba-geral .pb-cab { display: none; }
-  #aba-geral .pb { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome val" "track track" "var pos"; gap: 6px 12px; }
+  #aba-geral .pb { grid-template-columns: auto auto minmax(0, 1fr); grid-template-areas: "nome nome val" "track track track" "var rs pos"; gap: 6px 12px; }
+  #aba-geral .pb-rs { grid-area: rs; text-align: left; }
+  #aba-geral .pb { column-gap: 10px; }
+  #aba-geral .pb-var, #aba-geral .pb-rs { font-size: .8rem; }
+  #aba-geral .pb-pos { min-width: 0; gap: 2px 6px; row-gap: 2px; font-size: .82rem; }
+  #aba-geral .ctrl-ord .seg-ctrl { flex-wrap: wrap; max-width: 100%; }
+  #aba-geral .ctrl-ord .seg-ctrl button { white-space: nowrap; padding: 8px 10px; }
   #aba-geral .pb-nome { grid-area: nome; } #aba-geral .pb-track { grid-area: track; } #aba-geral .pb-val { grid-area: val; }
   #aba-geral .pb-var { grid-area: var; text-align: left; } #aba-geral .pb-pos { grid-area: pos; justify-content: flex-end; }
   #aba-geral .hero-val { font-size: 2.3rem; }
