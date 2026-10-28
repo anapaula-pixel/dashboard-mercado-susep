@@ -451,6 +451,9 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 
 /* C. gráfico */
 #aba-geral .ctrl-ord { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+#aba-geral .sec > .legenda-topo { margin: 0 0 16px; }
+#aba-geral .pr-ctrls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; }
+#aba-geral .sec .tab-wrap { margin-top: 4px; }
 #aba-geral .ctrl-rot { font-size: .84rem; color: var(--g-label); }
 #aba-geral .seg-ctrl button { padding: 6px 12px; }
 #aba-geral .seg-ctrl button:hover { background: var(--g-hover); }
