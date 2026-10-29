@@ -31,7 +31,7 @@
     ufMetrica: "share",
     ufSel: null,
     rankOrd: { col: "pe", dir: -1 },
-    geralOrd: "share",
+    geralOrd: "pos",
     geralTab: null,
     geralModo: "resumo",
     geralSel: null,
@@ -689,9 +689,19 @@
           ${est ? `<span class="pb-quebra">${x.n === 1 ? "única no ramo" : "fora da escala"}</span>` : ""}
         </span>`;
     };
+    // Selo da posição da Akad ao lado do nome: medalha para 1º, 2º e 3º; número simples nos demais
+    const MED = { 1: ["#F5C542", "#C78800", "ouro"], 2: ["#E0E0E0", "#757575", "prata"], 3: ["#E8A87C", "#9C5A2E", "bronze"] };
+    const seloPos = (pos) => {
+      if (!pos) return "";
+      if (MED[pos]) {
+        const [f, s] = MED[pos];
+        return `<span class="selo-pos med" title="${pos}º lugar no mercado" aria-label="${pos}º lugar no mercado"><svg width="26" height="28" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="${f}" stroke="${s}" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">${pos}</text></svg></span>`;
+      }
+      return `<span class="selo-pos num" title="${pos}º lugar no mercado" aria-label="${pos}º lugar no mercado">${pos}</span>`;
+    };
     const linhaTab = (x, grupo) => `
             <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
-              <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
+              <td class="nome"><div class="nome-in"><div><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></div>${seloPos(x.a.pos)}</div></td>
               ${det ? "" : `<td class="barra g1">${barra(x)}</td>`}
               <td class="n${det ? " g1" : ""}"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n">${ppSeta(x.a.dShare)}</td>
@@ -739,21 +749,16 @@
         <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1%${det ? ' · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação' : ""}.</p>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
-    const ORD_ROT = { share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$", pos: "Posição" };
+    const ORD_ROT = { pos: "Posição no mercado", share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$" };
     const ordSel = `<select id="pr-ord" class="pr-sel" aria-label="Ordenar ramos por">
-      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição" }[T.col] || "Coluna da tabela"}</option>`}
+      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição no mercado" }[T.col] || "Coluna da tabela"}</option>`}
       ${Object.keys(ORD_ROT).map((k) => `<option value="${k}"${ordAtivo === k ? " selected" : ""}>${ORD_ROT[k]}</option>`).join("")}
     </select>`;
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
       <section class="card sec" aria-labelledby="h-pbar">
-        <div class="sec-cab">
-          <div>
-            <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
-            <p class="sec-sub">${det
-              ? "Mesma lista do Resumo, com variação do GWP da Akad, mercado e maior concorrente. Clique num ramo para ver o detalhe ou no título de uma coluna para ordenar."
-              : "Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe ou no título de uma coluna para ordenar."}</p>
-          </div>
+        <div class="sec-cab pr-cab">
+          <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
           <div class="pr-ctrls">
             <div class="seg-ctrl ctrl-modo" role="group" aria-label="Nível de detalhe">${modoBtn("resumo", "Resumo")}${modoBtn("detalhado", "Detalhado")}</div>
             <label class="pr-ord"><span class="ctrl-rot">Ordenar por</span>${ordSel}</label>
