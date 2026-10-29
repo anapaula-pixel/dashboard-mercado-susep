@@ -1069,3 +1069,4 @@ body { color: var(--ink); }
 }
 @media (max-width: 1000px) { #aba-uf .uf-kpis, #aba-uf .uf-meio { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 760px) { #aba-uf .card.uf-k, #aba-uf .card.uf-c { padding: 20px 16px; } }
+.status .st-sep { margin: 0 6px; opacity: .7; }
