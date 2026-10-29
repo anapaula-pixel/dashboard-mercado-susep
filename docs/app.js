@@ -739,7 +739,11 @@
         <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1%${det ? ' · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação' : ""}.</p>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
-    const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ordAtivo === k}">${rot}</button>`;
+    const ORD_ROT = { share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$", pos: "Posição" };
+    const ordSel = `<select id="pr-ord" class="pr-sel" aria-label="Ordenar ramos por">
+      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição" }[T.col] || "Coluna da tabela"}</option>`}
+      ${Object.keys(ORD_ROT).map((k) => `<option value="${k}"${ordAtivo === k ? " selected" : ""}>${ORD_ROT[k]}</option>`).join("")}
+    </select>`;
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
       <section class="card sec" aria-labelledby="h-pbar">
@@ -751,14 +755,8 @@
               : "Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe ou no título de uma coluna para ordenar."}</p>
           </div>
           <div class="pr-ctrls">
-            <div class="ctrl-ord"><span class="ctrl-rot">Ver</span>
-              <div class="seg-ctrl ctrl-modo" role="group" aria-label="Nível de detalhe">${modoBtn("resumo", "Resumo")}${modoBtn("detalhado", "Detalhado")}</div>
-            </div>
-            <div class="ctrl-ord"><span class="ctrl-rot">Ordenar por</span>
-              <div class="seg-ctrl ctrl-sort" role="group" aria-label="Ordenar ramos">
-                ${ordBtn("share", "Market share")}${ordBtn("ganho", "Ganho em p.p.")}${ordBtn("perda", "Perda em p.p.")}${ordBtn("ganhoRs", "Ganho em R$")}${ordBtn("pos", "Posição")}
-              </div>
-            </div>
+            <div class="seg-ctrl ctrl-modo" role="group" aria-label="Nível de detalhe">${modoBtn("resumo", "Resumo")}${modoBtn("detalhado", "Detalhado")}</div>
+            <label class="pr-ord"><span class="ctrl-rot">Ordenar por</span>${ordSel}</label>
           </div>
         </div>
         ${corpoHtml}
@@ -777,7 +775,7 @@
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
       n.addEventListener("focusout", () => hl(n.dataset.linha, false));
     });
-    el.querySelectorAll(".ctrl-sort button").forEach((b) => b.addEventListener("click", () => { S.geralOrd = b.dataset.ord; S.geralTab = null; renderGeral(); el.querySelector(`.ctrl-sort [data-ord="${b.dataset.ord}"]`)?.focus(); }));
+    el.querySelector("#pr-ord")?.addEventListener("change", (e) => { if (!e.target.value) return; S.geralOrd = e.target.value; S.geralTab = null; renderGeral(); el.querySelector("#pr-ord")?.focus(); });
     el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
     el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
       const c = thEl.dataset.col;
