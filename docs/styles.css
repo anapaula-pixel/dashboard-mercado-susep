@@ -994,3 +994,5 @@ body { color: var(--ink); }
 #aba-geral table.tg-part .lid-ak { color: var(--magenta); font-weight: 700; }
 #aba-geral table.tg-det th, #aba-geral table.tg-det td { padding-left: 7px; padding-right: 7px; }
 #aba-geral table.tg-det td.nome { min-width: 0; }
+#aba-geral .legenda-topo .lg-dica { color: var(--g-label); }
+#aba-geral .legenda-topo .lg-hover { margin-left: auto; font-style: italic; }
