@@ -633,7 +633,7 @@
       <li><button type="button" class="mv-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(x.a.share)}, abrir detalhe">
         <span class="mv-nome">${esc(x.l.nome)}</span>
         <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b> de participação` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
-        <span class="mv-var mv-gwp" data-tip="${esc(`<b>GWP da Akad em ${esc(x.l.nome)}</b><div>${per}: ${reais(x.a.pe)}</div>${x.a.peP > 0 ? `<div>${perP}: ${reais(x.a.peP)}</div>` : ""}${x.a.cresc != null ? `<div>Variação: ${x.a.cresc > 999 ? "> +999" : (x.a.cresc > 0 ? "+" : x.a.cresc < 0 ? "−" : "") + nf1.format(Math.abs(x.a.cresc))}%</div>` : ""}<div>Market share: ${pctPart(x.a.share)}${x.a.dShare != null ? ` (${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.)` : ""}</div>`)}"><small>GWP</small> ${reais(x.a.pe)}</span>
+        <span class="mv-var mv-gwp" data-tip="${esc(`<b>GWP da Akad em ${esc(x.l.nome)}</b><div>${per}: ${reais(x.a.pe)}</div>${x.a.peP > 0 ? `<div>${perP}: ${reais(x.a.peP)}</div>` : ""}${x.a.cresc != null ? `<div>Variação: ${x.a.cresc > 999 ? "> +999" : (x.a.cresc > 0 ? "+" : x.a.cresc < 0 ? "−" : "") + nf1.format(Math.abs(x.a.cresc))}%</div>` : ""}<div>Market share: ${pctPart(x.a.share)}${x.a.dShare != null ? ` (${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.)` : ""}</div>`)}">${reais(x.a.pe)}</span>
       </button></li>`;
     const ICO_MV = {
       lider: '<svg width="18" height="20" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="#F5C542" stroke="#C78800" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">1</text></svg>',
@@ -642,7 +642,7 @@
     };
     const coluna = (tit, lst, tipo, vazio) => `
       <div class="mv-col">
-        <h3>${ICO_MV[tipo]}${tit}</h3>
+        <h3>${ICO_MV[tipo]}<span class="mv-tit">${tit}</span><span class="mv-col-rot" title="GWP da Akad no ramo em ${per}">GWP</span></h3>
         ${lst.length ? `<ul>${lst.map((x) => item(x, tipo)).join("")}</ul>` : `<p class="mv-vazio">${vazio}</p>`}
       </div>`;
     const movimentos = `
