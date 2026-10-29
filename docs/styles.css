@@ -947,3 +947,28 @@ body { color: var(--ink); }
   #aba-geral .ev-cr, #aba-geral .ev-val { font-size: 9.5px; letter-spacing: -.02em; }
   #aba-geral .ev-rot { font-size: 10.5px; }
 }
+/* Linha de baixo: GWP ano a ano + onde está o GWP */
+#aba-geral .pan-baixo { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; align-items: stretch; }
+#aba-geral .pan-baixo .ev-lista { gap: 14px; }
+#aba-geral .pan-baixo .ev-trilho { height: 170px; max-width: 56px; }
+#aba-geral .ct-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+#aba-geral .ct-item { width: 100%; display: grid; grid-template-columns: minmax(110px, 1.1fr) minmax(60px, 1fr) 48px 64px; align-items: center; gap: 10px; background: none; border: 0; border-radius: 4px; padding: 8px 6px; margin: 0 -6px; cursor: pointer; text-align: left; color: var(--ink); font-size: 13px; }
+#aba-geral .ct-item:hover { background: var(--g-hover); }
+#aba-geral .ct-nome { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#aba-geral .ct-tr { height: 10px; background: var(--g-track); border-radius: 3px; overflow: hidden; }
+#aba-geral .ct-tr i { display: block; height: 100%; background: #7C97B8; border-radius: 3px; }
+#aba-geral .ct-pct { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+#aba-geral .ct-item .kc-var { text-align: right; font-size: 12px; }
+#aba-geral .ct-nota { margin-top: auto; padding-top: 12px; }
+#aba-geral .mv-col h3 { display: flex; align-items: center; gap: 8px; }
+#aba-geral .mv-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; font-size: 13px; font-weight: 700; }
+#aba-geral .mv-ico.up { color: var(--g-up); background: rgba(112, 194, 74, .15); }
+#aba-geral .mv-ico.down { color: var(--g-down); background: rgba(224, 27, 27, .1); }
+#aba-geral .mv-gwp { font-weight: 600; color: var(--ink); white-space: nowrap; cursor: help; font-variant-numeric: tabular-nums; }
+#aba-geral .mv-gwp small { font-size: 10px; font-weight: 600; color: var(--g-label); margin-right: 2px; letter-spacing: .03em; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) #aba-geral .mv-col .fita { stroke: #7C97B8; }
+}
+@media (max-width: 1000px) {
+  #aba-geral .pan-baixo { grid-template-columns: minmax(0, 1fr); }
+}
