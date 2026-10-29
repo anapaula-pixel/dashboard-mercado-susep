@@ -369,7 +369,7 @@
     ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
-    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
+    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Uma vez por dia (agendado para as 9h, mas pode atrasar algumas horas) o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     tShare: "Market share da Akad no ramo no período escolhido: GWP da Akad dividido pelo GWP de todas as seguradoras no ramo.",
     tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
     tRank: "Lugar da Akad no ranking de GWP do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
@@ -534,7 +534,7 @@
       <div class="cab-aba cab-geral">
         <div>
           <h2>Visão geral</h2>
-          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">dados oficiais da SUSEP</a>. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada todos os dias às 9h.`)}" aria-label="Sobre os dados">?</button></p>
+          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">dados oficiais da SUSEP</a>. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada uma vez por dia.`)}" aria-label="Sobre os dados">?</button></p>
         </div>
       </div>`;
 
@@ -588,7 +588,13 @@
     for (let k = 0; P.a - 12 * k >= 0; k++) {
       const a = P.a - 12 * k, b = P.b - 12 * k;
       const m = agg(IDX.todos, a, b).get(AKAD);
-      hist.unshift({ a, b, v: m ? m[0] : 0 });
+      hist.unshift({ a, b, v: m ? m[0] : 0, sel: k === 0 });
+    }
+    // Anos posteriores ao período escolhido também aparecem (mesmo recorte de meses)
+    for (let k = 1; P.b + 12 * k <= D.meses.length - 1; k++) {
+      const a = P.a + 12 * k, b = P.b + 12 * k;
+      const m = agg(IDX.todos, a, b).get(AKAD);
+      hist.push({ a, b, v: m ? m[0] : 0, sel: false });
     }
     hist.forEach((h, i) => { h.cr = i > 0 ? cresc(h.v, hist[i - 1].v) : null; });
     const mesmoAno = D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4);
@@ -598,7 +604,7 @@
       : mesmoAno ? "ano completo" : "mesmo intervalo de meses, ano a ano";
     const maxH = Math.max(1, ...hist.map((h) => h.v));
     const barrasH = hist.map((h, i) => {
-      const atual = i === hist.length - 1;
+      const atual = h.sel;
       const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
       return `<li class="ev${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
         <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i>${h.cr == null ? "" : `<span class="ev-cr ${h.cr >= 0 ? "sobe" : "cai"}" style="bottom:calc(${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}% + 6px)">${crTxt}</span>`}</span>
@@ -1567,20 +1573,23 @@
   }
   function desenharStatus(ultima, falhou) {
     const ult = D.meses.length - 1;
-    const prox = proximaVerificacao();
-    const dia = (d) => d.toLocaleString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" }).replace(".", "");
-    const hora = (d) => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const dm = (d) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+    const hm = (d) => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const mudou = new Date(D.gerado);
+    const lista = [
+      ultima ? `Última consulta à SUSEP: ${dm(ultima)} às ${hm(ultima)}${falhou ? " (com erro)" : ""}.` : null,
+      `Os números mudaram pela última vez em ${dm(mudou)}.`,
+    ].filter(Boolean).join("|");
+    const quando = ultima || mudou;
     $("#status").innerHTML = `
       <span class="st-item st-dado"><i class="st-dot${falhou ? " alerta" : ""}" aria-hidden="true"></i>Dados até <b>${mesLabel(ult, true)}</b></span>
-      <span class="st-item">${falhou ? "Última consulta com erro em" : "Consultado na SUSEP em"} <b>${dia(ultima)}</b></span>
-      <span class="st-item">Próxima consulta <b>${dia(prox)}, ${hora(prox)}</b></span>
-      <button type="button" class="ajuda st-ajuda" data-ajuda="status" data-lista="${esc(`Base gerada em ${new Date(D.gerado).toLocaleString("pt-BR")}.`)}" aria-label="Como funciona a atualização?">?</button>`;
+      <span class="st-sep" aria-hidden="true">·</span>
+      <span class="st-item">${falhou ? "Erro na atualização de" : "Atualizado em"} <b>${dm(quando)}</b></span>
+      <button type="button" class="ajuda st-ajuda" data-ajuda="status" data-lista="${esc(lista)}" aria-label="Como funciona a atualização?">?</button>`;
   }
   function montarStatus() {
     ligarAjuda();
-    const gerado = new Date(D.gerado);
-    const base = ultimaVerificacao();
-    desenharStatus(gerado > base ? gerado : base, false);
+    desenharStatus(null, false);
     // Consulta real: última execução do robô no GitHub (se a API responder)
     fetch("https://api.github.com/repos/anapaula-pixel/dashboard-mercado-susep/actions/workflows/atualizar-dados.yml/runs?per_page=1&status=completed", { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : null))
@@ -1666,7 +1675,7 @@
         <div class="rod-col">
           <h2>Como funciona</h2>
           <ul>
-            <li>Todo dia às 9h o painel consulta a base oficial da SUSEP e se atualiza sozinho.</li>
+            <li>Uma vez por dia o painel consulta a base oficial da SUSEP e se atualiza sozinho.</li>
             <li>Os números comparam o período escolhido no filtro com os mesmos meses do ano anterior.</li>
           </ul>
         </div>
