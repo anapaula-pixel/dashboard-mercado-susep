@@ -508,8 +508,8 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 #aba-geral table.tg th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--g-label); font-weight: 600; vertical-align: bottom; white-space: nowrap; }
 #aba-geral table.tg tr.grupo th { border-bottom: 0; padding-bottom: 4px; }
 #aba-geral table.tg th.g { text-align: left; color: var(--ink); text-transform: none; letter-spacing: 0; font-size: .82rem; box-shadow: inset 0 -2px 0 var(--navy); padding-bottom: 6px; }
-#aba-geral table.tg th.ord button { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
-#aba-geral table.tg th.ord button:hover { color: var(--ink); }
+#aba-geral table.tg th.ord button:not(.ajuda) { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; }
+#aba-geral table.tg th.ord button:not(.ajuda):hover { color: var(--ink); }
 #aba-geral table.tg th[aria-sort] { color: var(--ink); }
 #aba-geral table.tg .g1 { border-left: 1px solid var(--g-rule); }
 #aba-geral table.tg td.nome { min-width: 170px; }
@@ -889,3 +889,5 @@ body { color: var(--ink); }
 }
 #aba-geral table.tg-part td.barra .pb-track { display: block; width: 100%; }
 #aba-geral table.tg-part td.ref { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
+#aba-geral table.tg-part th .ajuda { margin-left: 3px; vertical-align: middle; text-transform: none; }
+#aba-geral table.tg-part th.g .g-sub { font-weight: 400; color: var(--g-label); font-size: .74rem; margin-left: 4px; }
