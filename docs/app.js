@@ -677,7 +677,7 @@
     const escMax = passoEsc * 4;
     const W = (v) => Math.min(100, (v / escMax) * 100);
     const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
-    const nCols = det ? 14 : 7;
+    const nCols = det ? 13 : 7;
     const barra = (x) => {
       const a = x.a;
       if (!x.temAkad) return `<span class="pb-track"><span class="pb-semtxt" title="${x.n ? `${x.n} seguradoras com prêmio no ramo` : "sem dados de mercado"}">Akad sem prêmio</span></span>`;
@@ -692,8 +692,8 @@
     const linhaTab = (x, grupo) => `
             <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
               <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
-              <td class="barra g1">${barra(x)}</td>
-              <td class="n"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
+              ${det ? "" : `<td class="barra g1">${barra(x)}</td>`}
+              <td class="n${det ? " g1" : ""}"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n">${ppSeta(x.a.dShare)}</td>
               <td class="n g1">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
               <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
@@ -709,20 +709,20 @@
     const grupoTab = (tit, lst, cls) => lst.length ? `<tr class="tg-sep" aria-hidden="true"><td colspan="${nCols}">${tit}</td></tr>${lst.map((x) => linhaTab(x, cls)).join("")}` : "";
     const th = (c, rot, cls = "", aj) => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${aj ? " " + ajuda(aj, rot) : ""}</th>`;
     const corpoHtml = `
-        <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Market share em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
+        <p class="legenda-pb legenda-topo">${det ? "" : `<span class="lg-i"><span class="lg-fill"></span>Market share em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}`}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
         <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
           <thead>
             <tr class="grupo">
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
-              <th colspan="3" class="g">Market share da Akad</th>
+              <th colspan="${det ? 2 : 3}" class="g">Market share da Akad</th>
               <th colspan="2" class="g">Ranking do mercado</th>
               <th colspan="${det ? 4 : 1}" class="g">Vendas da Akad <span class="g-sub">GWP</span></th>
               ${det ? `<th colspan="2" class="g">Mercado do ramo <span class="g-sub">todas as seguradoras</span></th>
               <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>` : ""}
             </tr>
             <tr>
-              <th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>
-              ${th("share", "Atual", "n", "tShare")}${th("dShare", "Variação (p.p.)", "n")}
+              ${det ? "" : `<th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>`}
+              ${th("share", "Atual", det ? "n g1" : "n", "tShare")}${th("dShare", "Variação (p.p.)", "n")}
               ${th("pos", "Posição", "n g1")}${th("mov", "Variação", "n")}
               ${th("pe", "Total", "n g1", "tPe")}
               ${det ? `${th("dPe", "Variação (R$)", "n")}${th("cresc", "Variação (%)", "n")}${th("vs", "vs. mercado", "", "tVs")}
