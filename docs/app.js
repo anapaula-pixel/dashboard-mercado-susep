@@ -537,31 +537,50 @@
     // A. Panorama: participação, vendas da Akad e sinistros, cada um com sua comparação
     const crescMerc = cresc(RT.tc[0], RT.tp[0]);
 
-    // A1. Participação (aqui sim compara com o mercado)
-    let frase = "";
-    if (ak.cresc != null && crescMerc != null && ak.dShare != null) {
-      const fa = `O prêmio da Akad ${ak.cresc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(ak.cresc))}%`;
-      const fm = `o do mercado ${crescMerc >= 0 ? "cresceu" : "caiu"} ${nf1.format(Math.abs(crescMerc))}%`;
-      const fim = Math.abs(ak.dShare) < 0.05
-        ? "Por isso a participação ficou praticamente igual."
-        : ak.dShare > 0 ? "Como a Akad foi melhor que o mercado, a fatia dela aumentou."
-        : "Como a Akad foi pior que o mercado, a fatia dela diminuiu.";
-      frase = `${fa}, enquanto ${fm}. ${fim}`;
-    }
-    const blocoPart = `
-      <div class="pz pz-part">
-        <h2 class="pz-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h2>
-        <div class="hero-linha"><span class="hero-val">${pct(ak.share, 2)}</span><span class="hero-var">${ppSeta(ak.dShare)} ${ajuda("pp", "variação em pontos percentuais")}</span></div>
-        <p class="pz-ant">${ak.shareP != null ? `Era <b>${pct(ak.shareP, 2)}</b> em ${perP}` : "Sem participação no período anterior para comparar"}</p>
-        ${frase ? `<p class="hero-frase">${frase}</p>` : ""}
-        <dl class="pz-fatos">
-          <div><dt>Mercado nos ${nL} ramos</dt><dd>${reais(RT.tc[0])} <span class="pz-cr">${crescNeutro(crescMerc)}</span></dd></div>
-          <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="pz-cr">era ${ak.posP}º</span>` : ""}</dd></div>
-          <div><dt>Liderança <button type="button" class="ajuda" data-ajuda="lider" data-lista="${esc(lidera.length ? lidera.map((x) => `${x.l.nome}: ${pctPart(x.a.share)} do mercado`).join("|") : "Nenhum ramo no período")}" aria-label="O que é liderança? Ramos: ${esc(lidera.map((x) => x.l.nome).join(", ") || "nenhum")}">?</button></dt><dd>${lidera.length} de ${nL} ramos <span class="pz-cr">top 3 em ${top3.length}</span></dd></div>
-        </dl>
-      </div>`;
+    // Variação dos KPIs: seta, sinal e cor pelo efeito (bom em verde, ruim em vermelho)
+    const varKpi = (x, unid, ruimSeSobe) => {
+      if (x == null || !isFinite(x)) return '<span class="kc-var zero">–</span>';
+      if (unid === "%" && x > 999) return '<span class="kc-var bom">↑ > 999%</span>';
+      const v = nf1.format(Math.abs(x)) + (unid === "pp" ? " p.p." : "%");
+      if (Math.abs(x) < 0.05) return `<span class="kc-var zero">= ${v}</span>`;
+      const bom = ruimSeSobe ? x < 0 : x > 0;
+      return `<span class="kc-var ${bom ? "bom" : "ruim"}">${x > 0 ? "↑" : "↓"} ${v}</span>`;
+    };
 
-    // A2. Vendas da Akad: mesmo recorte de meses em cada ano, sem olhar o mercado
+    // A1. Vendas da Akad
+    const cardVendas = `
+      <section class="card kc" aria-label="Vendas da Akad">
+        <h2 class="kc-tit">Vendas da Akad ${ajuda("premio", "GWP")}</h2>
+        <div class="kc-linha"><span class="kc-val">${reais(ak.pe)}</span>${varKpi(ak.cresc, "%")}</div>
+        <p class="kc-aux">${ak.peP > 0 ? `${reais(ak.peP)} em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
+      </section>`;
+
+    // A2. Participação de mercado
+    const cardPart = `
+      <section class="card kc" aria-label="Participação de mercado">
+        <h2 class="kc-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h2>
+        <div class="kc-linha"><span class="kc-val">${pct(ak.share, 2)}</span>${varKpi(ak.dShare, "pp")}</div>
+        <p class="kc-aux">${ak.shareP != null ? `${pct(ak.shareP, 2)} em ${perP}` : "Sem participação no período anterior para comparar"}</p>
+        <dl class="kc-fatos">
+          <div><dt>Mercado nos ${nL} ramos</dt><dd>${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 999 ? "> +999" : (crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : "") + nf1.format(Math.abs(crescMerc))}%)` : ""}</dd></div>
+          <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="kc-ant">(anterior: ${ak.posP}º)</span>` : ""}</dd></div>
+          <div><dt>Liderança <button type="button" class="ajuda" data-ajuda="lider" data-lista="${esc(lidera.length ? lidera.map((x) => `${x.l.nome}: ${pctPart(x.a.share)} do mercado`).join("|") : "Nenhum ramo no período")}" aria-label="O que é liderança? Ramos: ${esc(lidera.map((x) => x.l.nome).join(", ") || "nenhum")}">?</button></dt><dd>${lidera.length} de ${nL} ramos</dd></div>
+        </dl>
+      </section>`;
+
+    // A3. Sinistralidade: comparação com a própria Akad (subir é ruim)
+    const pAk = RT.prev.get(AKAD);
+    const sinP = pAk && pAk[1] > 0 ? (pAk[2] / pAk[1]) * 100 : null;
+    const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
+    const cardSin = `
+      <section class="card kc" aria-label="Sinistralidade">
+        <h2 class="kc-tit">Sinistralidade ${ajuda("sin", "sinistralidade")}</h2>
+        <div class="kc-linha"><span class="kc-val">${pct(ak.sin)}</span>${varKpi(dSin, "pp", true)}</div>
+        <p class="kc-aux">${sinP != null ? `${pct(sinP)} em ${perP}` : "Sem período anterior para comparar"}</p>
+        <p class="kc-aux kc-nota">${ak.sin != null ? `De cada R$ 100 em prêmio ganho, R$ ${nf0.format(ak.sin)} viraram sinistros.` : "Sem prêmio ganho no período para calcular."}</p>
+      </section>`;
+
+    // A4. Evolução das vendas: mesmo recorte de meses em cada ano
     const hist = [];
     for (let k = 0; P.a - 12 * k >= 0; k++) {
       const a = P.a - 12 * k, b = P.b - 12 * k;
@@ -578,53 +597,24 @@
     const barrasH = hist.map((h, i) => {
       const atual = i === hist.length - 1;
       const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
-      return `<li class="vh${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
-        <span class="vh-cr${h.cr == null ? " zero" : ""}" aria-hidden="true">${h.cr == null ? "&nbsp;" : `<span class="vh-seta">${h.cr >= 0 ? "▲" : "▼"} </span>` + crTxt}</span>
-        <span class="vh-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i></span>
-        <span class="vh-val" aria-hidden="true">${reaisCurto(h.v)}</span>
-        <span class="vh-rot" aria-hidden="true">${rotH(h)}</span>
+      return `<li class="ev${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
+        <span class="ev-cr" aria-hidden="true">${h.cr == null ? "&nbsp;" : crTxt}</span>
+        <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i></span>
+        <span class="ev-val" aria-hidden="true">${reaisCurto(h.v)}</span>
+        <span class="ev-rot" aria-hidden="true">${rotH(h)}</span>
       </li>`;
     }).join("");
-    const blocoVendas = `
-      <div class="pz pz-vendas">
-        <h2 class="pz-tit">Vendas da Akad ${ajuda("premio", "GWP")}</h2>
-        <div class="hero-linha"><span class="hero-val hv-m">${reais(ak.pe)}</span><span class="hero-var">${crescNeutro(ak.cresc)} ${ajuda("cresc", "crescimento")}</span></div>
-        <p class="pz-ant">${ak.peP > 0 ? `Era <b>${reais(ak.peP)}</b> em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
-        <div class="vh-cab">
-          <span class="vh-tit">Histórico de vendas</span>
-          <span class="vh-recorte">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}</span>
-        </div>
-        <ol class="vh-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
-        <p class="vh-leg"><span><i class="vh-sw atual"></i>Período atual</span><span><i class="vh-sw"></i>Anos anteriores</span><span><b>▲▼</b> crescimento contra o ano anterior</span></p>
-      </div>`;
-
-    // A3. Sinistros: comparação principal com a própria Akad
-    const pAk = RT.prev.get(AKAD);
-    const sinP = pAk && pAk[1] > 0 ? (pAk[2] / pAk[1]) * 100 : null;
-    const em100 = (s) => (s == null ? "–" : `R$ ${nf0.format(s)}`);
-    const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
-    const blocoSin = `
-      <div class="pz pz-sin">
-        <h2 class="pz-tit">Sinistros ${ajuda("sin", "sinistralidade")}</h2>
-        <div class="sin-grade">
-          <div>
-            <p class="sin-frase">${ak.sin != null ? `A cada <b>R$ 100</b> de prêmio ganho, <b>${em100(ak.sin)}</b> viraram sinistro.` : "Sem prêmio ganho no período para calcular."}</p>
-            <p class="pz-ant">${sinP != null ? `Em ${perP} eram <b>${em100(sinP)}</b>, ${dSin == null || Math.abs(dSin) < 0.05 ? "praticamente o mesmo custo" : dSin > 0 ? "então o custo de sinistros aumentou" : "então o custo de sinistros diminuiu"}.` : "Sem período anterior para comparar."} Esse número se chama sinistralidade: <b>${pct(ak.sin)}</b>.</p>
-          </div>
-          <div class="sin-comp">
-            <div class="sc-l"><span>Akad, ${per}</span><b>${pct(ak.sin)}</b></div>
-            <div class="sc-l"><span>Akad, ${perP || "período anterior"}</span><b>${pct(sinP)}</b></div>
-            ${dSin != null ? `<div class="sc-l sc-d"><span>Diferença</span><b>${dSin > 0 ? "+" : dSin < 0 ? "−" : ""}${nf1.format(Math.abs(dSin))} p.p. ${Math.abs(dSin) < 0.05 ? "" : dSin > 0 ? "(pior)" : "(melhor)"}</b></div>` : ""}
-          </div>
-        </div>
-      </div>`;
+    const cardEvo = `
+      <section class="card kc kc-evo" aria-label="Evolução das vendas">
+        <div class="kc-cab"><h2 class="kc-tit">Evolução das vendas</h2><span class="kc-aux">${recorte}</span></div>
+        <ol class="ev-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
+      </section>`;
 
     const panorama = `
-      <div class="pan-cards">
-        <section class="card sec" aria-label="Vendas da Akad">${blocoVendas}</section>
-        <section class="card sec" aria-label="Participação de mercado">${blocoPart}</section>
-      </div>
-      <section class="card sec" aria-label="Sinistros">${blocoSin}</section>`;
+      <div class="pan">
+        <div class="kpi3">${cardVendas}${cardPart}${cardSin}</div>
+        ${cardEvo}
+      </div>`;
 
     // B. Movimentos
     const item = (x, tipo) => `
