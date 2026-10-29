@@ -29,7 +29,9 @@
     concSels: null,
     pilha: [],
     ufMetrica: "share",
-    ufSel: null,
+    uf: "todos",
+    ufOrdR: "merc",
+    ufTodos: false,
     rankOrd: { col: "pe", dir: -1 },
     geralOrd: "pos",
     geralTab: null,
@@ -380,6 +382,11 @@
     tCrescM: "Quanto o ramo inteiro cresceu ou caiu, em porcentagem, contra os mesmos meses do ano anterior.",
     tRefShare: "Market share do maior concorrente no ramo no período escolhido.",
     universo: "Sobre os dados desta página:",
+    ufConc: "Quanto das vendas da Akad (prêmio direto) está concentrado em cada estado. Os 5 maiores:",
+    ufCresc: "Estados em que as vendas da Akad foram maiores que nos mesmos meses do ano anterior:",
+    ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
+    ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
+    ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -1149,143 +1156,220 @@
     return { bg: `rgb(${c.join(",")})`, fg: lum > 0.55 ? "#212121" : "#FFFFFF" };
   }
 
+  const UF_NOME = { AC: "Acre", AL: "Alagoas", AM: "Amazonas", AP: "Amapá", BA: "Bahia", CE: "Ceará", DF: "Distrito Federal", ES: "Espírito Santo", GO: "Goiás", MA: "Maranhão", MG: "Minas Gerais", MS: "Mato Grosso do Sul", MT: "Mato Grosso", PA: "Pará", PB: "Paraíba", PE: "Pernambuco", PI: "Piauí", PR: "Paraná", RJ: "Rio de Janeiro", RN: "Rio Grande do Norte", RO: "Rondônia", RR: "Roraima", RS: "Rio Grande do Sul", SC: "Santa Catarina", SE: "Sergipe", SP: "São Paulo", TO: "Tocantins" };
+  const nomeCurtoCia = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros Corporativos|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
+
   function renderUF() {
     const P = periodo();
     const el = $("#aba-uf");
     const ramos = ramosDaSel(S.linha);
-    const cur = new Map(), prev = new Map();
-    for (const ri of ramos) for (const r of IDX.ufmPorRamo[ri]) {
-      const tgt = r[0] >= P.a && r[0] <= P.b ? cur : P.pa != null && r[0] >= P.pa && r[0] <= P.pb ? prev : null;
-      if (!tgt) continue;
-      const x = tgt.get(r[2]) || [0, 0, 0, 0];
-      x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6];
-      tgt.set(r[2], x);
-    }
-    const linhasUF = D.ufs.map((u, i) => {
-      const c = cur.get(i) || [0, 0, 0, 0], p = prev.get(i) || [0, 0, 0, 0];
-      const sh = c[0] > 0 ? (c[1] / c[0]) * 100 : null, shP = p[0] > 0 ? (p[1] / p[0]) * 100 : null;
-      return { i, u, merc: c[0], akad: c[1], share: sh, dShare: sh != null && shP != null ? sh - shP : null, crescM: cresc(c[0], p[0]), crescA: cresc(c[1], p[1]) };
-    });
-    const totM = linhasUF.reduce((s, x) => s + x.merc, 0);
-    // Por estado e ramo (todos os ramos acompanhados): o que mais se vende em cada UF
-    const ufRamo = D.ufs.map(() => new Map());
-    for (const l of IDX.linhas) for (const ri of l.idx) for (const r of IDX.ufmPorRamo[ri]) {
-      if (r[0] < P.a || r[0] > P.b) continue;
-      const m = ufRamo[r[2]]; const v = m.get(l.id) || [0, 0];
-      v[0] += r[3]; v[1] += r[4]; m.set(l.id, v);
-    }
-    const ramosDoUF = (i) => { const m = ufRamo[i]; const t = [...m.values()].reduce((a, v) => a + v[0], 0);
-      return [...m.entries()].filter(([, v]) => v[0] > 0).sort((a, b) => b[1][0] - a[1][0]).map(([id, v]) => ({ l: IDX.linhaPorId[id], v: v[0], ak: v[1], s: t > 0 ? (v[0] / t) * 100 : null, sa: v[0] > 0 && v[1] > 0 ? (v[1] / v[0]) * 100 : null })); };
-    const totA = linhasUF.reduce((s, x) => s + x.akad, 0);
+    const setR = new Set(ramos);
+    const per = periodoLabel(P.a, P.b), perP = P.pa != null ? periodoLabel(P.pa, P.pb) : null;
+    const emCur = (m) => m >= P.a && m <= P.b, emPrev = (m) => P.pa != null && m >= P.pa && m <= P.pb;
 
-    // líder por UF (base anual do ano final)
+    // Por estado (prêmio direto): mercado e Akad, período atual e anterior
+    const cur = D.ufs.map(() => [0, 0]), prev = D.ufs.map(() => [0, 0]);
+    // Por estado e ramo da tela (linha): mercado e Akad no período atual
+    const linhasSel = IDX.linhas.filter((l) => l.idx.some((ri) => setR.has(ri)));
+    const ufLinha = D.ufs.map(() => new Map());
+    for (const l of linhasSel) for (const ri of l.idx) {
+      if (!setR.has(ri)) continue;
+      for (const r of IDX.ufmPorRamo[ri]) {
+        if (emCur(r[0])) {
+          cur[r[2]][0] += r[3]; cur[r[2]][1] += r[4];
+          const v = ufLinha[r[2]].get(l.id) || [0, 0]; v[0] += r[3]; v[1] += r[4]; ufLinha[r[2]].set(l.id, v);
+        } else if (emPrev(r[0])) { prev[r[2]][0] += r[3]; prev[r[2]][1] += r[4]; }
+      }
+    }
+    const totM = cur.reduce((s, x) => s + x[0], 0), totA = cur.reduce((s, x) => s + x[1], 0);
+    const MED = totM > 0 ? (totA / totM) * 100 : null;
+
+    // Ranking anual por estado (base anual da SUSEP, ano do fim do período)
     const ano = +D.meses[P.b].slice(0, 4);
-    const lid = new Map();
+    const ult = D.meses[D.meses.length - 1];
+    const anoTxt = ano === +ult.slice(0, 4) && !ult.endsWith("12") ? `${ano} (jan–${MESES_PT[+ult.slice(4) - 1]})` : String(ano);
+    const rkUF = D.ufs.map(() => new Map());
+    const rkUFL = D.ufs.map(() => new Map()); // uf -> linha -> Map(ent -> v)
+    const linhaDoRamo = new Map(); linhasSel.forEach((l) => l.idx.forEach((ri) => linhaDoRamo.set(ri, l.id)));
     for (const ri of ramos) for (const r of IDX.ufaPorRamo[ri]) {
       if (r[0] !== ano) continue;
-      let m = lid.get(r[2]); if (!m) { m = new Map(); lid.set(r[2], m); }
       const e = IDX.chave[r[3]];
+      rkUF[r[2]].set(e, (rkUF[r[2]].get(e) || 0) + r[4]);
+      const lid = linhaDoRamo.get(ri); if (!lid) continue;
+      let m = rkUFL[r[2]].get(lid); if (!m) { m = new Map(); rkUFL[r[2]].set(lid, m); }
       m.set(e, (m.get(e) || 0) + r[4]);
     }
-    const topUF = (i) => { const m = lid.get(i); if (!m) return []; const t = [...m.values()].reduce((s, v) => s + v, 0); return [...m.entries()].sort((a, b) => b[1] - a[1]).map(([e, v]) => ({ e, v, s: t > 0 ? (v / t) * 100 : null })); };
+    const ordena = (m) => [...m.entries()].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]);
 
-    const met = S.ufMetrica;
-    const valMet = (x) => (met === "share" ? x.share : met === "merc" ? x.merc : x.crescM);
-    const vals = linhasUF.map(valMet).filter((v) => v != null && isFinite(v));
-    const maxV = Math.max(0.0001, ...vals.map((v) => Math.abs(v)));
-    const base = met === "share" ? css("--akad") : css("--mercado");
-
-    const ord = [...linhasUF].sort((a, b) => b.merc - a.merc);
-    const sel = S.ufSel;
-    const ult = D.meses[D.meses.length - 1];
-    const parc = ano === +ult.slice(0, 4) && !ult.endsWith("12") ? ` (jan–${MESES_PT[+ult.slice(4) - 1]})` : "";
-
-    el.innerHTML = `
-      <div class="cab-aba">
-        <div>
-          <h2>Participação por estado</h2>
-          <p>Prêmio direto por UF, ${periodoLabel(P.a, P.b)}. Akad tem ${pct(totM > 0 ? (totA / totM) * 100 : null)} do mercado destes ramos no país, por esta base.</p>
-        </div>
-        <div class="ctrl">
-          <div class="campo"><label>Colorir por</label>
-            <div class="seg-ctrl" role="group" aria-label="Métrica do mapa">
-              <button type="button" data-m="share" aria-pressed="${met === "share"}">Participação Akad</button>
-              <button type="button" data-m="merc" aria-pressed="${met === "merc"}">Tamanho do mercado</button>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="bloco">
-        <div class="mapa-wrap">
-          <div>
-            <div class="mapa" id="mapa"></div>
-            <div class="escala"><span>${met === "share" ? "0%" : "menor"}</span><span class="grad" style="background:linear-gradient(90deg, ${rampa(0, base).bg}, ${rampa(1, base).bg})"></span><span>${met === "share" ? pct(maxV) : "maior"}</span></div>
-          </div>
-          <div id="uf-detalhe"></div>
-        </div>
-      </div>
-      <div class="bloco" id="uf-ramos"></div>
-      <div class="bloco">
-        <div class="bloco-cab"><h2>Todos os estados</h2><p class="nota">Líder no estado com base em ${ano}${parc}. Clique numa UF para ver as maiores seguradoras.</p></div>
-        <div class="tab-wrap"><table>
-          <thead><tr><th>UF</th><th class="n">Mercado</th><th class="n">Cresc. mercado</th><th class="n">Akad</th><th class="n">Cresc. Akad</th><th class="n">Part. Akad</th><th class="n">Variação</th><th>Ramo que mais vende</th><th>Líder no estado</th></tr></thead>
-          <tbody>${ord.map((x) => { const t = topUF(x.i)[0]; return `<tr class="clic ${sel === x.i ? "akad" : ""}" data-uf="${x.i}">
-            <td><b>${x.u}</b></td><td class="n">${reais(x.merc)}</td><td class="n">${varHtml(x.crescM)}</td><td class="n">${reais(x.akad)}</td><td class="n">${varHtml(x.crescA)}</td>
-            <td class="n">${pct(x.share)}</td><td class="n">${ppHtml(x.dShare)}</td>
-            <td>${(() => { const rm = ramosDoUF(x.i)[0]; return rm ? `${esc(rm.l.nome)} <span class="sub">${pctPart(rm.s)} do estado</span>` : "–"; })()}</td>
-            <td>${t ? `${esc(nomeEnt(t.e))} <span class="sub">${pct(t.s)}</span>` : "–"}</td></tr>`; }).join("")}</tbody>
-        </table></div>
-      </div>`;
-
-    const mapa = $("#mapa");
-    mapa.innerHTML = MOSAICO.map(([u, r, c]) => {
-      const x = linhasUF.find((y) => y.u === u);
-      const v = valMet(x);
-      const { bg, fg } = v == null ? { bg: "var(--grid)", fg: "var(--muted)" } : rampa(Math.abs(v) / maxV, base);
-      const rot = met === "share" ? pct(x.share) : reaisCurto(x.merc);
-      return `<button type="button" class="uf" style="grid-row:${r + 1};grid-column:${c + 1};background:${bg};color:${fg}" data-uf="${x.i}" aria-pressed="${sel === x.i}" aria-label="${u}: ${met === "share" ? "participação Akad " + pct(x.share) : "mercado " + reais(x.merc)}">${u}<small>${rot}</small></button>`;
-    }).join("");
-    mapa.querySelectorAll(".uf").forEach((b) => {
-      b.addEventListener("click", () => { S.ufSel = +b.dataset.uf; renderUF(); });
-      b.addEventListener("mousemove", (ev) => {
-        const x = linhasUF[+b.dataset.uf];
-        mostrarTip(`<b>${x.u}</b><div>Mercado: ${reais(x.merc)} ${x.crescM != null ? "(" + (x.crescM > 0 ? "+" : "") + nf1.format(x.crescM) + "%)" : ""}</div><div>Akad: ${reais(x.akad)}</div><div>Participação Akad: ${pct(x.share)}</div>`, ev);
-      });
-      b.addEventListener("mouseleave", esconderTip);
+    const UF = D.ufs.map((u, i) => {
+      const [m, a] = cur[i], [mp, ap] = prev[i];
+      const rk = ordena(rkUF[i]);
+      const top = [...ufLinha[i].entries()].filter(([, v]) => v[1] > 0).sort((x, y) => y[1][1] - x[1][1])[0];
+      return {
+        i, u, nome: UF_NOME[u] || u, merc: m, akad: a, share: m > 0 ? (a / m) * 100 : null,
+        cres: cresc(a, ap), pct: totA > 0 ? (a / totA) * 100 : null,
+        vsMed: m > 0 && MED ? ((a / m) * 100) / MED : null,
+        topRamo: top ? IDX.linhaPorId[top[0]].nome : null,
+        lider: rk.length ? rk[0][0] : null, pos: rk.findIndex(([e]) => e === AKAD) + 1, nRk: rk.length,
+      };
     });
-    el.querySelectorAll("tr[data-uf]").forEach((tr) => tr.addEventListener("click", () => { S.ufSel = +tr.dataset.uf; renderUF(); }));
-    el.querySelectorAll(".seg-ctrl button").forEach((b) => b.addEventListener("click", () => { S.ufMetrica = b.dataset.m; renderUF(); }));
+    const sinal = (x) => (x > 0 ? "+" : x < 0 ? "−" : "");
+    const cresTxt = (x) => (x == null ? "–" : x > 999 ? "> +999%" : `${sinal(x)}${nf1.format(Math.abs(x))}%`);
+    const varCor = (x) => (x == null || !isFinite(x) ? '<span class="uf-var zero">–</span>' : `<span class="uf-var ${x >= 0.05 ? "bom" : x <= -0.05 ? "ruim" : "zero"}">${x > 0 ? "↑" : x < 0 ? "↓" : "="} ${cresTxt(x).replace(/^[+−]/, "")}</span>`);
+    const xMed = (v) => (v == null ? "–" : `${nf1.format(v)}x`);
+    const xCls = (v) => (v == null ? "" : v >= 1.2 ? "bom" : v < 0.9 ? "ruim" : "");
+    const nomeLider = (e) => (e === AKAD ? '<b class="ak">Akad</b>' : e ? esc(nomeCurtoCia(nomeEnt(e))) : "–");
 
-    const det = $("#uf-detalhe");
-    const ui = sel != null ? sel : ord[0].i;
-    const x = linhasUF[ui];
-    const t = topUF(ui).slice(0, 8);
-    const akPos = topUF(ui).findIndex((y) => y.e === AKAD);
-    det.innerHTML = `
-      <h3 style="font-size:1rem;margin-bottom:4px">${x.u}: maiores seguradoras em ${ano}${parc}</h3>
-      <p class="nota" style="margin:0 0 10px">Mercado no período: ${reais(x.merc)} · Akad: ${reais(x.akad)} (${pct(x.share)})${akPos >= 0 ? ` · ${akPos + 1}º lugar no estado` : ""}</p>
-      ${t.length ? `<div class="tab-wrap"><table><thead><tr><th class="n">#</th><th>Seguradora</th><th class="n">Prêmio</th><th class="n">Part.</th></tr></thead>
-      <tbody>${t.map((y, j) => `<tr class="${y.e === AKAD ? "akad" : ""}"><td class="n">${j + 1}</td><td class="nome">${esc(nomeEnt(y.e))}</td><td class="n">${reais(y.v)}</td><td class="n">${pct(y.s)}</td></tr>`).join("")}</tbody></table></div>` : '<p class="vazio">Sem dados para este estado.</p>'}`;
+    const sel = S.uf === "todos" || S.uf == null ? null : +S.uf;
+    const subtitulo = `Prêmio direto por estado (a SUSEP não abre o GWP por UF), ${per}${perP ? ` comparado com ${perP}` : ""}.`;
 
-    // O que mais se vende no estado selecionado
-    const rr = ramosDoUF(ui).slice(0, 10);
-    const maxR = Math.max(1, ...rr.map((y) => y.v));
-    $("#uf-ramos").innerHTML = `
-      <div class="bloco-cab"><h2>O que mais se vende em ${x.u}</h2><p class="nota">Os ramos acompanhados com mais prêmio no estado, ${periodoLabel(P.a, P.b)}. Clique em outro estado no mapa para trocar.</p></div>
-      ${rr.length ? `<ol class="ur-lista">${rr.map((y, j) => `
-        <li class="ur">
-          <span class="ur-n">${j + 1}º</span>
-          <span class="ur-nome"><b>${esc(y.l.nome)}</b><small>${pctPart(y.s)} do que se vende no estado</small></span>
-          <span class="ur-barra" aria-hidden="true"><i style="width:${(y.v / maxR) * 100}%"></i></span>
-          <span class="ur-val">${reais(y.v)}</span>
-          <span class="ur-ak">${y.sa != null ? `Akad tem <b>${pctPart(y.sa)}</b>` : '<span class="vs0">Akad não vende</span>'}</span>
-        </li>`).join("")}</ol>` : '<p class="vazio">Sem dados para este estado.</p>'}`;
+    if (!(totM > 0)) {
+      el.innerHTML = `<div class="cab-aba"><div><h2>Por estado</h2><p>${subtitulo}</p></div></div><div class="card vazio-bloco"><h2>Sem dados para este período</h2></div>`;
+      return;
+    }
+
+    if (sel == null) {
+      // ---------- Visão do Brasil ----------
+      const comAkad = UF.filter((x) => x.akad > 0).sort((a, b) => b.akad - a.akad);
+      const top3 = comAkad.slice(0, 3);
+      const cresceram = UF.filter((x) => x.cres != null && x.cres > 0).sort((a, b) => b.cres - a.cres);
+      const relevantes = UF.filter((x) => x.akad > 0 && x.merc >= totM * 0.005);
+      const melhor = [...relevantes].sort((a, b) => b.share - a.share)[0];
+      const forte = relevantes.filter((x) => x.vsMed >= 1.2).sort((a, b) => b.vsMed - a.vsMed).slice(0, 5);
+      const potencial = (x) => (x.merc * (MED - x.share)) / 100;
+      const espaco = UF.filter((x) => x.share != null && x.share < MED && x.merc >= totM * 0.02).sort((a, b) => potencial(b) - potencial(a)).slice(0, 4);
+
+      const met = ["share", "akad", "cres"].includes(S.ufMetrica) ? S.ufMetrica : "share";
+      const valMet = (x) => (met === "share" ? x.share : met === "akad" ? x.akad : x.cres);
+      const vals = UF.map(valMet).filter((v) => v != null && isFinite(v));
+      const maxV = Math.max(0.0001, ...vals.map((v) => Math.abs(Math.min(v, met === "cres" ? 200 : Infinity))));
+      const corMet = (x) => {
+        const v = valMet(x);
+        if (v == null || !isFinite(v)) return { bg: "var(--grid)", fg: "var(--muted)" };
+        if (met === "cres") return rampa(Math.min(Math.abs(v), 200) / maxV, v >= 0 ? "#319C00" : "#E01B1B");
+        return rampa(v / maxV, met === "share" ? css("--akad") : css("--mercado"));
+      };
+      const rotMet = (x) => (met === "share" ? pct(x.share) : met === "akad" ? (x.akad > 0 ? reaisCurto(x.akad) : "–") : cresTxt(x.cres));
+      const ufBtn = (x, extra) => `<button type="button" class="uf-li" data-uf="${x.i}"><span class="uf-sig">${x.u}</span><span class="uf-li-n">${esc(x.nome)}<small>market share ${pct(x.share, 2)} · mercado de ${reais(x.merc)}</small></span>${extra}</button>`;
+      const verTodos = !!S.ufTodos;
+      const tabela = [...UF].sort((a, b) => b.akad - a.akad || b.merc - a.merc);
+
+      el.innerHTML = `
+        <div class="cab-aba"><div><h2>Por estado</h2><p>${subtitulo}</p></div></div>
+        <div class="uf-kpis">
+          <section class="card uf-k"><h2 class="uf-kt">Concentração <button type="button" class="ajuda" data-ajuda="ufConc" data-lista="${esc(comAkad.slice(0, 5).map((x) => `${x.nome}: ${pct(x.pct)} das vendas da Akad`).join("|"))}" aria-label="O que é concentração?">?</button></h2>
+            <div class="uf-kl"><span class="uf-kv">${pct(top3[0]?.pct)}</span><span class="uf-ks">em ${top3[0]?.u || "–"}</span></div>
+            <p class="uf-ka">${top3.map((x) => x.u).join(", ")} somam ${pct(top3.reduce((s, x) => s + x.pct, 0))} das vendas da Akad</p></section>
+          <section class="card uf-k"><h2 class="uf-kt">Estados em crescimento <button type="button" class="ajuda" data-ajuda="ufCresc" data-lista="${esc(cresceram.length ? cresceram.map((x) => `${x.nome}: ${cresTxt(x.cres)}`).join("|") : "Nenhum estado")}" aria-label="Quais estados cresceram?">?</button></h2>
+            <div class="uf-kl"><span class="uf-kv">${cresceram.length}</span><span class="uf-ks">de ${UF.length}</span></div>
+            <p class="uf-ka">Estados com vendas da Akad maiores que em ${perP || "o período anterior"}</p></section>
+          <section class="card uf-k"><h2 class="uf-kt">Maior market share <button type="button" class="ajuda" data-ajuda="ufMelhor" aria-label="O que é maior market share?">?</button></h2>
+            <div class="uf-kl"><span class="uf-kv">${melhor ? pct(melhor.share, 2) : "–"}</span><span class="uf-ks">${melhor ? `no ${melhor.u}` : ""}</span></div>
+            <p class="uf-ka">Média da Akad no país: ${pct(MED, 2)}</p></section>
+        </div>
+        <div class="uf-meio">
+          <section class="card uf-c">
+            <div class="uf-cab"><h2 class="uf-tit">${met === "share" ? "Market share da Akad" : met === "akad" ? "Vendas da Akad" : "Variação das vendas da Akad"} por estado</h2>
+              <div class="seg-ctrl uf-met" role="group" aria-label="Colorir o mapa por">
+                <button type="button" data-m="share" aria-pressed="${met === "share"}">Market share</button><button type="button" data-m="akad" aria-pressed="${met === "akad"}">Vendas</button><button type="button" data-m="cres" aria-pressed="${met === "cres"}">Variação</button>
+              </div></div>
+            <div class="mapa" id="mapa"></div>
+            <p class="uf-nota">Clique num estado para ver o que mais se vende nele.</p>
+          </section>
+          <section class="card uf-c">
+            <div class="uf-cab"><h2 class="uf-tit">Onde a Akad está</h2><span class="uf-nota">comparado à média da Akad no país (${pct(MED, 2)})</span></div>
+            <h3 class="uf-h3"><i class="bom">↑</i>Mais forte que a média</h3>
+            ${forte.length ? forte.map((x) => ufBtn(x, `<b class="uf-x bom">${xMed(x.vsMed)} a média</b>`)).join("") : '<p class="uf-nota">Nenhum estado relevante acima de 1,2x a média.</p>'}
+            <h3 class="uf-h3" style="margin-top:18px"><i class="op">◎</i>Mercados grandes abaixo da média</h3>
+            ${espaco.length ? espaco.map((x) => ufBtn(x, `<b class="uf-x op" title="Quanto a Akad venderia a mais no estado com a mesma participação que tem no país">+${reais(potencial(x))}</b>`)).join("") : '<p class="uf-nota">Nenhum mercado grande abaixo da média.</p>'}
+            <p class="uf-nota" style="margin-top:12px">Valor em magenta: quanto a Akad venderia a mais no estado se tivesse ali a mesma participação que tem na média do país.</p>
+          </section>
+        </div>
+        <section class="card uf-c">
+          <div class="uf-cab"><h2 class="uf-tit">Todos os estados</h2><span class="uf-nota">ordenado por vendas da Akad · quem lidera com base em ${anoTxt}</span></div>
+          <div class="tab-wrap"><table class="uf-tab">
+            <thead><tr><th>Estado</th><th class="n">Vendas Akad</th><th class="n">Variação</th><th class="n">% das vendas Akad</th><th class="n">Market share</th><th class="n">vs. média ${ajuda("ufVs", "vs. média")}</th><th>Principal ramo da Akad</th><th>Quem lidera no estado</th></tr></thead>
+            <tbody>${tabela.slice(0, verTodos ? 99 : 10).map((x) => `
+              <tr class="clic" data-uf="${x.i}"><td><b>${x.u}</b> <span class="sub-i">${esc(x.nome)}</span></td>
+              <td class="n">${x.akad > 0 ? reais(x.akad) : '<span class="sub-i">sem vendas</span>'}</td><td class="n">${varCor(x.cres)}</td>
+              <td class="n">${x.akad > 0 ? pct(x.pct) : "–"}</td><td class="n"><b>${x.akad > 0 ? pct(x.share, 2) : "–"}</b></td>
+              <td class="n"><span class="uf-x ${xCls(x.vsMed)}">${x.akad > 0 ? xMed(x.vsMed) : "–"}</span></td>
+              <td>${x.topRamo ? esc(x.topRamo) : "–"}</td><td>${nomeLider(x.lider)}</td></tr>`).join("")}</tbody>
+          </table></div>
+          ${tabela.length > 10 ? `<button type="button" class="uf-mais" id="uf-mais">${verTodos ? "Mostrar só os 10 maiores" : `Ver todos os ${tabela.length} estados`}</button>` : ""}
+        </section>`;
+
+      const mapa = $("#mapa");
+      const maxEsc = met === "share" ? pct(maxV) : met === "akad" ? reaisCurto(maxV) : "";
+      mapa.innerHTML = MOSAICO.map(([u, r, c]) => {
+        const x = UF.find((y) => y.u === u);
+        const { bg, fg } = corMet(x);
+        return `<button type="button" class="uf" style="grid-row:${r + 1};grid-column:${c + 1};background:${bg};color:${fg}" data-uf="${x.i}" aria-label="${esc(x.nome)}: market share ${pct(x.share)}, vendas da Akad ${reais(x.akad)}">${u}<small>${rotMet(x)}</small></button>`;
+      }).join("");
+      mapa.insertAdjacentHTML("afterend", met === "cres" ? '<div class="escala"><span class="uf-var ruim">caiu</span><span class="grad" style="background:linear-gradient(90deg,#E01B1B,#F5F5F5,#319C00)"></span><span class="uf-var bom">cresceu</span></div>'
+        : `<div class="escala"><span>${met === "share" ? "0%" : "menor"}</span><span class="grad" style="background:linear-gradient(90deg, ${rampa(0, met === "share" ? css("--akad") : css("--mercado")).bg}, ${rampa(1, met === "share" ? css("--akad") : css("--mercado")).bg})"></span><span>${maxEsc}</span></div>`);
+      mapa.querySelectorAll(".uf").forEach((b) => {
+        b.addEventListener("mousemove", (ev) => {
+          const x = UF[+b.dataset.uf];
+          mostrarTip(`<b>${esc(x.nome)}</b><div>Vendas da Akad: ${reais(x.akad)} (${cresTxt(x.cres)})</div><div>Market share: ${pct(x.share, 2)}</div><div>Mercado: ${reais(x.merc)}</div>`, ev);
+        });
+        b.addEventListener("mouseleave", esconderTip);
+      });
+      el.querySelectorAll("[data-uf]").forEach((b) => b.addEventListener("click", () => { esconderTip(); S.uf = String(b.dataset.uf); render(); window.scrollTo({ top: 0 }); }));
+      el.querySelectorAll(".uf-met button").forEach((b) => b.addEventListener("click", () => { S.ufMetrica = b.dataset.m; renderUF(); }));
+      $("#uf-mais")?.addEventListener("click", () => { S.ufTodos = !S.ufTodos; renderUF(); });
+      return;
+    }
+
+    // ---------- Um estado ----------
+    const x = UF[sel];
+    const ordR = S.ufOrdR === "akad" ? "akad" : "merc";
+    const totUF = x.merc;
+    const linhas = linhasSel.map((l) => {
+      const v = ufLinha[sel].get(l.id) || [0, 0];
+      const rk = ordena(rkUFL[sel].get(l.id) || new Map());
+      return { l, merc: v[0], akad: v[1], share: v[0] > 0 ? (v[1] / v[0]) * 100 : null, pEst: totUF > 0 ? (v[0] / totUF) * 100 : null,
+        pos: rk.findIndex(([e]) => e === AKAD) + 1, lider: rk.length ? rk[0][0] : null };
+    }).filter((y) => y.merc > 0 || y.akad > 0)
+      .sort((a, b) => (ordR === "akad" ? b.akad - a.akad || b.merc - a.merc : b.merc - a.merc));
+    const maxM = Math.max(1, ...linhas.map((y) => y.merc));
+    el.innerHTML = `
+      <div class="cab-aba"><div><a href="#uf" class="uf-volta" id="uf-volta"><span aria-hidden="true">←</span> Todos os estados</a><h2>${esc(x.nome)}</h2><p>O que se vende no estado nos ramos em que a Akad atua e onde a Akad está em cada um. ${subtitulo}</p></div></div>
+      <div class="uf-kpis">
+        <section class="card uf-k"><h2 class="uf-kt">Vendas da Akad em ${x.u}</h2>
+          <div class="uf-kl"><span class="uf-kv">${reais(x.akad)}</span>${varCor(x.cres)}</div>
+          <p class="uf-ka">${pct(x.pct)} das vendas da Akad no país</p></section>
+        <section class="card uf-k"><h2 class="uf-kt">Market share em ${x.u}</h2>
+          <div class="uf-kl"><span class="uf-kv">${pct(x.share, 2)}</span><span class="uf-x ${xCls(x.vsMed)}">${xMed(x.vsMed)} a média</span></div>
+          <p class="uf-ka">Média da Akad no país: ${pct(MED, 2)}</p></section>
+        <section class="card uf-k"><h2 class="uf-kt">Posição no estado <button type="button" class="ajuda" data-ajuda="ufPos" aria-label="Como é calculada a posição?">?</button></h2>
+          <div class="uf-kl"><span class="uf-kv">${x.pos ? `${x.pos}º` : "–"}</span><span class="uf-ks">${x.nRk ? `de ${x.nRk}` : ""}</span></div>
+          <p class="uf-ka">Quem lidera: ${nomeLider(x.lider)} · base ${anoTxt}</p></section>
+      </div>
+      <section class="card uf-c">
+        <div class="uf-cab"><h2 class="uf-tit">O que mais se vende em ${x.u}</h2>
+          <div class="seg-ctrl uf-ord" role="group" aria-label="Ordenar ramos"><button type="button" data-o="merc" aria-pressed="${ordR === "merc"}">Maior mercado</button><button type="button" data-o="akad" aria-pressed="${ordR === "akad"}">Maiores vendas da Akad</button></div></div>
+        <div class="tab-wrap"><table class="uf-tab">
+          <thead><tr><th>Ramo</th><th>Tamanho do mercado</th><th class="n">Mercado</th><th class="n">% do estado</th><th class="n">Vendas Akad</th><th class="n">Share Akad</th><th class="n">Posição Akad</th><th>Quem lidera</th></tr></thead>
+          <tbody>${linhas.map((y) => `
+            <tr class="clic${y.lider === AKAD ? " lid" : ""}" data-abrir="${y.l.id}"><td><b>${esc(y.l.nome)}</b> <span class="sub-i">${y.l.ramos.join(", ")}</span></td>
+            <td class="uf-bar-td"><span class="uf-bar"><i style="width:${(y.merc / maxM) * 100}%"></i></span></td>
+            <td class="n">${reais(y.merc)}</td><td class="n">${pctPart(y.pEst)}</td>
+            <td class="n">${y.akad > 0 ? reais(y.akad) : '<span class="sub-i">não vende</span>'}</td>
+            <td class="n"><b>${y.akad > 0 ? pctPart(y.share) : "–"}</b></td>
+            <td class="n">${y.pos ? `${y.pos}º` : "–"}</td><td>${nomeLider(y.lider)}</td></tr>`).join("")}</tbody>
+        </table></div>
+        <p class="uf-nota">Posição e quem lidera com base em ${anoTxt}. Clique num ramo para ver o detalhe nacional.</p>
+      </section>`;
+    $("#uf-volta").addEventListener("click", (e) => { e.preventDefault(); S.uf = "todos"; render(); });
+    el.querySelectorAll(".uf-ord button").forEach((b) => b.addEventListener("click", () => { S.ufOrdR = b.dataset.o; renderUF(); }));
+    el.querySelectorAll("tr[data-abrir]").forEach((tr) => tr.addEventListener("click", () => abrirDe("linhas", () => { S.linha = tr.dataset.abrir; })));
   }
 
   /* ---------- Navegação e filtros ---------- */
   const ABAS = ["geral", "linhas", "conc", "uf"];
   // Quais filtros cada página usa (o período vale para todas)
-  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: ["conc", "linha"], uf: ["linha"] };
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: ["conc", "linha"], uf: ["linha", "uf"] };
 
   function irPara(aba, manterVoltar) {
     if (!manterVoltar) S.pilha = [];
@@ -1444,6 +1528,11 @@
     const usa = FILTROS_ABA[S.aba] || [];
     $("#fg-linha").hidden = !usa.includes("linha");
     $("#fg-conc").hidden = !usa.includes("conc");
+    $("#fg-uf").hidden = !usa.includes("uf");
+    if (usa.includes("uf") && document.activeElement?.id !== "cb-uf-in") {
+      const ops = [{ v: "todos", t: "Todos os estados" }, ...D.ufs.map((u, i) => ({ v: String(i), t: UF_NOME[u] || u, sub: u })).sort((a, b) => a.t.localeCompare(b.t, "pt-BR"))];
+      combo($("#cb-uf"), { id: "cb-uf-in", opcoes: ops, valor: () => String(S.uf), placeholder: "Buscar estado", aoEscolher: (v) => { S.uf = v; render(); } });
+    }
     $("#fg-nota").hidden = true; // o contexto da Visão geral fica no cabeçalho da página
     // Período
     const P = periodo();
