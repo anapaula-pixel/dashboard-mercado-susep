@@ -866,3 +866,26 @@ body { color: var(--ink); }
   :root:not([data-theme="light"]) .rc-sobe .rc-selo { color: #A9E88B; background: rgba(112,194,74,.15); }
   :root:not([data-theme="light"]) .rc-cai .rc-selo { color: #FF7171; background: rgba(224,27,27,.15); }
 }
+
+/* Participação por ramo: tabela única (Resumo e Detalhado com a mesma estrutura) */
+#aba-geral table.tg-part { width: 100%; }
+#aba-geral table.tg-part th.barra, #aba-geral table.tg-part td.barra { width: 34%; min-width: 220px; }
+#aba-geral table.tg-det th.barra, #aba-geral table.tg-det td.barra { width: auto; min-width: 150px; }
+#aba-geral table.tg-part th.barra { vertical-align: bottom; text-transform: none; letter-spacing: 0; }
+#aba-geral table.tg-part th.barra .pb-eixo { display: block; height: 14px; font-size: .72rem; }
+#aba-geral table.tg-part tr.suave .pb-fill { background: #9E9E9E; }
+#aba-geral table.tg-part tr.suave .pb-quebra { color: #fff; }
+#aba-geral table.tg-part tr.sem .pb-track { background: transparent; border: 1px dashed var(--g-rule); }
+#aba-geral table.tg-part tr.tg-sep td { padding: 18px 9px 6px; font-size: .8rem; font-weight: 600; color: var(--g-label); background: none !important; cursor: default; }
+#aba-geral table.tg-part tbody tr.tg-sep { cursor: default; }
+#aba-geral table.tg-part tr.grupo th:first-child, #aba-geral table.tg-part td.nome { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+#aba-geral table.tg-part td.n { white-space: nowrap; }
+#aba-geral table.tg-part td.nome .lk { white-space: nowrap; }
+@media (max-width: 760px) {
+  #aba-geral table.tg-part th.barra, #aba-geral table.tg-part td.barra { min-width: 120px; }
+  #aba-geral table.tg-part td.nome { min-width: 130px; max-width: 150px; }
+  #aba-geral table.tg-part td.nome .lk { white-space: normal; }
+  #aba-geral table.tg-part th.barra .pb-eixo i:nth-child(2), #aba-geral table.tg-part th.barra .pb-eixo i:nth-child(4) { display: none; }
+}
+#aba-geral table.tg-part td.barra .pb-track { display: block; width: 100%; }
+#aba-geral table.tg-part td.ref { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
