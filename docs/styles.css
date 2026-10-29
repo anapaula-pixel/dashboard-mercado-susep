@@ -991,3 +991,6 @@ body { color: var(--ink); }
 @media (max-width: 760px) {
   #aba-geral .ev-trilho .ev-cr { font-size: 9px; padding: 1px 4px; }
 }
+#aba-geral table.tg-part .lid-ak { color: var(--magenta); font-weight: 700; }
+#aba-geral table.tg-det th, #aba-geral table.tg-det td { padding-left: 7px; padding-right: 7px; }
+#aba-geral table.tg-det td.nome { min-width: 0; }
