@@ -617,10 +617,9 @@
             <span class="ct-nome">${esc(x.l.nome)}</span>
             <span class="ct-tr" aria-hidden="true"><i style="width:${(x.a.pe / maxPeso) * 100}%"></i></span>
             <span class="ct-pct" title="${reais(x.a.pe)} em ${per}">${nf1.format((x.a.pe / ak.pe) * 100)}%</span>
-            ${varKpi(x.a.cresc, "%")}
           </button></li>`).join("")}
         </ul>
-        <p class="kc-aux ct-nota">${pesoTop != null ? `Esses ${top5.length} ramos somam ${nf0.format(pesoTop)}% do GWP da Akad. Variação contra ${perP || "o período anterior"}.` : ""}</p>
+        <p class="kc-aux ct-nota">${pesoTop != null ? `Esses ${top5.length} ramos somam ${nf0.format(pesoTop)}% do GWP da Akad.` : ""}</p>
       </section>`;
 
     const panorama = `
