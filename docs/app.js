@@ -33,7 +33,7 @@
     ufOrdR: "merc",
     ufTodos: false,
     rankOrd: { col: "pe", dir: -1 },
-    geralOrd: "pos",
+    geralOrd: "ganhoRs",
     geralTab: null,
     geralModo: "resumo",
     geralSel: null,
@@ -676,8 +676,8 @@
     // a mesma ordem e as mesmas colunas-base; o Detalhado só acrescenta colunas.
     const modo = S.geralModo === "detalhado" ? "detalhado" : "resumo";
     const det = modo === "detalhado";
-    const ORD_TAB = { share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 }, perda: { col: "dShare", dir: 1 }, ganhoRs: { col: "dPe", dir: -1 }, pos: { col: "pos", dir: 1 } };
-    const T = S.geralTab || ORD_TAB[S.geralOrd || "share"];
+    const ORD_TAB = { pe: { col: "pe", dir: -1 }, ganhoRs: { col: "dPe", dir: -1 }, pos: { col: "pos", dir: 1 }, share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 } };
+    const T = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.ganhoRs);
     const val = (x, c) => ({
       nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.temAkad ? x.a.share : null, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
       dPe: x.dPe, cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
@@ -772,7 +772,7 @@
         </table></div>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
-    const ORD_ROT = { pos: "Posição no mercado", share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$" };
+    const ORD_ROT = { pe: "Maior GWP", ganhoRs: "Maior ganho de GWP (R$)", pos: "Melhor posição no ranking", share: "Maior market share", ganho: "Mais ganhou market share" };
     const ordSel = `<select id="pr-ord" class="pr-sel" aria-label="Ordenar ramos por">
       ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição no mercado" }[T.col] || "Coluna da tabela"}</option>`}
       ${Object.keys(ORD_ROT).map((k) => `<option value="${k}"${ordAtivo === k ? " selected" : ""}>${ORD_ROT[k]}</option>`).join("")}
@@ -814,7 +814,7 @@
     el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
       const c = thEl.dataset.col;
       const padrao = c === "pos" || c === "nome" ? 1 : -1;
-      const atual = S.geralTab || ORD_TAB[S.geralOrd || "share"];
+      const atual = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.ganhoRs);
       S.geralTab = { col: c, dir: atual.col === c ? -atual.dir : padrao };
       const k = Object.keys(ORD_TAB).find((o) => ORD_TAB[o].col === c && ORD_TAB[o].dir === S.geralTab.dir);
       if (k) S.geralOrd = k;
