@@ -356,23 +356,23 @@
   /* ---------- Visão geral ---------- */
   // Textos de ajuda contextual (abrem no "?" ao lado de cada indicador)
   const AJUDA = {
-    premio: "Prêmio emitido: valor das apólices emitidas no período, antes de descontar resseguro. É a medida de tamanho usada para participação e ranking.",
-    share: "Participação de mercado: prêmio emitido da Akad dividido pelo prêmio emitido de todas as seguradoras no mesmo ramo e no mesmo período.",
+    premio: "GWP (Gross Written Premium): valor das apólices emitidas no período, antes de descontar resseguro. Na base da SUSEP aparece como prêmio emitido. É a medida de tamanho usada para participação e ranking.",
+    share: "Participação de mercado: GWP da Akad dividido pelo GWP de todas as seguradoras no mesmo ramo e no mesmo período.",
     pp: "Variação em pontos percentuais (p.p.): diferença entre a participação atual e a do mesmo período do ano anterior. Ex.: de 10% para 12% = +2 p.p.",
-    cresc: "Crescimento: quanto o prêmio emitido da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
-    pos: "Posição: lugar da Akad no ranking de prêmio emitido entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
+    cresc: "Crescimento: quanto o GWP da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
+    pos: "Posição: lugar da Akad no ranking de GWP entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
     sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
-    lider: "Ramos em que a Akad tem o maior prêmio emitido no período.",
+    lider: "Ramos em que a Akad tem o maior GWP no período.",
     ref: "A maior seguradora do ramo sem contar a Akad. Na maioria dos ramos é a líder; quando a Akad lidera, aparece quem vem logo atrás dela.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     tShare: "Fatia do mercado do ramo que é da Akad no período escolhido: prêmio da Akad dividido pelo prêmio de todas as seguradoras no ramo.",
     tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
-    tRank: "Lugar da Akad no ranking de prêmio emitido do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
+    tRank: "Lugar da Akad no ranking de GWP do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
     tMov: "Quantas posições a Akad subiu (▲) ou caiu (▼) no ranking contra os mesmos meses do ano anterior. \"novo\": a Akad não vendia no ramo no ano anterior.",
-    tPe: "Quanto a Akad vendeu no ramo no período escolhido (prêmio emitido, em reais).",
+    tPe: "Quanto a Akad vendeu no ramo no período escolhido (GWP, em reais).",
     tDpe: "Quanto a Akad vendeu a mais (▲) ou a menos (▼) que nos mesmos meses do ano anterior, em reais.",
     tCresc: "A mesma diferença em porcentagem: quanto as vendas da Akad cresceram ou caíram contra os mesmos meses do ano anterior.",
     tVs: "Se as vendas da Akad cresceram mais (acima) ou menos (abaixo) que as do mercado no ramo. Acima do mercado, a fatia da Akad sobe.",
@@ -530,7 +530,7 @@
       </div>`;
 
     if (!(RT.tc[0] > 0)) {
-      el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem prêmio emitido nos ramos acompanhados entre ${per}. Escolha outro período no filtro de período.</p></div>`;
+      el.innerHTML = `${contexto}<div class="card vazio-bloco"><h2>Sem dados para este período</h2><p>A base da SUSEP não tem GWP nos ramos acompanhados entre ${per}. Escolha outro período no filtro de período.</p></div>`;
       return;
     }
 
@@ -587,14 +587,14 @@
     }).join("");
     const blocoVendas = `
       <div class="pz pz-vendas">
-        <h2 class="pz-tit">Vendas da Akad ${ajuda("premio", "prêmio emitido")}</h2>
+        <h2 class="pz-tit">Vendas da Akad ${ajuda("premio", "GWP")}</h2>
         <div class="hero-linha"><span class="hero-val hv-m">${reais(ak.pe)}</span><span class="hero-var">${crescNeutro(ak.cresc)} ${ajuda("cresc", "crescimento")}</span></div>
         <p class="pz-ant">${ak.peP > 0 ? `Era <b>${reais(ak.peP)}</b> em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
         <div class="vh-cab">
           <span class="vh-tit">Histórico de vendas</span>
           <span class="vh-recorte">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}</span>
         </div>
-        <ol class="vh-lista" aria-label="Prêmio emitido da Akad por ano">${barrasH}</ol>
+        <ol class="vh-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
         <p class="vh-leg"><span><i class="vh-sw atual"></i>Período atual</span><span><i class="vh-sw"></i>Anos anteriores</span><span><b>▲▼</b> crescimento contra o ano anterior</span></p>
       </div>`;
 
@@ -717,7 +717,7 @@
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
               <th colspan="3" class="g">Fatia da Akad no mercado</th>
               <th colspan="2" class="g">Ranking da Akad</th>
-              <th colspan="${det ? 4 : 1}" class="g">Vendas da Akad <span class="g-sub">prêmio emitido</span></th>
+              <th colspan="${det ? 4 : 1}" class="g">Vendas da Akad <span class="g-sub">GWP</span></th>
               ${det ? `<th colspan="2" class="g">Mercado do ramo <span class="g-sub">todas as seguradoras</span></th>
               <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>` : ""}
             </tr>
@@ -917,7 +917,7 @@
       <div class="kpis">
         <div class="kpi destaque"><span class="rot">Posição da Akad</span><span class="val">${ak.pos ? ak.pos + "º" : "–"} <small style="font-size:.9rem;color:var(--muted)">de ${R.rk.length}</small></span><span class="det">${ak.posP ? `No ano anterior: ${ak.posP}º` : "Sem prêmio no ano anterior"}</span></div>
         <div class="kpi"><span class="rot">Participação Akad</span><span class="val">${pct(ak.share)}</span><span class="det">${ppHtml(ak.dShare)} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Prêmio emitido Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
+        <div class="kpi"><span class="rot">GWP Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Mercado</span><span class="val">${reais(R.tc[0])}</span><span class="det">${varHtml(cresc(R.tc[0], R.tp[0]))} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Sinistralidade</span><span class="val">${pct(ak.sin)}</span><span class="det">Mercado: ${pct(sinM)}</span></div>
         <div class="kpi"><span class="rot">Despesa comercial</span><span class="val">${pct(ak.com)}</span><span class="det">Mercado: ${pct(comM)} (÷ prêmio ganho)</span></div>
@@ -928,11 +928,11 @@
           <div class="graf" id="g-share"></div>
         </div>
         <div class="bloco c6">
-          <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">Prêmio emitido. * ano parcial</p></div>
+          <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">GWP. * ano parcial</p></div>
           <div class="graf" id="g-merc"></div>
         </div>
         <div class="bloco c6">
-          <div class="bloco-cab"><h2>Prêmio emitido Akad por ano</h2><p class="nota">* ano parcial</p></div>
+          <div class="bloco-cab"><h2>GWP Akad por ano</h2><p class="nota">* ano parcial</p></div>
           <div class="graf" id="g-akad"></div>
         </div>
         <div class="bloco c12">
@@ -940,7 +940,7 @@
           <div class="tab-wrap"><table>
             <thead><tr>
               <th class="n ord" data-col="pos">#</th><th>Seguradora</th>
-              <th class="n ord" data-col="pe">Prêmio emitido</th><th class="n ord" data-col="share">Participação</th>
+              <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Participação</th>
               <th class="n ord" data-col="dShare">Variação</th><th class="n ord" data-col="cresc">Crescimento</th>
               <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com">Desp. comercial</th>
             </tr></thead>
@@ -1066,7 +1066,7 @@
       <section class="card cs">
         <div class="cs-cab"><span class="cs-n">1</span><div><h2>Resumo no período</h2><p>Tamanho, crescimento e fatia de mercado de cada seguradora.</p></div></div>
         <div class="tab-wrap"><table class="tc">
-          <thead><tr><th>Seguradora</th>${cab("Prêmio emitido", ["premio", "prêmio emitido"])}${cab("Crescimento", ["cresc", "crescimento"])}${cab("Participação", ["share", "participação"])}${cab("Var. participação", ["pp", "variação em pontos percentuais"])}<th>Posição ${ajuda("pos", "posição")}</th>${cab("Akad à frente em", ["frente", "Akad à frente"])}</tr></thead>
+          <thead><tr><th>Seguradora</th>${cab("GWP", ["premio", "GWP"])}${cab("Crescimento", ["cresc", "crescimento"])}${cab("Participação", ["share", "participação"])}${cab("Var. participação", ["pp", "variação em pontos percentuais"])}<th>Posição ${ajuda("pos", "posição")}</th>${cab("Akad à frente em", ["frente", "Akad à frente"])}</tr></thead>
           <tbody>${linhasTab}</tbody>
         </table></div>
       </section>
@@ -1571,7 +1571,7 @@
           <h2>Como ler os números</h2>
           <ul>
             <li>Valores em reais correntes, sem correção pela inflação.</li>
-            <li>Nacional: prêmio emitido. Por estado: prêmio direto (a SUSEP só publica esse por UF).</li>
+            <li>Nacional: GWP (prêmio emitido na SUSEP). Por estado: prêmio direto (a SUSEP só publica esse por UF).</li>
             <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho.</li>
           </ul>
         </div>
