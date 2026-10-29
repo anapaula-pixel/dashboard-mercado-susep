@@ -907,3 +907,43 @@ body { color: var(--ink); }
   :root:not([data-theme="light"]) #aba-geral .selo-pos.num { background: #424242; color: #E0E0E0; box-shadow: none; }
   :root:not([data-theme="light"]) #aba-geral .selo-pos .fita { stroke: #7C97B8; }
 }
+
+/* Primeira seção: 3 KPIs comparáveis + evolução das vendas */
+#aba-geral .pan { display: flex; flex-direction: column; gap: 16px; }
+#aba-geral .kpi3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; align-items: start; }
+#aba-geral .card.kc { padding: 24px; background: var(--surface); border: 1px solid var(--g-rule); display: flex; flex-direction: column; gap: 6px; }
+#aba-geral .kc-tit { margin: 0 0 6px; font-family: var(--font-display); font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+#aba-geral .kc-linha { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+#aba-geral .kc-val { font-family: var(--font-display); font-size: 32px; font-weight: 700; line-height: 1.1; color: var(--ink); letter-spacing: -.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+#aba-geral .kc-var { font-size: 13px; font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums; }
+#aba-geral .kc-var.bom { color: var(--g-up); }
+#aba-geral .kc-var.ruim { color: var(--g-down); }
+#aba-geral .kc-var.zero { color: var(--g-label); }
+#aba-geral .kc-aux { margin: 0; font-size: 12px; line-height: 1.45; color: var(--g-label); }
+#aba-geral .kc-nota { margin-top: 10px; }
+#aba-geral .kc-fatos { margin: 14px 0 0; display: flex; flex-direction: column; gap: 8px; }
+#aba-geral .kc-fatos > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+#aba-geral .kc-fatos dt { font-size: 12px; color: var(--g-label); display: inline-flex; align-items: center; gap: 4px; }
+#aba-geral .kc-fatos dd { margin: 0; font-size: 13px; font-weight: 600; color: var(--ink); text-align: right; font-variant-numeric: tabular-nums; }
+#aba-geral .kc-ant { font-weight: 400; color: var(--g-label); font-size: 12px; }
+#aba-geral .kc-cab { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 12px; }
+#aba-geral .kc-cab .kc-tit { margin: 0; }
+#aba-geral .ev-lista { list-style: none; margin: 0; padding: 0; display: flex; gap: 24px; align-items: stretch; }
+#aba-geral .ev { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+#aba-geral .ev-cr { font-size: 11px; font-weight: 400; color: var(--g-label); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#aba-geral .ev-trilho { width: 100%; max-width: 72px; height: 200px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--g-rule); }
+#aba-geral .ev-trilho i { display: block; width: 100%; background: #7C97B8; border-radius: 4px 4px 0 0; }
+#aba-geral .ev.atual .ev-trilho i { background: var(--magenta); }
+#aba-geral .ev-val { font-size: 12px; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#aba-geral .ev-rot { font-size: 12px; font-weight: 600; color: var(--g-label); white-space: nowrap; }
+#aba-geral .ev.atual .ev-val, #aba-geral .ev.atual .ev-rot { color: var(--ink); font-weight: 600; }
+@media (max-width: 1000px) {
+  #aba-geral .kpi3 { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 760px) {
+  #aba-geral .card.kc { padding: 20px 16px; }
+  #aba-geral .ev-lista { gap: 6px; }
+  #aba-geral .ev-trilho { height: 150px; }
+  #aba-geral .ev-cr, #aba-geral .ev-val { font-size: 9.5px; letter-spacing: -.02em; }
+  #aba-geral .ev-rot { font-size: 10.5px; }
+}
