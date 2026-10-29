@@ -592,8 +592,7 @@
       const atual = i === hist.length - 1;
       const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
       return `<li class="ev${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
-        <span class="ev-cr" aria-hidden="true">${h.cr == null ? "&nbsp;" : crTxt}</span>
-        <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i></span>
+        <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i>${h.cr == null ? "" : `<span class="ev-cr ${h.cr >= 0 ? "sobe" : "cai"}" style="bottom:calc(${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}% + 6px)">${crTxt}</span>`}</span>
         <span class="ev-val" aria-hidden="true">${reaisCurto(h.v)}</span>
         <span class="ev-rot" aria-hidden="true">${rotH(h)}</span>
       </li>`;
@@ -632,7 +631,7 @@
     const item = (x, tipo) => `
       <li><button type="button" class="mv-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(x.a.share)}, abrir detalhe">
         <span class="mv-nome">${esc(x.l.nome)}</span>
-        <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b> de participação` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
+        <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b> de market share` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
         <span class="mv-var mv-gwp" data-tip="${esc(`<b>GWP da Akad em ${esc(x.l.nome)}</b><div>${per}: ${reais(x.a.pe)}</div>${x.a.peP > 0 ? `<div>${perP}: ${reais(x.a.peP)}</div>` : ""}${x.a.cresc != null ? `<div>Variação: ${x.a.cresc > 999 ? "> +999" : (x.a.cresc > 0 ? "+" : x.a.cresc < 0 ? "−" : "") + nf1.format(Math.abs(x.a.cresc))}%</div>` : ""}<div>Market share: ${pctPart(x.a.share)}${x.a.dShare != null ? ` (${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.)` : ""}</div>`)}">${reais(x.a.pe)}</span>
       </button></li>`;
     const ICO_MV = {
@@ -650,8 +649,8 @@
         <h2 id="h-mov" class="sec-tit">Destaques do período</h2>
         <div class="mv-grade">
           ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhum ramo no período.")}
-          ${coluna("Maiores ganhos", ganhos, "g", "Nenhum ramo ganhou participação no período.")}
-          ${coluna("Maiores perdas", perdas, "p", "Nenhum ramo perdeu participação no período.")}
+          ${coluna("Mais ganharam market share", ganhos, "g", "Nenhum ramo ganhou market share no período.")}
+          ${coluna("Mais perderam market share", perdas, "p", "Nenhum ramo perdeu market share no período.")}
         </div>
       </section>`;
 
