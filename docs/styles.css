@@ -972,3 +972,7 @@ body { color: var(--ink); }
 @media (max-width: 1000px) {
   #aba-geral .pan-baixo { grid-template-columns: minmax(0, 1fr); }
 }
+#aba-geral .kpi3 .kc-tit { font-size: 16px; }
+#aba-geral .pan-baixo .kc-tit { font-size: 20px; }
+#aba-geral .mv-tit { flex: 1; }
+#aba-geral .mv-col-rot { font-size: 11px; font-weight: 600; color: var(--g-label); letter-spacing: .04em; padding-right: 8px; cursor: help; }
