@@ -368,6 +368,17 @@
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
+    tShare: "Fatia do mercado do ramo que é da Akad no período escolhido: prêmio da Akad dividido pelo prêmio de todas as seguradoras no ramo.",
+    tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
+    tRank: "Lugar da Akad no ranking de prêmio emitido do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
+    tMov: "Quantas posições a Akad subiu (▲) ou caiu (▼) no ranking contra os mesmos meses do ano anterior. \"novo\": a Akad não vendia no ramo no ano anterior.",
+    tPe: "Quanto a Akad vendeu no ramo no período escolhido (prêmio emitido, em reais).",
+    tDpe: "Quanto a Akad vendeu a mais (▲) ou a menos (▼) que nos mesmos meses do ano anterior, em reais.",
+    tCresc: "A mesma diferença em porcentagem: quanto as vendas da Akad cresceram ou caíram contra os mesmos meses do ano anterior.",
+    tVs: "Se as vendas da Akad cresceram mais (acima) ou menos (abaixo) que as do mercado no ramo. Acima do mercado, a fatia da Akad sobe.",
+    tMerc: "Quanto todas as seguradoras juntas venderam no ramo no período escolhido, incluindo a Akad. Mostra o tamanho do ramo.",
+    tCrescM: "Quanto o ramo inteiro cresceu ou caiu, em porcentagem, contra os mesmos meses do ano anterior.",
+    tRefShare: "Fatia do mercado do ramo que é do maior concorrente no período escolhido.",
     universo: "Os ramos da SUSEP em que a Akad atua, cada um com seu código oficial. Os indicadores do topo somam todos eles.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -696,27 +707,28 @@
               <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>` : ""}
             </tr>`;
     const grupoTab = (tit, lst, cls) => lst.length ? `<tr class="tg-sep" aria-hidden="true"><td colspan="${nCols}">${tit}</td></tr>${lst.map((x) => linhaTab(x, cls)).join("")}` : "";
-    const th = (c, rot, cls = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`;
+    const vsAno = perP && /\d{4}$/.test(perP) ? `vs. ${perP.slice(-4)}` : "vs. ano ant.";
+    const th = (c, rot, cls = "", aj) => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${aj ? " " + ajuda(aj, rot) : ""}</th>`;
     const corpoHtml = `
         <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
         <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
           <thead>
             <tr class="grupo">
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
-              <th colspan="3" class="g">Participação da Akad</th>
-              <th colspan="2" class="g">Posição da Akad</th>
-              <th colspan="${det ? 4 : 1}" class="g">Prêmio emitido Akad</th>
-              ${det ? `<th colspan="2" class="g">Mercado</th>
+              <th colspan="3" class="g">Fatia da Akad no mercado</th>
+              <th colspan="2" class="g">Ranking da Akad</th>
+              <th colspan="${det ? 4 : 1}" class="g">Vendas da Akad <span class="g-sub">prêmio emitido</span></th>
+              ${det ? `<th colspan="2" class="g">Mercado do ramo <span class="g-sub">todas as seguradoras</span></th>
               <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>` : ""}
             </tr>
             <tr>
               <th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>
-              ${th("share", "Atual", "n")}${th("dShare", "Var. p.p.", "n")}
-              ${th("pos", "Lugar", "n g1")}${th("mov", "Mov.", "n")}
-              ${det ? th("pe", "Valor", "n g1") : ""}${th("dPe", "Var. R$", det ? "n" : "n g1")}
-              ${det ? `${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
-              ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
-              <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}` : ""}
+              ${th("share", "% do ramo", "n", "tShare")}${th("dShare", `${vsAno} (p.p.)`, "n", "tPP")}
+              ${th("pos", "Lugar", "n g1", "tRank")}${th("mov", vsAno, "n", "tMov")}
+              ${det ? th("pe", "Total", "n g1", "tPe") : ""}${th("dPe", `${vsAno} (R$)`, det ? "n" : "n g1", "tDpe")}
+              ${det ? `${th("cresc", `${vsAno} (%)`, "n", "tCresc")}${th("vs", "vs. mercado", "", "tVs")}
+              ${th("mercado", "Total", "n g1", "tMerc")}${th("crescM", `${vsAno} (%)`, "n", "tCrescM")}
+              <th class="g1">Seguradora</th>${th("refShare", "% do ramo", "n", "tRefShare")}` : ""}
             </tr>
           </thead>
           <tbody>
