@@ -701,7 +701,7 @@
     const escMax = passoEsc * 4;
     const W = (v) => Math.min(100, (v / escMax) * 100);
     const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
-    const nCols = det ? 9 : 6;
+    const nCols = det ? 7 : 4;
     const nomeCurto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros Corporativos|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
     const barra = (x) => {
       const a = x.a;
@@ -720,17 +720,23 @@
       if (!pos) return "";
       if (MED[pos]) {
         const [f, s] = MED[pos];
-        return `<span class="selo-pos med" title="${pos}º lugar no mercado" aria-label="${pos}º lugar no mercado"><svg width="26" height="28" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="${f}" stroke="${s}" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">${pos}</text></svg></span>`;
+        return `<span class="selo-pos med" aria-label="${pos}º lugar no mercado"><svg width="26" height="28" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="${f}" stroke="${s}" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">${pos}</text></svg></span>`;
       }
-      return `<span class="selo-pos num" title="${pos}º lugar no mercado" aria-label="${pos}º lugar no mercado">${pos}</span>`;
+      return `<span class="selo-pos num" aria-label="${pos}º lugar no mercado">${pos}</span>`;
+    };
+    // Posição + variação no ranking ao lado do nome; o detalhe ("2º de 20") aparece ao passar o mouse
+    const posGrp = (x) => {
+      if (!x.a.pos) return "";
+      const d = x.a.posP ? x.a.posP - x.a.pos : null;
+      const sub = d == null ? `Sem prêmio em ${perP || "período anterior"}` : d === 0 ? `Mesma posição de ${perP}` : `${d > 0 ? "Subiu" : "Caiu"} ${Math.abs(d)} ${Math.abs(d) === 1 ? "posição" : "posições"} contra ${perP} (era ${x.a.posP}º)`;
+      const tipH = `<b>${x.a.pos}º de ${x.n}</b><div>${x.n === 1 ? "Única seguradora com prêmio no ramo" : `${x.n} seguradoras com prêmio no ramo`}</div><div>${sub}</div>`;
+      return `<span class="pos-grp" data-tip="${esc(tipH)}">${seloPos(x.a.pos)}${movHtml(x.a.pos, x.a.posP).replace(/ title="[^"]*"/, "")}</span>`;
     };
     const linhaTab = (x, grupo) => `
             <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
-              <td class="nome"><div class="nome-in"><div><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></div>${seloPos(x.a.pos)}</div></td>
+              <td class="nome"><div class="nome-in"><div><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></div>${posGrp(x)}</div></td>
               ${det ? "" : `<td class="barra g1" title="${esc(x.temAkad ? `Market share em ${per}: ${pctPart(x.a.share)}${x.a.shareP != null && perP ? `\nEm ${perP}: ${pctPart(x.a.shareP)}` : ""}${x.a.dShare != null ? `\nVariação: ${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.` : ""}` : "Akad sem prêmio no período")}">${barra(x)}</td>`}
               <td class="n${det ? " g1" : ""}" title="${esc(x.a.dShare != null ? `Variação: ${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p. contra ${perP}` : "")}"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
-              <td class="n g1">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
-              <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
               <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
               ${det ? `<td class="n">${rsSeta(x.dPe)}</td>
               <td class="n">${crescNeutro(x.a.cresc)}</td>
@@ -743,9 +749,8 @@
         <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
           <thead>
             <tr class="grupo">
-              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
+              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><div class="th-ramo"><button type="button">Ramo</button><span class="th-pos">Posição</span></div></th>
               <th colspan="${det ? 1 : 2}" class="g">Market share da Akad</th>
-              <th colspan="2" class="g">Ranking do mercado</th>
               <th colspan="${det ? 3 : 1}" class="g">Vendas da Akad</th>
               ${det ? `<th class="g">Mercado do ramo</th>
               <th class="g">Quem lidera ${ajuda("ref", "quem lidera")}</th>` : ""}
@@ -753,7 +758,6 @@
             <tr>
               ${det ? "" : `<th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>`}
               ${th("share", "Atual", det ? "n g1" : "n", "tShare")}
-              ${th("pos", "Posição", "n g1")}${th("mov", "Variação", "n")}
               ${th("pe", "GWP", "n g1")}
               ${det ? `${th("dPe", "Variação (R$)", "n")}${th("cresc", "Variação (%)", "n")}
               ${th("mercado", "Total", "n g1", "tMerc")}
@@ -790,7 +794,7 @@
 
     // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
     el.querySelectorAll(".mv-item, .lk, .ct-item").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
-    el.querySelectorAll(".mv-gwp").forEach((g) => {
+    el.querySelectorAll(".mv-gwp, .pos-grp").forEach((g) => {
       g.addEventListener("mouseenter", (ev) => mostrarTip(g.dataset.tip, ev));
       g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev));
       g.addEventListener("mouseleave", esconderTip);
@@ -1061,7 +1065,7 @@
     };
     el.querySelector("#tr-q").addEventListener("input", (e) => { S.rcBusca = e.target.value; aplicar(); });
     el.querySelector("#tr-f").addEventListener("change", (e) => { S.trFiltro = e.target.value; aplicar(); });
-    el.querySelectorAll(".tr-tab th.ord > button").forEach((b) => b.addEventListener("click", () => {
+    el.querySelectorAll(".tr-tab th.ord > button:not(.ajuda)").forEach((b) => b.addEventListener("click", () => {
       const c = b.parentElement.dataset.col;
       S.trOrd = S.trOrd.col === c ? { col: c, dir: -S.trOrd.dir } : { col: c, dir: c === "nome" || c === "q" || c === "pos" ? 1 : -1 };
       renderCatalogo(el, P);
