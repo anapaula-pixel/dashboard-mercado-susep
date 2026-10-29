@@ -637,123 +637,97 @@
         </div>
       </section>`;
 
-    // C. Participação por ramo: modo Resumo (barras) ou Detalhado (todos os indicadores)
+    // C. Participação por ramo: uma única tabela. "Resumo" e "Detalhado" têm as mesmas linhas,
+    // a mesma ordem e as mesmas colunas-base; o Detalhado só acrescenta colunas.
     const modo = S.geralModo === "detalhado" ? "detalhado" : "resumo";
+    const det = modo === "detalhado";
     const ORD_TAB = { share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 }, perda: { col: "dShare", dir: 1 }, ganhoRs: { col: "dPe", dir: -1 }, pos: { col: "pos", dir: 1 } };
-    const ord = S.geralOrd || "share";
-    const disputa = linhas.filter((x) => x.temAkad && x.n > 1);
-    const semConc = linhas.filter((x) => x.temAkad && x.n === 1);
-    const semA = linhas.filter((x) => !x.temAkad);
-    const cmp = {
-      share: (p, q) => (q.a.share || 0) - (p.a.share || 0),
-      ganho: (p, q) => (q.a.dShare ?? -1e9) - (p.a.dShare ?? -1e9),
-      perda: (p, q) => (p.a.dShare ?? 1e9) - (q.a.dShare ?? 1e9),
-      ganhoRs: (p, q) => (q.dPe ?? -1e12) - (p.dPe ?? -1e12),
-      pos: (p, q) => (p.a.pos || 999) - (q.a.pos || 999) || (q.a.share || 0) - (p.a.share || 0),
-    }[ord];
-    disputa.sort(cmp);
-    // Escala definida só pelas linhas com concorrência (o 100% do DPEM não achata as demais)
-    const base = [];
-    disputa.forEach((x) => { if (x.a.share != null) base.push(x.a.share); if (x.a.shareP != null) base.push(x.a.shareP); });
-    const passoEsc = niceMax((Math.max(1, ...base) * 1.05) / 4);
-    const escMax = passoEsc * 4;
-    const W = (v) => Math.min(100, (v / escMax) * 100);
-    const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
-    const barRow = (x, suave) => {
-      const a = x.a;
-      const est = a.share != null && a.share >= escMax;
-      const estP = a.shareP != null && a.shareP >= escMax;
-      const sel = S.geralSel === x.l.id ? " sel" : "";
-      if (!x.temAkad) {
-        return `<li><button type="button" class="pb sem${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: Akad sem prêmio no período. Abrir detalhe">
-          <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
-          <span class="pb-track"><span class="pb-semtxt">Akad sem prêmio no período${x.n ? ` · ${x.n} seguradoras com prêmio` : " · sem dados de mercado"}</span></span>
-          <span class="pb-val">–</span><span class="pb-var">${ppSeta(null)}</span><span class="pb-rs">${rsSeta(x.dPe)}</span><span class="pb-pos">${posChip(null)}</span>
-        </button></li>`;
-      }
-      return `<li><button type="button" class="pb${suave ? " suave" : ""}${sel}" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(a.share)}, variação ${a.dShare == null ? "sem comparação" : nf1.format(a.dShare) + " pontos percentuais"}, prêmio ${x.dPe == null ? "sem comparação" : (x.dPe >= 0 ? "aumentou " : "caiu ") + reais(Math.abs(x.dPe))}, posição ${a.pos} de ${x.n}. Abrir detalhe">
-        <span class="pb-nome"><b>${esc(x.l.nome)}</b><small>${x.l.ramos.join(", ")}</small></span>
-        <span class="pb-track">
-          <span class="pb-fill${est ? " est" : ""}" style="width:${W(a.share || 0)}%"></span>
-          ${a.shareP != null ? `<span class="pb-ant${estP ? " est" : ""}" style="left:${W(a.shareP)}%" title="${perP}: ${pctPart(a.shareP)}"></span>` : ""}
-          ${est ? `<span class="pb-quebra">${x.n === 1 ? "única seguradora no ramo" : "fora da escala"}</span>` : ""}
-        </span>
-        <span class="pb-val">${pctPart(a.share)}</span>
-        <span class="pb-var">${ppSeta(a.dShare)}</span>
-        <span class="pb-rs">${rsSeta(x.dPe)}</span>
-        <span class="pb-pos">${posChip(a.pos, x.n)} ${movHtml(a.pos, a.posP)}</span>
-      </button></li>`;
-    };
-    const grupoExtra = (tit, lst, suave) => lst.length ? `<li class="pb-grupo" aria-hidden="true">${tit}</li>${lst.map((x) => barRow(x, suave)).join("")}` : "";
-    const resumoHtml = `
-        <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
-        <div class="pb-cab" aria-hidden="true">
-          <span>Ramo</span>
-          <span class="pb-eixo">${ticks.map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span>
-          <span class="n">Atual</span><span class="n">Var. p.p.</span><span class="n">Var. R$</span><span>Posição</span>
-        </div>
-        <ul class="pb-lista">
-          ${disputa.map((x) => barRow(x, false)).join("")}
-          ${grupoExtra("Sem concorrência no período", semConc, true)}
-          ${grupoExtra("Sem prêmio da Akad no período", semA, true)}
-        </ul>`;
-
-    // D. Tabela analítica
-    const T = S.geralTab || ORD_TAB[ord];
+    const T = S.geralTab || ORD_TAB[S.geralOrd || "share"];
     const val = (x, c) => ({
-      nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.a.share, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
+      nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.temAkad ? x.a.share : null, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
       dPe: x.dPe, cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
       mercado: x.mercado, crescM: x.crescM, refShare: x.refInfo ? x.refInfo.share : null,
     }[c]);
-    const tab = [...linhas].sort((p, q) => {
+    const ordenar = (lst) => [...lst].sort((p, q) => {
       if (T.col === "nome") return p.l.nome.localeCompare(q.l.nome, "pt-BR") * T.dir;
       const va = val(p, T.col), vb = val(q, T.col);
-      if (va == null && vb == null) return 0;
+      if (va == null && vb == null) return (q.a.share || 0) - (p.a.share || 0);
       if (va == null) return 1;
       if (vb == null) return -1;
       return (va - vb) * T.dir || ((q.a.share || 0) - (p.a.share || 0));
     });
-    const th = (c, rot, cls = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`;
-    const detalheHtml = `
-        <div class="tab-wrap"><table class="tg">
-          <thead>
-            <tr class="grupo">
-              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
-              <th colspan="2" class="g">Posição Akad</th>
-              <th colspan="2" class="g">Participação</th>
-              <th colspan="4" class="g">Prêmio emitido Akad</th>
-              <th colspan="2" class="g">Mercado</th>
-              <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>
-            </tr>
-            <tr>
-              ${th("pos", "Lugar", "n")}${th("mov", "Mov.", "n")}
-              ${th("share", "Atual", "n g1")}${th("dShare", "Var. p.p.", "n")}
-              ${th("pe", "Valor", "n g1")}${th("dPe", "Var. R$", "n")}${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
-              ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
-              <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}
-            </tr>
-          </thead>
-          <tbody>${tab.map((x) => `
-            <tr data-linha="${x.l.id}" class="${S.geralSel === x.l.id ? "sel" : ""}${x.temAkad ? "" : " semak"}">
+    const disputa = ordenar(linhas.filter((x) => x.temAkad && x.n > 1));
+    const semConc = ordenar(linhas.filter((x) => x.temAkad && x.n === 1));
+    const semA = ordenar(linhas.filter((x) => !x.temAkad));
+    // Escala definida só pelas linhas com concorrência (o 100% do DPEM não achata as demais)
+    const base = [];
+    disputa.forEach((x) => { if (x.a.share != null) base.push(x.a.share); if (x.a.shareP != null) base.push(x.a.shareP); });
+    const passoEsc = Math.min(25, niceMax((Math.max(1, ...base) * 1.05) / 4));
+    const escMax = passoEsc * 4;
+    const W = (v) => Math.min(100, (v / escMax) * 100);
+    const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
+    const nCols = det ? 15 : 8;
+    const barra = (x) => {
+      const a = x.a;
+      if (!x.temAkad) return `<span class="pb-track"><span class="pb-semtxt" title="${x.n ? `${x.n} seguradoras com prêmio no ramo` : "sem dados de mercado"}">Akad sem prêmio</span></span>`;
+      const est = a.share != null && a.share >= escMax;
+      const estP = a.shareP != null && a.shareP >= escMax;
+      return `<span class="pb-track">
+          <span class="pb-fill${est ? " est" : ""}" style="width:${W(a.share || 0)}%"></span>
+          ${a.shareP != null ? `<span class="pb-ant${estP ? " est" : ""}" style="left:${W(a.shareP)}%" title="${perP}: ${pctPart(a.shareP)}"></span>` : ""}
+          ${est ? `<span class="pb-quebra">${x.n === 1 ? "única no ramo" : "fora da escala"}</span>` : ""}
+        </span>`;
+    };
+    const linhaTab = (x, grupo) => `
+            <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
               <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
-              <td class="n">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
-              <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
-              <td class="n g1"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
+              <td class="barra g1">${barra(x)}</td>
+              <td class="n"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n">${ppSeta(x.a.dShare)}</td>
-              <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
-              <td class="n">${rsSeta(x.dPe)}</td>
-              <td class="n">${crescNeutro(x.a.cresc)}</td>
+              <td class="n g1">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
+              <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
+              ${det ? `<td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>` : ""}
+              <td class="n${det ? "" : " g1"}">${rsSeta(x.dPe)}</td>
+              ${det ? `<td class="n">${crescNeutro(x.a.cresc)}</td>
               <td>${vsTexto(x.a.cresc, x.crescM)}</td>
               <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
               <td class="n">${crescNeutro(x.crescM)}</td>
-              <td class="g1 ref">${x.ref ? `${esc(nomeEnt(x.ref))}${x.lider === AKAD ? ' <span class="sub-i">atrás da Akad</span>' : ""}` : '<span class="sub-i">não há outra seguradora</span>'}</td>
-              <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>
-            </tr>`).join("")}
+              <td class="g1 ref" title="${x.ref ? esc(nomeEnt(x.ref)) : ""}">${x.ref ? `${esc(nomeEnt(x.ref))}${x.lider === AKAD ? ' <span class="sub-i">atrás da Akad</span>' : ""}` : '<span class="sub-i">não há outra seguradora</span>'}</td>
+              <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>` : ""}
+            </tr>`;
+    const grupoTab = (tit, lst, cls) => lst.length ? `<tr class="tg-sep" aria-hidden="true"><td colspan="${nCols}">${tit}</td></tr>${lst.map((x) => linhaTab(x, cls)).join("")}` : "";
+    const th = (c, rot, cls = "") => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`;
+    const corpoHtml = `
+        <p class="legenda-pb legenda-topo"><span class="lg-i"><span class="lg-fill"></span>Participação em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
+        <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
+          <thead>
+            <tr class="grupo">
+              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
+              <th colspan="3" class="g">Participação da Akad</th>
+              <th colspan="2" class="g">Posição da Akad</th>
+              <th colspan="${det ? 4 : 1}" class="g">Prêmio emitido Akad</th>
+              ${det ? `<th colspan="2" class="g">Mercado</th>
+              <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>` : ""}
+            </tr>
+            <tr>
+              <th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>
+              ${th("share", "Atual", "n")}${th("dShare", "Var. p.p.", "n")}
+              ${th("pos", "Lugar", "n g1")}${th("mov", "Mov.", "n")}
+              ${det ? th("pe", "Valor", "n g1") : ""}${th("dPe", "Var. R$", det ? "n" : "n g1")}
+              ${det ? `${th("cresc", "Cresc.", "n")}${th("vs", "vs. mercado", "")}
+              ${th("mercado", "Valor", "n g1")}${th("crescM", "Cresc.", "n")}
+              <th class="g1">Seguradora</th>${th("refShare", "Part.", "n")}` : ""}
+            </tr>
+          </thead>
+          <tbody>
+            ${disputa.map((x) => linhaTab(x, "")).join("")}
+            ${grupoTab("Sem concorrência no período", semConc, "suave")}
+            ${grupoTab("Sem prêmio da Akad no período", semA, "sem")}
           </tbody>
         </table></div>
-        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1% · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação.</p>`;
+        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1%${det ? ' · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação' : ""}.</p>`;
 
-    const ordAtivo = S.geralTab ? Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === S.geralTab.col && ORD_TAB[k].dir === S.geralTab.dir) : ord;
+    const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
     const ordBtn = (k, rot) => `<button type="button" data-ord="${k}" aria-pressed="${ordAtivo === k}">${rot}</button>`;
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
@@ -761,9 +735,9 @@
         <div class="sec-cab">
           <div>
             <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
-            <p class="sec-sub">${modo === "resumo"
-              ? "Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe."
-              : "Todos os indicadores de cada ramo: participação, prêmio da Akad, mercado e maior concorrente. Clique no título de uma coluna para ordenar."}</p>
+            <p class="sec-sub">${det
+              ? "Mesma lista do Resumo, com prêmio da Akad, mercado e maior concorrente. Clique num ramo para ver o detalhe ou no título de uma coluna para ordenar."
+              : "Quanto do mercado de cada ramo é da Akad. Clique num ramo para ver o detalhe ou no título de uma coluna para ordenar."}</p>
           </div>
           <div class="pr-ctrls">
             <div class="ctrl-ord"><span class="ctrl-rot">Ver</span>
@@ -776,17 +750,17 @@
             </div>
           </div>
         </div>
-        ${modo === "resumo" ? resumoHtml : detalheHtml}
+        ${corpoHtml}
       </section>`;
 
     el.innerHTML = contexto + panorama + movimentos + participacao;
 
     // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
-    el.querySelectorAll(".mv-item, .pb, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
+    el.querySelectorAll(".mv-item, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
     el.querySelectorAll("tbody tr[data-linha]").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest("button")) abrirLinha(tr.dataset.linha); }));
     // Destaque sincronizado entre destaques, gráfico e tabela
     const hl = (id, on) => el.querySelectorAll(`[data-linha="${id}"]`).forEach((n) => n.classList.toggle("hl", on));
-    el.querySelectorAll(".pb, tbody tr[data-linha], .mv-item").forEach((n) => {
+    el.querySelectorAll("tbody tr[data-linha], .mv-item").forEach((n) => {
       n.addEventListener("mouseenter", () => hl(n.dataset.linha, true));
       n.addEventListener("mouseleave", () => hl(n.dataset.linha, false));
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
