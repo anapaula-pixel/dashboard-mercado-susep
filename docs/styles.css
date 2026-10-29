@@ -1008,3 +1008,5 @@ body { color: var(--ink); }
 .rod-col a:hover { text-decoration-color: #FFFFFF; }
 @media (max-width: 1000px) { .rod-in { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .rod-in { grid-template-columns: 1fr; } }
+#aba-geral .pr-cab .pr-ctrls { width: 100%; }
+#aba-geral .sec > .sec-cab .pr-leg { margin: 0 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px 18px; }
