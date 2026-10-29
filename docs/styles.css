@@ -976,3 +976,6 @@ body { color: var(--ink); }
 #aba-geral .pan-baixo .kc-tit { font-size: 20px; }
 #aba-geral .mv-tit { flex: 1; }
 #aba-geral .mv-col-rot { font-size: 11px; font-weight: 600; color: var(--g-label); letter-spacing: .04em; padding-right: 8px; cursor: help; }
+#aba-geral .cab-geral p { max-width: none; }
+#aba-geral .cab-geral p a { color: inherit; text-decoration: underline; text-decoration-color: var(--g-label); text-underline-offset: 2px; }
+#aba-geral .cab-geral p a:hover { color: var(--magenta); text-decoration-color: currentColor; }
