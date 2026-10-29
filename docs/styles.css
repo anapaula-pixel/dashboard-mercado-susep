@@ -996,3 +996,15 @@ body { color: var(--ink); }
 #aba-geral table.tg-det td.nome { min-width: 0; }
 #aba-geral .legenda-topo .lg-dica { color: var(--g-label); }
 #aba-geral .legenda-topo .lg-hover { margin-left: auto; font-style: italic; }
+/* Footer em azul escuro Akad */
+.rodape { background: #062854; border-top: 0; color: #DEE7F1; margin-top: 32px; }
+.rod-in { grid-template-columns: 1fr 1.2fr 1.4fr; gap: 24px 48px; padding-top: 36px; padding-bottom: 40px; }
+.rod-marca b { color: #FFFFFF; }
+.rod-marca span { color: #B8C8DC; }
+.rod-col h2 { color: #7C97B8; }
+.rod-col ul { color: #DEE7F1; }
+.rod-col li::marker { color: #7C97B8; }
+.rod-col a { color: #FFFFFF; text-decoration: underline; text-decoration-color: #7C97B8; text-underline-offset: 2px; white-space: nowrap; }
+.rod-col a:hover { text-decoration-color: #FFFFFF; }
+@media (max-width: 1000px) { .rod-in { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .rod-in { grid-template-columns: 1fr; } }
