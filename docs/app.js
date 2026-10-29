@@ -382,6 +382,7 @@
     tCrescM: "Quanto o ramo inteiro cresceu ou caiu, em porcentagem, contra os mesmos meses do ano anterior.",
     tRefShare: "Market share do maior concorrente no ramo no período escolhido.",
     universo: "Sobre os dados desta página:",
+    ufBase: "Os valores por estado são de prêmio direto, a informação que a SUSEP publica por UF. Por isso o total pode ficar um pouco diferente do GWP da Visão geral. A comparação é com os mesmos meses do ano anterior.",
     ufConc: "Quanto das vendas da Akad (prêmio direto) está concentrado em cada estado. Os 5 maiores:",
     ufCresc: "Estados em que as vendas da Akad foram maiores que nos mesmos meses do ano anterior:",
     ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
@@ -1221,10 +1222,11 @@
     const nomeLider = (e) => (e === AKAD ? '<b class="ak">Akad</b>' : e ? esc(nomeCurtoCia(nomeEnt(e))) : "–");
 
     const sel = S.uf === "todos" || S.uf == null ? null : +S.uf;
-    const subtitulo = `Prêmio direto por estado (a SUSEP não abre o GWP por UF), ${per}${perP ? ` comparado com ${perP}` : ""}.`;
+    const notaBase = `<button type="button" class="ajuda" data-ajuda="ufBase" aria-label="Sobre os dados por estado">?</button>`;
+    const subtitulo = `Veja onde a Akad vende, onde é mais forte e onde há espaço para crescer. ${notaBase}`;
 
     if (!(totM > 0)) {
-      el.innerHTML = `<div class="cab-aba"><div><h2>Por estado</h2><p>${subtitulo}</p></div></div><div class="card vazio-bloco"><h2>Sem dados para este período</h2></div>`;
+      el.innerHTML = `<div class="cab-aba"><div><h2>Desempenho por estado</h2><p>${subtitulo}</p></div></div><div class="card vazio-bloco"><h2>Sem dados para este período</h2></div>`;
       return;
     }
 
@@ -1255,7 +1257,7 @@
       const tabela = [...UF].sort((a, b) => b.akad - a.akad || b.merc - a.merc);
 
       el.innerHTML = `
-        <div class="cab-aba"><div><h2>Por estado</h2><p>${subtitulo}</p></div></div>
+        <div class="cab-aba"><div><h2>Desempenho por estado</h2><p>${subtitulo}</p></div></div>
         <div class="uf-kpis">
           <section class="card uf-k"><h2 class="uf-kt">Concentração <button type="button" class="ajuda" data-ajuda="ufConc" data-lista="${esc(comAkad.slice(0, 5).map((x) => `${x.nome}: ${pct(x.pct)} das vendas da Akad`).join("|"))}" aria-label="O que é concentração?">?</button></h2>
             <div class="uf-kl"><span class="uf-kv">${pct(top3[0]?.pct)}</span><span class="uf-ks">em ${top3[0]?.u || "–"}</span></div>
@@ -1334,7 +1336,7 @@
       .sort((a, b) => (ordR === "akad" ? b.akad - a.akad || b.merc - a.merc : b.merc - a.merc));
     const maxM = Math.max(1, ...linhas.map((y) => y.merc));
     el.innerHTML = `
-      <div class="cab-aba"><div><a href="#uf" class="uf-volta" id="uf-volta"><span aria-hidden="true">←</span> Todos os estados</a><h2>${esc(x.nome)}</h2><p>O que se vende no estado nos ramos em que a Akad atua e onde a Akad está em cada um. ${subtitulo}</p></div></div>
+      <div class="cab-aba"><div><a href="#uf" class="uf-volta" id="uf-volta"><span aria-hidden="true">←</span> Todos os estados</a><h2>${esc(x.nome)}</h2><p>O que mais se vende no estado, entre os ramos em que a Akad atua, e a posição da Akad em cada um. ${notaBase}</p></div></div>
       <div class="uf-kpis">
         <section class="card uf-k"><h2 class="uf-kt">Vendas da Akad em ${x.u}</h2>
           <div class="uf-kl"><span class="uf-kv">${reais(x.akad)}</span>${varCor(x.cres)}</div>
