@@ -549,8 +549,8 @@
 
     // A1. Vendas da Akad
     const cardVendas = `
-      <section class="card kc" aria-label="Vendas da Akad">
-        <h2 class="kc-tit">Vendas da Akad ${ajuda("premio", "GWP")}</h2>
+      <section class="card kc" aria-label="GWP da Akad">
+        <h2 class="kc-tit">GWP da Akad ${ajuda("premio", "GWP")}</h2>
         <div class="kc-linha"><span class="kc-val">${reais(ak.pe)}</span>${varKpi(ak.cresc, "%")}</div>
         <p class="kc-aux">${ak.peP > 0 ? `${reais(ak.peP)} em ${perP}` : "Sem prêmio no período anterior para comparar"}</p>
       </section>`;
@@ -558,14 +558,9 @@
     // A2. Participação de mercado
     const cardPart = `
       <section class="card kc" aria-label="Participação de mercado">
-        <h2 class="kc-tit">Participação de mercado ${ajuda("share", "participação de mercado")}</h2>
+        <h2 class="kc-tit">Participação de mercado <button type="button" class="ajuda" data-ajuda="share" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button></h2>
         <div class="kc-linha"><span class="kc-val">${pct(ak.share, 2)}</span>${varKpi(ak.dShare, "pp")}</div>
         <p class="kc-aux">${ak.shareP != null ? `${pct(ak.shareP, 2)} em ${perP}` : "Sem participação no período anterior para comparar"}</p>
-        <dl class="kc-fatos">
-          <div><dt>Mercado nos ${nL} ramos</dt><dd>${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 999 ? "> +999" : (crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : "") + nf1.format(Math.abs(crescMerc))}%)` : ""}</dd></div>
-          <div><dt>Posição da Akad ${ajuda("pos", "posição")}</dt><dd>${ak.pos ? `${ak.pos}º lugar` : "sem prêmio"}${ak.posP && ak.pos ? ` <span class="kc-ant">(anterior: ${ak.posP}º)</span>` : ""}</dd></div>
-          <div><dt>Liderança <button type="button" class="ajuda" data-ajuda="lider" data-lista="${esc(lidera.length ? lidera.map((x) => `${x.l.nome}: ${pctPart(x.a.share)} do mercado`).join("|") : "Nenhum ramo no período")}" aria-label="O que é liderança? Ramos: ${esc(lidera.map((x) => x.l.nome).join(", ") || "nenhum")}">?</button></dt><dd>${lidera.length} de ${nL} ramos</dd></div>
-        </dl>
       </section>`;
 
     // A3. Sinistralidade: comparação com a própria Akad (subir é ruim)
@@ -577,7 +572,6 @@
         <h2 class="kc-tit">Sinistralidade ${ajuda("sin", "sinistralidade")}</h2>
         <div class="kc-linha"><span class="kc-val">${pct(ak.sin)}</span>${varKpi(dSin, "pp", true)}</div>
         <p class="kc-aux">${sinP != null ? `${pct(sinP)} em ${perP}` : "Sem período anterior para comparar"}</p>
-        <p class="kc-aux kc-nota">${ak.sin != null ? `De cada R$ 100 em prêmio ganho, R$ ${nf0.format(ak.sin)} viraram sinistros.` : "Sem prêmio ganho no período para calcular."}</p>
       </section>`;
 
     // A4. Evolução das vendas: mesmo recorte de meses em cada ano
@@ -605,15 +599,34 @@
       </li>`;
     }).join("");
     const cardEvo = `
-      <section class="card kc kc-evo" aria-label="Evolução das vendas">
-        <div class="kc-cab"><h2 class="kc-tit">Evolução das vendas</h2><span class="kc-aux">${recorte}</span></div>
+      <section class="card kc kc-evo" aria-label="GWP ano a ano">
+        <div class="kc-cab"><h2 class="kc-tit">GWP ano a ano</h2><span class="kc-aux">${recorte}</span></div>
         <ol class="ev-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
+      </section>`;
+
+    // A5. Onde está o GWP da Akad: os 5 maiores ramos da carteira
+    const carteira = linhas.filter((x) => x.a.pe > 0).sort((p, q) => q.a.pe - p.a.pe);
+    const top5 = carteira.slice(0, 5);
+    const pesoTop = ak.pe > 0 ? (top5.reduce((t, x) => t + x.a.pe, 0) / ak.pe) * 100 : null;
+    const maxPeso = top5.length ? top5[0].a.pe : 1;
+    const cardCart = `
+      <section class="card kc kc-cart" aria-label="Onde está o GWP da Akad">
+        <div class="kc-cab"><h2 class="kc-tit">Onde está o GWP da Akad</h2><span class="kc-aux">top 5 ramos</span></div>
+        <ul class="ct-lista">${top5.map((x) => `
+          <li><button type="button" class="ct-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: ${pctPart((x.a.pe / ak.pe) * 100)} do GWP da Akad, ${reais(x.a.pe)}. Abrir detalhe">
+            <span class="ct-nome">${esc(x.l.nome)}</span>
+            <span class="ct-tr" aria-hidden="true"><i style="width:${(x.a.pe / maxPeso) * 100}%"></i></span>
+            <span class="ct-pct" title="${reais(x.a.pe)} em ${per}">${nf1.format((x.a.pe / ak.pe) * 100)}%</span>
+            ${varKpi(x.a.cresc, "%")}
+          </button></li>`).join("")}
+        </ul>
+        <p class="kc-aux ct-nota">${pesoTop != null ? `Esses ${top5.length} ramos somam ${nf0.format(pesoTop)}% do GWP da Akad. Variação contra ${perP || "o período anterior"}.` : ""}</p>
       </section>`;
 
     const panorama = `
       <div class="pan">
         <div class="kpi3">${cardVendas}${cardPart}${cardSin}</div>
-        ${cardEvo}
+        <div class="pan-baixo">${cardEvo}${cardCart}</div>
       </div>`;
 
     // B. Movimentos
@@ -621,16 +634,21 @@
       <li><button type="button" class="mv-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: participação ${pctPart(x.a.share)}, abrir detalhe">
         <span class="mv-nome">${esc(x.l.nome)}</span>
         <span class="mv-val">${tipo === "lider" ? `<b>${pctPart(x.a.share)}</b> de participação` : `${pctPart(x.a.shareP)} <span aria-hidden="true">→</span> <b>${pctPart(x.a.share)}</b>`}</span>
-        <span class="mv-var">${tipo === "lider" ? (x.n === 1 ? '<span class="vs0">única seguradora</span>' : ppSeta(x.a.dShare)) : ppSeta(x.a.dShare)}</span>
+        <span class="mv-var mv-gwp" data-tip="${esc(`<b>GWP da Akad em ${esc(x.l.nome)}</b><div>${per}: ${reais(x.a.pe)}</div>${x.a.peP > 0 ? `<div>${perP}: ${reais(x.a.peP)}</div>` : ""}${x.a.cresc != null ? `<div>Variação: ${x.a.cresc > 999 ? "> +999" : (x.a.cresc > 0 ? "+" : x.a.cresc < 0 ? "−" : "") + nf1.format(Math.abs(x.a.cresc))}%</div>` : ""}<div>Market share: ${pctPart(x.a.share)}${x.a.dShare != null ? ` (${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.)` : ""}</div>`)}"><small>GWP</small> ${reais(x.a.pe)}</span>
       </button></li>`;
+    const ICO_MV = {
+      lider: '<svg width="18" height="20" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="#F5C542" stroke="#C78800" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">1</text></svg>',
+      g: '<span class="mv-ico up" aria-hidden="true">↑</span>',
+      p: '<span class="mv-ico down" aria-hidden="true">↓</span>',
+    };
     const coluna = (tit, lst, tipo, vazio) => `
       <div class="mv-col">
-        <h3>${tit}</h3>
+        <h3>${ICO_MV[tipo]}${tit}</h3>
         ${lst.length ? `<ul>${lst.map((x) => item(x, tipo)).join("")}</ul>` : `<p class="mv-vazio">${vazio}</p>`}
       </div>`;
     const movimentos = `
       <section class="card sec" aria-labelledby="h-mov">
-        <h2 id="h-mov" class="sec-tit">Movimentos de participação</h2>
+        <h2 id="h-mov" class="sec-tit">Destaques do período</h2>
         <div class="mv-grade">
           ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhum ramo no período.")}
           ${coluna("Maiores ganhos", ganhos, "g", "Nenhum ramo ganhou participação no período.")}
@@ -760,7 +778,12 @@
     el.innerHTML = contexto + panorama + movimentos + participacao;
 
     // Interações: um clique em qualquer linha (destaques, gráfico ou tabela) abre o detalhe
-    el.querySelectorAll(".mv-item, .lk").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
+    el.querySelectorAll(".mv-item, .lk, .ct-item").forEach((b) => b.addEventListener("click", () => abrirLinha(b.dataset.linha || b.dataset.abrir)));
+    el.querySelectorAll(".mv-gwp").forEach((g) => {
+      g.addEventListener("mouseenter", (ev) => mostrarTip(g.dataset.tip, ev));
+      g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev));
+      g.addEventListener("mouseleave", esconderTip);
+    });
     el.querySelectorAll("tbody tr[data-linha]").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest("button")) abrirLinha(tr.dataset.linha); }));
     // Destaque sincronizado entre destaques, gráfico e tabela
     const hl = (id, on) => el.querySelectorAll(`[data-linha="${id}"]`).forEach((n) => n.classList.toggle("hl", on));
