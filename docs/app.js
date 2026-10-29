@@ -388,7 +388,8 @@
     ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
-    trBcg: "Matriz BCG adaptada aos ramos da Akad. Eixo vertical: quanto o mercado do ramo cresceu contra os mesmos meses do ano anterior; a linha de corte é o crescimento do mercado somando todos os ramos acompanhados. Eixo horizontal: share relativo (GWP da Akad dividido pelo GWP do maior concorrente). O corte fica em 0,25x, ou seja, a Akad com pelo menos um quarto do tamanho do líder.",
+    trBcg: "Mapa inspirado na matriz BCG, adaptado a mercados fragmentados. Na BCG clássica, só o líder do mercado (1x) conta como posição forte; aqui o corte é 0,25x, ou seja, a Akad com pelo menos um quarto do tamanho do maior concorrente. Eixo vertical: crescimento médio anual do mercado do ramo nos últimos 3 anos (12 meses até o fim do período contra os mesmos 12 meses de 3 anos antes). A linha de corte é a média dos ramos acompanhados.",
+    trCresc: "Quanto o mercado do ramo cresceu por ano, em média, nos últimos 3 anos: 12 meses até o fim do período escolhido contra os mesmos 12 meses de 3 anos antes. É o crescimento usado para posicionar o ramo no mapa.",
     trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
   };
@@ -834,12 +835,23 @@
     return IDX.linhaPorId[sel].nome;
   }
   // Página "Todos os ramos": um card por ramo, com o que ele cobre e onde a Akad está
-  // Todos os ramos: matriz BCG (crescimento do mercado x share relativo), equilíbrio da carteira e tabela comparativa
+  // Todos os ramos: mapa de portfólio (crescimento médio do mercado x share relativo), equilíbrio da carteira e tabela comparativa
+  // Crescimento médio anual do mercado: últimos 12 meses até o fim do período contra 12 meses de N anos antes (N = 3, ou menos se faltar histórico)
+  function crescMedio(ramos, b) {
+    const ag = total(agg(ramos, b - 11, b))[0];
+    if (!(ag > 0)) return null;
+    // se o ramo não existia 3 anos atrás, usa o maior intervalo disponível (2 anos ou 1 ano)
+    for (let anos = Math.min(3, Math.floor((b - 11) / 12)); anos >= 1; anos--) {
+      const an = total(agg(ramos, b - 11 - 12 * anos, b - 12 * anos))[0];
+      if (an > 0) return { v: (Math.pow(ag / an, 1 / anos) - 1) * 100, anos };
+    }
+    return null;
+  }
   const QUAD = {
-    est: { nome: "Estrelas", cor: "#319C00", desc: "Akad forte num mercado que cresce rápido. Investir para manter." },
-    vac: { nome: "Vacas leiteiras", cor: "#1C4173", desc: "Akad forte num mercado maduro. Gera caixa; defender posição." },
-    int: { nome: "Interrogações", cor: "#E3175E", desc: "Mercado cresce rápido, Akad pequena. Escolher onde apostar." },
-    aba: { nome: "Abacaxis", cor: "#9E9E9E", desc: "Akad pequena num mercado lento. Rever presença." },
+    est: { nome: "Forte em mercado em alta", curto: "Forte · em alta", cor: "#319C00", desc: "A Akad tem posição relevante e o ramo cresce acima da média." },
+    vac: { nome: "Forte em mercado estável", curto: "Forte · estável", cor: "#1C4173", desc: "A Akad tem posição relevante e o ramo cresce abaixo da média ou encolhe." },
+    int: { nome: "Pequena em mercado em alta", curto: "Pequena · em alta", cor: "#E3175E", desc: "A Akad ainda é pequena e o ramo cresce acima da média." },
+    aba: { nome: "Pequena em mercado estável", curto: "Pequena · estável", cor: "#9E9E9E", desc: "A Akad é pequena e o ramo cresce abaixo da média ou encolhe." },
   };
   const QORD = ["est", "vac", "int", "aba"];
   const CORTE_REL = 0.25;
@@ -854,19 +866,23 @@
     const curto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros Corporativos|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
     // mercado somado dos ramos acompanhados: define o corte de crescimento
     const RT = resumo(IDX.linhas.flatMap((l) => l.idx), P);
-    const cMed = cresc(RT.tc[0], RT.tp[0]);
+    const cMedO = crescMedio(IDX.linhas.flatMap((l) => l.idx), P.b);
+    const cMed = cMedO ? cMedO.v : null;
+    const nAnos = cMedO ? cMedO.anos : 3;
     const corteY = cMed != null ? cMed : 0;
     const itens = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
-      const crM = cresc(R.tc[0], R.tp[0]);
+      const cm = crescMedio(l.idx, P.b);
+      const crM = cm ? cm.v : null;
+      const anosM = cm ? cm.anos : null;
       const lid = R.rk[0];
       const conc = R.rk.find((k) => k !== AKAD);
       const peC = conc != null ? (R.cur.get(conc) || [0])[0] : 0;
       const rel = a.pe > 0 ? (peC > 0 ? a.pe / peC : Infinity) : null;
       let q = null;
       if (a.pe > 0 && crM != null) q = rel >= CORTE_REL ? (crM >= corteY ? "est" : "vac") : (crM >= corteY ? "int" : "aba");
-      return { l, R, a, crM, lid, conc, rel, q, merc: R.tc[0], n: R.rk.length, akLidera: lid === AKAD && a.pe > 0, tem: a.pe > 0 };
+      return { l, R, a, crM, anosM, lid, conc, rel, q, merc: R.tc[0], n: R.rk.length, akLidera: lid === AKAD && a.pe > 0, tem: a.pe > 0 };
     });
     const naMatriz = itens.filter((x) => x.q);
     const fora = itens.filter((x) => !x.q);
@@ -905,14 +921,14 @@
       nome: (x) => x.l.nome, q: (x) => (x.q ? QORD.indexOf(x.q) : 9), merc: (x) => x.merc, crM: (x) => x.crM,
       share: (x) => x.a.share, dShare: (x) => x.a.dShare, pos: (x) => x.a.pos, rel: (x) => (x.rel === Infinity ? 1e9 : x.rel),
     };
-    const ths = [["nome", "Ramo", ""], ["q", "Quadrante", ""], ["merc", "Mercado", "n", "tMerc"], ["crM", "Cresc. do mercado", "n", "tCrescM"], ["share", "Market share", "n", "tShare"], ["dShare", "Variação", "n", "tPP"], ["pos", "Posição", "n", "tRank"], ["rel", "Share relativo", "n", "trRel"], [null, "Quem lidera", ""]];
-    const tagQ = (x) => x.q ? `<span class="tr-tag" style="--c:${QUAD[x.q].cor}"><i></i>${QUAD[x.q].nome}</span>` : `<span class="sub-i">${x.tem ? "sem base" : "sem prêmio"}</span>`;
+    const ths = [["nome", "Ramo", ""], ["q", "Quadrante", ""], ["merc", "Mercado", "n", "tMerc"], ["crM", "Cresc. médio do mercado", "n", "trCresc"], ["share", "Market share", "n", "tShare"], ["dShare", "Variação", "n", "tPP"], ["pos", "Posição", "n", "tRank"], ["rel", "Share relativo", "n", "trRel"], [null, "Quem lidera", ""]];
+    const tagQ = (x) => x.q ? `<span class="tr-tag" style="--c:${QUAD[x.q].cor}"><i></i>${QUAD[x.q].curto}</span>` : `<span class="sub-i">${x.tem ? "sem histórico" : "sem prêmio"}</span>`;
     const linhaTr = (x) => `
       <tr data-linha="${x.l.id}" data-q="${x.q || ""}" data-lider="${x.akLidera ? 1 : 0}" data-sem="${x.tem ? 0 : 1}" data-busca="${esc((x.l.nome + " " + x.l.ramos.join(" ")).toLowerCase())}">
         <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
         <td>${tagQ(x)}</td>
         <td class="n">${x.merc > 0 ? reais(x.merc) : '<span class="sub-i">sem dados</span>'}</td>
-        <td class="n">${crescNeutro(x.crM)}</td>
+        <td class="n"${x.anosM && x.anosM < nAnos ? ` title="Média de ${x.anosM} ${x.anosM === 1 ? "ano" : "anos"}: o ramo não tinha prêmio antes"` : ""}>${x.crM == null ? '<span class="sub-i" title="Sem histórico suficiente">sem histórico</span>' : crescNeutro(x.crM) + (x.anosM && x.anosM < nAnos ? "*" : "")}</td>
         <td class="n"><b>${x.tem ? pctPart(x.a.share) : "–"}</b></td>
         <td class="n">${x.tem ? ppSeta(x.a.dShare) : '<span class="var zero">–</span>'}</td>
         <td class="n">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">–</span>'}</td>
@@ -935,18 +951,18 @@
       <div class="cab-aba">
         <div>
           <h2>Todos os ramos</h2>
-          <p>Compare os ${IDX.linhas.length} mercados em que a Akad atua e descubra onde ela está forte, onde perde espaço e onde há oportunidade. ${per}. ${ajuda("trBcg", "matriz BCG")}</p>
+          <p>Compare os ${IDX.linhas.length} mercados em que a Akad atua e descubra onde ela está forte, onde perde espaço e onde há oportunidade. ${per}. ${ajuda("trBcg", "mapa de portfólio")}</p>
         </div>
       </div>
       <div class="tr-topo">
         <section class="tr-card" aria-labelledby="h-bcg">
-          <div class="tr-cab"><h3 id="h-bcg" class="tr-tit">Matriz BCG dos ramos</h3><span class="tr-nota">Bolha = GWP da Akad no ramo</span></div>
+          <div class="tr-cab"><h3 id="h-bcg" class="tr-tit">Mapa de portfólio dos ramos</h3><span class="tr-nota">Bolha = GWP da Akad no ramo</span></div>
           <div class="tr-mat" id="tr-mat"></div>
-          <p class="tr-rodape">Share relativo = GWP da Akad ÷ GWP do maior concorrente no ramo. Linhas de corte em ${fmtX(CORTE_REL)} e no crescimento do mercado dos ${IDX.linhas.length} ramos (${crescNeutro(cMed)}). Clique numa bolha para abrir o ramo.${fora.length ? ` Fora da matriz (Akad sem prêmio): ${fora.map((x) => esc(rotCurto(x.l.nome))).join(", ")}.` : ""}</p>
+          <p class="tr-rodape">Inspirado na matriz BCG, com cortes adaptados a mercados fragmentados. Posição relevante = Akad com pelo menos ${fmtX(CORTE_REL)} do GWP do maior concorrente (GWP da Akad ÷ GWP do maior concorrente). Crescimento = média anual dos últimos ${nAnos} anos (menos quando o ramo é mais novo); a linha de corte é a média dos ${IDX.linhas.length} ramos (${crescNeutro(cMed)} ao ano). Clique numa bolha para abrir o ramo.${fora.length ? ` Fora do mapa: ${fora.map((x) => esc(rotCurto(x.l.nome)) + (x.tem ? " (sem histórico)" : " (Akad sem prêmio)")).join(", ")}.` : ""}</p>
         </section>
         <section class="tr-card" aria-labelledby="h-eq">
           <div class="tr-cab"><h3 id="h-eq" class="tr-tit">Equilíbrio da carteira</h3></div>
-          <p class="tr-sub">Como o GWP da Akad (${reais(totA)}) se divide entre os quadrantes da matriz. A variação é contra os mesmos meses do ano anterior.</p>
+          <p class="tr-sub">Como o GWP da Akad (${reais(totA)}) se divide entre os quadrantes do mapa. A variação é contra os mesmos meses do ano anterior.</p>
           <div class="tr-eq-bar">${barraEq}</div>
           <ul class="tr-eq">${linhasEq}</ul>
         </section>
@@ -986,7 +1002,7 @@
     const isDark = document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
     const fundo = isDark ? { est: "rgba(49,156,0,.14)", int: "rgba(227,23,94,.12)", vac: "rgba(124,151,184,.16)", aba: "rgba(158,158,158,.10)" } : { est: "#F1FCEB", int: "#FFF2F6", vac: "#EEF3F8", aba: "#F7F7F7" };
     const corQ = (k) => (isDark && k === "vac" ? "#7C97B8" : QUAD[k].cor);
-    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Matriz BCG: crescimento do mercado de cada ramo contra o share relativo da Akad">`;
+    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Mapa de portfólio: crescimento médio do mercado de cada ramo contra o share relativo da Akad">`;
     s += `<rect x="${L}" y="${T}" width="${xc - L}" height="${yc - T}" fill="${fundo.est}"/><rect x="${xc}" y="${T}" width="${W - Rr - xc}" height="${yc - T}" fill="${fundo.int}"/><rect x="${L}" y="${yc}" width="${xc - L}" height="${H - B - yc}" fill="${fundo.vac}"/><rect x="${xc}" y="${yc}" width="${W - Rr - xc}" height="${H - B - yc}" fill="${fundo.aba}"/>`;
     const passo = ymax - ymin > 60 ? 20 : 10;
     for (let v = Math.ceil(ymin / passo) * passo; v <= ymax; v += passo) s += `<line x1="${L}" x2="${W - Rr}" y1="${ys(v)}" y2="${ys(v)}" class="tr-grid"/><text x="${L - 6}" y="${ys(v) + 4}" text-anchor="end" class="tr-ax">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}%</text>`;
@@ -995,15 +1011,15 @@
     s += `<line x1="${xs(1)}" x2="${xs(1)}" y1="${T}" y2="${H - B}" class="tr-um"/>`;
     s += `<line x1="${xc}" x2="${xc}" y1="${T}" y2="${H - B}" class="tr-corte"/><line x1="${L}" x2="${W - Rr}" y1="${yc}" y2="${yc}" class="tr-corte"/>`;
     s += `<text x="${(W + L) / 2}" y="${H - 6}" text-anchor="middle" class="tr-ax-t">${peq ? "← Share relativo vs. maior concorrente" : "← Share relativo: Akad comparada ao maior concorrente"}</text>`;
-    s += `<text transform="translate(12,${(H - B + T) / 2}) rotate(-90)" text-anchor="middle" class="tr-ax-t">Crescimento do mercado →</text>`;
+    s += `<text transform="translate(12,${(H - B + T) / 2}) rotate(-90)" text-anchor="middle" class="tr-ax-t">Crescimento médio do mercado (ao ano) →</text>`;
     const ocup = [];
-    const qLab = { est: [xc - 8, yc - 8, "end"], int: [W - Rr - 8, T + 16, "end"], vac: [L + 8, H - B - 8, "start"], aba: [W - Rr - 8, H - B - 8, "end"] };
+    const qLab = { est: [L + 8, T + 16, "start"], int: [W - Rr - 8, T + 16, "end"], vac: [L + 8, H - B - 8, "start"], aba: [W - Rr - 8, H - B - 8, "end"] };
     for (const k of QORD) {
       const [x, y, anc] = qLab[k];
-      const w = QUAD[k].nome.length * 8.2;
+      const w = QUAD[k].curto.length * 7.6;
       const x0 = anc === "start" ? x : x - w;
       ocup.push([x0, y - 12, x0 + w, y + 2]);
-      s += `<text x="${x}" y="${y}" text-anchor="${anc}" class="tr-q" fill="${corQ(k)}">${QUAD[k].nome.toUpperCase()}</text>`;
+      s += `<text x="${x}" y="${y}" text-anchor="${anc}" class="tr-q" fill="${corQ(k)}">${QUAD[k].curto.toUpperCase()}</text>`;
     }
     const maxA = Math.max(...naMatriz.map((x) => x.a.pe));
     const rMax = peq ? 20 : 26;
@@ -1034,7 +1050,8 @@
 
     // ----- interações
     const tipB = (x) => `<b>${esc(x.l.nome)}</b><div style="color:${corQ(x.q)};font-weight:600">${QUAD[x.q].nome}</div>
-      <div>Mercado: ${reais(x.merc)} (${x.crM > 999 ? "> +999" : (x.crM > 0 ? "+" : x.crM < 0 ? "−" : "") + nf1.format(Math.abs(x.crM))}%)</div>
+      <div>Mercado no período: ${reais(x.merc)}</div>
+      <div>Crescimento médio: ${x.crM > 999 ? "> +999" : (x.crM > 0 ? "+" : x.crM < 0 ? "−" : "") + nf1.format(Math.abs(x.crM))}% ao ano (média de ${x.anosM} ${x.anosM === 1 ? "ano" : "anos"})</div>
       <div>GWP da Akad: ${reais(x.a.pe)}</div>
       <div>Market share: ${pctPart(x.a.share)}${x.a.pos ? ` · ${x.a.pos}º de ${x.n}` : ""}</div>
       <div>Share relativo: ${x.rel === Infinity ? "única no ramo" : x.rel > 3 ? fmtX(x.rel) + " (fora da escala)" : fmtX(x.rel)}${x.lid === AKAD ? " (Akad lidera)" : x.conc != null ? ` vs. ${esc(curto(nomeEnt(x.conc)))}` : ""}</div>`;
