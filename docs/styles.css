@@ -891,3 +891,9 @@ body { color: var(--ink); }
 #aba-geral table.tg-part td.ref { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px; }
 #aba-geral table.tg-part th .ajuda { margin-left: 3px; vertical-align: middle; text-transform: none; }
 #aba-geral table.tg-part th.g .g-sub { font-weight: 400; color: var(--g-label); font-size: .74rem; margin-left: 4px; }
+#aba-geral .sec-cab { align-items: flex-start; }
+#aba-geral .pr-ctrls { gap: 12px 16px; }
+#aba-geral .pr-ord { display: inline-flex; align-items: center; gap: 8px; }
+#aba-geral .pr-sel { width: auto; min-width: 160px; height: 36px; padding: 0 32px 0 12px; font-size: .82rem; background-color: var(--surface); }
+#aba-geral .sec-cab > div:first-child { flex: 1 1 380px; min-width: 0; }
+#aba-geral .sec-cab > .pr-ctrls { flex: 0 0 auto; }
