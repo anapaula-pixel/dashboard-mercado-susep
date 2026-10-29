@@ -525,7 +525,7 @@
       <div class="cab-aba cab-geral">
         <div>
           <h2>Visão geral</h2>
-          <p>Como a Akad está no mercado de seguros, somando os <b>${nL} ramos da SUSEP</b> em que ela atua ${ajuda("universo", "ramos acompanhados")}. Os números vêm das estatísticas oficiais da SUSEP e comparam ${per} com ${perP || "o período anterior"}.</p>
+          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos dados oficiais da SUSEP.</p>
         </div>
       </div>`;
 
