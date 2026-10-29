@@ -364,7 +364,7 @@
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
     sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
     lider: "Ramos em que a Akad tem o maior GWP no período.",
-    ref: "A maior seguradora do ramo sem contar a Akad. Na maioria dos ramos é a líder; quando a Akad lidera, aparece quem vem logo atrás dela.",
+    ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Todos os dias, às 9h, o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
@@ -683,7 +683,8 @@
     const escMax = passoEsc * 4;
     const W = (v) => Math.min(100, (v / escMax) * 100);
     const ticks = [0, 1, 2, 3, 4].map((f) => passoEsc * f);
-    const nCols = det ? 13 : 7;
+    const nCols = det ? 9 : 6;
+    const nomeCurto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros Corporativos|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
     const barra = (x) => {
       const a = x.a;
       if (!x.temAkad) return `<span class="pb-track"><span class="pb-semtxt" title="${x.n ? `${x.n} seguradoras com prêmio no ramo` : "sem dados de mercado"}">Akad sem prêmio</span></span>`;
@@ -708,19 +709,15 @@
     const linhaTab = (x, grupo) => `
             <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
               <td class="nome"><div class="nome-in"><div><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></div>${seloPos(x.a.pos)}</div></td>
-              ${det ? "" : `<td class="barra g1">${barra(x)}</td>`}
-              <td class="n${det ? " g1" : ""}"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
-              <td class="n">${ppSeta(x.a.dShare)}</td>
+              ${det ? "" : `<td class="barra g1" title="${esc(x.temAkad ? `Market share em ${per}: ${pctPart(x.a.share)}${x.a.shareP != null && perP ? `\nEm ${perP}: ${pctPart(x.a.shareP)}` : ""}${x.a.dShare != null ? `\nVariação: ${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p.` : ""}` : "Akad sem prêmio no período")}">${barra(x)}</td>`}
+              <td class="n${det ? " g1" : ""}" title="${esc(x.a.dShare != null ? `Variação: ${x.a.dShare > 0 ? "+" : x.a.dShare < 0 ? "−" : ""}${nf1.format(Math.abs(x.a.dShare))} p.p. contra ${perP}` : "")}"><b>${x.temAkad ? pctPart(x.a.share) : "–"}</b></td>
               <td class="n g1">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">sem prêmio</span>'}</td>
               <td class="n">${movHtml(x.a.pos, x.a.posP)}</td>
               <td class="n g1">${x.temAkad ? reais(x.a.pe) : '<span class="sub-i">sem prêmio</span>'}</td>
               ${det ? `<td class="n">${rsSeta(x.dPe)}</td>
               <td class="n">${crescNeutro(x.a.cresc)}</td>
-              <td>${vsTexto(x.a.cresc, x.crescM)}</td>
               <td class="n g1">${x.mercado > 0 ? reais(x.mercado) : '<span class="sub-i">sem dados</span>'}</td>
-              <td class="n">${crescNeutro(x.crescM)}</td>
-              <td class="g1 ref" title="${x.ref ? esc(nomeEnt(x.ref)) : ""}">${x.ref ? `${esc(nomeEnt(x.ref))}${x.lider === AKAD ? ' <span class="sub-i">atrás da Akad</span>' : ""}` : '<span class="sub-i">não há outra seguradora</span>'}</td>
-              <td class="n">${x.refInfo ? pctPart(x.refInfo.share) : "–"}</td>` : ""}
+              <td class="g1 ref" title="${x.lider === AKAD ? (x.ref ? `2º lugar: ${esc(nomeEnt(x.ref))}` : "Única seguradora no ramo") : x.lider != null ? esc(nomeEnt(x.lider)) : ""}">${x.lider === AKAD ? '<b class="lid-ak">Akad</b>' : x.lider != null ? esc(nomeCurto(nomeEnt(x.lider))) : '<span class="sub-i">sem dados</span>'}</td>` : ""}
             </tr>`;
     const grupoTab = (tit, lst, cls) => lst.length ? `<tr class="tg-sep" aria-hidden="true"><td colspan="${nCols}">${tit}</td></tr>${lst.map((x) => linhaTab(x, cls)).join("")}` : "";
     const th = (c, rot, cls = "", aj) => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${aj ? " " + ajuda(aj, rot) : ""}</th>`;
@@ -730,20 +727,20 @@
           <thead>
             <tr class="grupo">
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
-              <th colspan="${det ? 2 : 3}" class="g">Market share da Akad</th>
+              <th colspan="${det ? 1 : 2}" class="g">Market share da Akad</th>
               <th colspan="2" class="g">Ranking do mercado</th>
-              <th colspan="${det ? 4 : 1}" class="g">Vendas da Akad <span class="g-sub">GWP</span></th>
-              ${det ? `<th colspan="2" class="g">Mercado do ramo <span class="g-sub">todas as seguradoras</span></th>
-              <th colspan="2" class="g">Maior concorrente ${ajuda("ref", "maior concorrente")}</th>` : ""}
+              <th colspan="${det ? 3 : 1}" class="g">Vendas da Akad <span class="g-sub">GWP</span></th>
+              ${det ? `<th class="g">Mercado do ramo</th>
+              <th class="g">Quem lidera ${ajuda("ref", "quem lidera")}</th>` : ""}
             </tr>
             <tr>
               ${det ? "" : `<th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>`}
-              ${th("share", "Atual", det ? "n g1" : "n", "tShare")}${th("dShare", "Variação (p.p.)", "n")}
+              ${th("share", "Atual", det ? "n g1" : "n", "tShare")}
               ${th("pos", "Posição", "n g1")}${th("mov", "Variação", "n")}
               ${th("pe", "Total", "n g1", "tPe")}
-              ${det ? `${th("dPe", "Variação (R$)", "n")}${th("cresc", "Variação (%)", "n")}${th("vs", "vs. mercado", "", "tVs")}
-              ${th("mercado", "Total", "n g1", "tMerc")}${th("crescM", "Variação (%)", "n")}
-              <th class="g1">Seguradora</th>${th("refShare", "Market share", "n", "tRefShare")}` : ""}
+              ${det ? `${th("dPe", "Variação (R$)", "n")}${th("cresc", "Variação (%)", "n")}
+              ${th("mercado", "Total", "n g1", "tMerc")}
+              <th class="g1">Seguradora</th>` : ""}
             </tr>
           </thead>
           <tbody>
@@ -752,7 +749,7 @@
             ${grupoTab("Sem prêmio da Akad no período", semA, "sem")}
           </tbody>
         </table></div>
-        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": participação positiva, abaixo de 0,1%${det ? ' · "vs. mercado": se o prêmio da Akad cresceu acima ou abaixo do mercado no ramo · crescimento em cor neutra: o ganho competitivo é medido pela variação de participação' : ""}.</p>`;
+        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": market share positivo, abaixo de 0,1%${det ? " · crescimento em cor neutra: o ganho competitivo é medido pela variação de market share" : " · passe o mouse na barra para ver a variação do market share"}.</p>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
     const ORD_ROT = { pos: "Posição no mercado", share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$" };
