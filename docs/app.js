@@ -674,7 +674,8 @@
       return (va - vb) * T.dir || ((q.a.share || 0) - (p.a.share || 0));
     });
     const disputa = ordenar(linhas.filter((x) => x.temAkad && x.n > 1));
-    const semConc = ordenar(linhas.filter((x) => x.temAkad && x.n === 1));
+    // Ramos com prêmio da Akad entram todos na mesma ordem (inclusive onde ela é a única seguradora)
+    const comAkad = ordenar(linhas.filter((x) => x.temAkad));
     const semA = ordenar(linhas.filter((x) => !x.temAkad));
     // Escala definida só pelas linhas com concorrência (o 100% do DPEM não achata as demais)
     const base = [];
@@ -744,8 +745,7 @@
             </tr>
           </thead>
           <tbody>
-            ${disputa.map((x) => linhaTab(x, "")).join("")}
-            ${grupoTab("Sem concorrência no período", semConc, "suave")}
+            ${comAkad.map((x) => linhaTab(x, x.n === 1 ? "suave" : "")).join("")}
             ${grupoTab("Sem prêmio da Akad no período", semA, "sem")}
           </tbody>
         </table></div>
