@@ -1144,3 +1144,11 @@ body { color: var(--ink); }
 #aba-linhas .ctrl-rot { font-size: .84rem; color: var(--tr-label); }
 #aba-linhas .pr-ord { display: inline-flex; align-items: center; gap: 8px; }
 #aba-linhas .pr-sel { width: auto; min-width: 170px; height: 36px; padding: 0 32px 0 12px; font-size: .82rem; background-color: var(--surface); }
+#aba-geral table.tg-part .th-ramo { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+#aba-geral table.tg-part .th-pos { flex: none; width: 66px; text-align: left; }
+#aba-geral table.tg-part .pos-grp { flex: none; width: 66px; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+#aba-geral table.tg-part .pos-grp .mov { font-size: .74rem; }
+@media (max-width: 760px) {
+  #aba-geral table.tg-part td.nome { min-width: 196px; max-width: 220px; }
+  #aba-geral table.tg-part .pos-grp, #aba-geral table.tg-part .th-pos { width: 58px; gap: 4px; }
+}
