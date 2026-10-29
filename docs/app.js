@@ -379,7 +379,7 @@
     tMerc: "Quanto todas as seguradoras juntas venderam no ramo no período escolhido, incluindo a Akad. Mostra o tamanho do ramo.",
     tCrescM: "Quanto o ramo inteiro cresceu ou caiu, em porcentagem, contra os mesmos meses do ano anterior.",
     tRefShare: "Market share do maior concorrente no ramo no período escolhido.",
-    universo: "Os ramos da SUSEP em que a Akad atua, cada um com seu código oficial. Os indicadores do topo somam todos eles.",
+    universo: "Sobre os dados desta página:",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
   function ligarAjuda() {
@@ -525,7 +525,7 @@
       <div class="cab-aba cab-geral">
         <div>
           <h2>Visão geral</h2>
-          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos dados oficiais da SUSEP.</p>
+          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">dados oficiais da SUSEP</a>. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada todos os dias às 9h.`)}" aria-label="Sobre os dados">?</button></p>
         </div>
       </div>`;
 
