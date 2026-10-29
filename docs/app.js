@@ -744,7 +744,7 @@
               <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">Ramo</button></th>
               <th colspan="${det ? 1 : 2}" class="g">Market share da Akad</th>
               <th colspan="2" class="g">Ranking do mercado</th>
-              <th colspan="${det ? 3 : 1}" class="g">Vendas da Akad <span class="g-sub">GWP</span></th>
+              <th colspan="${det ? 3 : 1}" class="g">Vendas da Akad</th>
               ${det ? `<th class="g">Mercado do ramo</th>
               <th class="g">Quem lidera ${ajuda("ref", "quem lidera")}</th>` : ""}
             </tr>
@@ -752,7 +752,7 @@
               ${det ? "" : `<th class="barra g1" aria-hidden="true"><span class="pb-eixo">${ticks.filter((t, k) => !det || k % 2 === 0).map((t) => `<i style="left:${(t / escMax) * 100}%">${nf0.format(t)}%</i>`).join("")}</span></th>`}
               ${th("share", "Atual", det ? "n g1" : "n", "tShare")}
               ${th("pos", "Posição", "n g1")}${th("mov", "Variação", "n")}
-              ${th("pe", "Total", "n g1", "tPe")}
+              ${th("pe", "GWP", "n g1")}
               ${det ? `${th("dPe", "Variação (R$)", "n")}${th("cresc", "Variação (%)", "n")}
               ${th("mercado", "Total", "n g1", "tMerc")}
               <th class="g1">Seguradora</th>` : ""}
