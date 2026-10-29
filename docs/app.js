@@ -380,6 +380,7 @@
     tCrescM: "Quanto o ramo inteiro cresceu ou caiu, em porcentagem, contra os mesmos meses do ano anterior.",
     tRefShare: "Market share do maior concorrente no ramo no período escolhido.",
     universo: "Sobre os dados desta página:",
+    shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
   function ligarAjuda() {
@@ -558,7 +559,7 @@
     // A2. Participação de mercado
     const cardPart = `
       <section class="card kc" aria-label="Participação de mercado">
-        <h2 class="kc-tit">Participação de mercado <button type="button" class="ajuda" data-ajuda="share" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button></h2>
+        <h2 class="kc-tit">Participação de mercado <button type="button" class="ajuda" data-ajuda="shareTot" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button></h2>
         <div class="kc-linha"><span class="kc-val">${pct(ak.share, 2)}</span>${varKpi(ak.dShare, "pp")}</div>
         <p class="kc-aux">${ak.shareP != null ? `${pct(ak.shareP, 2)} em ${perP}` : "Sem participação no período anterior para comparar"}</p>
       </section>`;
@@ -1482,7 +1483,7 @@
       <span class="st-item st-dado"><i class="st-dot${falhou ? " alerta" : ""}" aria-hidden="true"></i>Dados até <b>${mesLabel(ult, true)}</b></span>
       <span class="st-item">${falhou ? "Última consulta com erro em" : "Consultado na SUSEP em"} <b>${dia(ultima)}</b></span>
       <span class="st-item">Próxima consulta <b>${dia(prox)}, ${hora(prox)}</b></span>
-      <button type="button" class="ajuda st-ajuda" data-ajuda="status" aria-label="Como funciona a atualização?">?</button>`;
+      <button type="button" class="ajuda st-ajuda" data-ajuda="status" data-lista="${esc(`Base gerada em ${new Date(D.gerado).toLocaleString("pt-BR")}.`)}" aria-label="Como funciona a atualização?">?</button>`;
   }
   function montarStatus() {
     ligarAjuda();
@@ -1572,24 +1573,19 @@
           <span>Painel da Akad Seguros com dados públicos do mercado de seguros.</span>
         </div>
         <div class="rod-col">
-          <h2>Fonte</h2>
-          <p>SUSEP, Sistema de Estatísticas (SES), base completa.</p>
-          <p><a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">Abrir o SES no site da SUSEP <span aria-hidden="true">↗</span></a></p>
-        </div>
-        <div class="rod-col">
-          <h2>Como ler os números</h2>
+          <h2>Como funciona</h2>
           <ul>
-            <li>Valores em reais correntes, sem correção pela inflação.</li>
-            <li>Nacional: GWP (prêmio emitido na SUSEP). Por estado: prêmio direto (a SUSEP só publica esse por UF).</li>
-            <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho.</li>
+            <li>Todo dia às 9h o painel consulta a base oficial da SUSEP e se atualiza sozinho.</li>
+            <li>Os números comparam o período escolhido no filtro com os mesmos meses do ano anterior.</li>
           </ul>
         </div>
         <div class="rod-col">
-          <h2>Atualização</h2>
+          <h2>Fonte e conceitos</h2>
+          <p>SUSEP, Sistema de Estatísticas (SES), base completa. <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">Abrir o SES no site da SUSEP <span aria-hidden="true">↗</span></a></p>
           <ul>
-            <li>Dados até ${mesLabel(ult, true)}.</li>
-            <li>Base gerada em ${gerado.toLocaleString("pt-BR")}.</li>
-            <li>Consulta automática todos os dias às 9h. A SUSEP pode recarregar meses anteriores.</li>
+            <li>GWP = prêmio emitido. Por estado, a SUSEP só publica o prêmio direto.</li>
+            <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho.</li>
+            <li>Valores em reais correntes, sem correção pela inflação.</li>
           </ul>
         </div>
       </div>`;
