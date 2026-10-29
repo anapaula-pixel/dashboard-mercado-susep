@@ -723,7 +723,7 @@
     const grupoTab = (tit, lst, cls) => lst.length ? `<tr class="tg-sep" aria-hidden="true"><td colspan="${nCols}">${tit}</td></tr>${lst.map((x) => linhaTab(x, cls)).join("")}` : "";
     const th = (c, rot, cls = "", aj) => `<th class="ord ${cls}" data-col="${c}" ${T.col === c ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button>${aj ? " " + ajuda(aj, rot) : ""}</th>`;
     const corpoHtml = `
-        <p class="legenda-pb legenda-topo">${det ? "" : `<span class="lg-i"><span class="lg-fill"></span>Market share em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}`}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span></p>
+        <p class="legenda-pb legenda-topo">${det ? "" : `<span class="lg-i"><span class="lg-fill"></span>Market share em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}`}<span class="lg-i"><b>▲▼</b>&nbsp;subiu ou caiu no ranking</span><span class="lg-i lg-dica">– sem base de comparação</span>${det ? "" : '<span class="lg-i lg-dica lg-hover">Passe o mouse na barra para ver a variação</span>'}</p>
         <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
           <thead>
             <tr class="grupo">
@@ -748,8 +748,7 @@
             ${comAkad.map((x) => linhaTab(x, x.n === 1 ? "suave" : "")).join("")}
             ${grupoTab("Sem prêmio da Akad no período", semA, "sem")}
           </tbody>
-        </table></div>
-        <p class="leg-tab">– sem base de comparação ou não se aplica · "sem prêmio": a Akad não emitiu prêmio positivo no ramo no período · "&lt; 0,1%": market share positivo, abaixo de 0,1%${det ? " · crescimento em cor neutra: o ganho competitivo é medido pela variação de market share" : " · passe o mouse na barra para ver a variação do market share"}.</p>`;
+        </table></div>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
     const ORD_ROT = { pos: "Posição no mercado", share: "Market share", ganho: "Ganho em p.p.", perda: "Perda em p.p.", ganhoRs: "Ganho em R$" };
