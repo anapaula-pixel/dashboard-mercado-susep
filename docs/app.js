@@ -388,6 +388,8 @@
     ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
+    trBcg: "Matriz BCG adaptada aos ramos da Akad. Eixo vertical: quanto o mercado do ramo cresceu contra os mesmos meses do ano anterior; a linha de corte é o crescimento do mercado somando todos os ramos acompanhados. Eixo horizontal: share relativo (GWP da Akad dividido pelo GWP do maior concorrente). O corte fica em 0,25x, ou seja, a Akad com pelo menos um quarto do tamanho do líder.",
+    trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
@@ -828,84 +830,244 @@
     return IDX.linhaPorId[sel].nome;
   }
   // Página "Todos os ramos": um card por ramo, com o que ele cobre e onde a Akad está
+  // Todos os ramos: matriz BCG (crescimento do mercado x share relativo), equilíbrio da carteira e tabela comparativa
+  const QUAD = {
+    est: { nome: "Estrelas", cor: "#319C00", desc: "Akad forte num mercado que cresce rápido. Investir para manter." },
+    vac: { nome: "Vacas leiteiras", cor: "#1C4173", desc: "Akad forte num mercado maduro. Gera caixa; defender posição." },
+    int: { nome: "Interrogações", cor: "#E3175E", desc: "Mercado cresce rápido, Akad pequena. Escolher onde apostar." },
+    aba: { nome: "Abacaxis", cor: "#9E9E9E", desc: "Akad pequena num mercado lento. Rever presença." },
+  };
+  const QORD = ["est", "vac", "int", "aba"];
+  const CORTE_REL = 0.25;
+  const rotCurto = (n) => n.replace("RC Executivos (D&O)", "D&O").replace("Riscos Nomeados e Operacionais", "RNO")
+    .replace("Transporte Internacional", "Transp. Internacional").replace("Transporte Nacional", "Transp. Nacional")
+    .replace("Garantia Setor ", "Garantia ").replace("Prestamista Individual", "Prestamista Ind.").replace("Prestamista Coletivo", "Prestamista Col.");
+  const fmtX = (v) => (v >= 10 || Number.isInteger(v) ? nf0.format(v) : v >= 1 ? nf1.format(v) : v >= 0.1 ? v.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) : v >= 0.01 ? v.toLocaleString("pt-BR", { maximumFractionDigits: 3 }) : "< 0,01") + "x";
+
   function renderCatalogo(el, P) {
     const per = periodoLabel(P.a, P.b);
-    const curto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
+    const abrirR = (id) => abrirDe("linhas", () => { S.linha = id; });
+    const curto = (t) => t.replace(/\b(Companhia de Seguros Gerais|Companhia de Seguros|Cia de Seguros|Seguradora|Seguros Brasil|Seguros Gerais|Seguros Corporativos|Seguros)\b/gi, "").replace(/\s+/g, " ").trim() || t;
+    // mercado somado dos ramos acompanhados: define o corte de crescimento
+    const RT = resumo(IDX.linhas.flatMap((l) => l.idx), P);
+    const cMed = cresc(RT.tc[0], RT.tp[0]);
+    const corteY = cMed != null ? cMed : 0;
     const itens = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
       const crM = cresc(R.tc[0], R.tp[0]);
       const lid = R.rk[0];
-      const ld = lid != null ? infoEnt(R, lid) : null;
-      const tend = !a.pos ? "sem" : a.dShare == null ? "neutro" : a.dShare >= 0.05 ? "sobe" : a.dShare <= -0.05 ? "cai" : "neutro";
-      const selo = { sobe: "Ganhando participação", cai: "Perdendo participação", neutro: "Participação estável", sem: "Akad sem prêmio" }[tend];
-      const seloCurto = { sobe: "Ganhando", cai: "Perdendo", neutro: "Estável", sem: "Sem prêmio" }[tend];
-      const akLidera = lid === AKAD;
-      const pp = a.dShare != null && tend !== "sem" && tend !== "neutro" ? ` <b>${a.dShare > 0 ? "+" : "−"}${nf1.format(Math.abs(a.dShare))} p.p.</b>` : "";
-      const html = `<li data-tend="${tend}" data-lider="${akLidera ? 1 : 0}" data-busca="${esc((l.nome + " " + l.ramos.join(" ")).toLowerCase())}"><button type="button" class="rc rc-${tend}" data-abrir="${l.id}" aria-label="${esc(l.nome)}: Akad em ${a.pos ? a.pos + "º" : "sem posição"}, ${selo}. Abrir detalhe">
-        <span class="rc-topo"><b class="rc-nome">${esc(l.nome)}</b><span class="rc-cod">${l.ramos.join(", ")}</span></span>
-        <span class="rc-dados">
-          <span class="rc-col">
-            <span class="rc-rot">Posição da Akad</span>
-            <span class="rc-pos">${a.pos ? `${a.pos}º<small> de ${R.rk.length}</small>` : "–"}</span>
-            <span class="rc-sh">${a.pos ? `${pctPart(a.share)} do mercado` : "Sem prêmio no período"}</span>
-            ${tend === "sem" ? "" : `<span class="rc-selo" title="${selo} contra o mesmo período do ano anterior">${tend === "sobe" ? "▲ " : tend === "cai" ? "▼ " : ""}${seloCurto}${pp}</span>`}
-          </span>
-          <span class="rc-col rc-col-l">
-            <span class="rc-rot">Nº 1 do ramo</span>
-            ${ld ? `<span class="rc-ln${akLidera ? " ak" : ""}" title="${esc(nomeEnt(lid))}">${akLidera ? "Akad" : esc(curto(nomeEnt(lid)))}</span>
-            <span class="rc-sh">${pctPart(ld.share)} do mercado</span>
-            ${akLidera ? '<span class="rc-lider">Akad lidera</span>' : ""}` : '<span class="rc-sh">Sem prêmio no período</span>'}
-          </span>
-        </span>
-        <span class="rc-rodape"><span class="rc-merc">Mercado <b>${R.tc[0] > 0 ? reais(R.tc[0]) : "sem prêmio"}</b>${crM != null ? ` <i>${crescNeutro(crM)}</i>` : ""}</span><span class="rc-ir" aria-hidden="true">Detalhe →</span></span>
-      </button></li>`;
-      return { tend, akLidera, html };
+      const conc = R.rk.find((k) => k !== AKAD);
+      const peC = conc != null ? (R.cur.get(conc) || [0])[0] : 0;
+      const rel = a.pe > 0 ? (peC > 0 ? a.pe / peC : Infinity) : null;
+      let q = null;
+      if (a.pe > 0 && crM != null) q = rel >= CORTE_REL ? (crM >= corteY ? "est" : "vac") : (crM >= corteY ? "int" : "aba");
+      return { l, R, a, crM, lid, conc, rel, q, merc: R.tc[0], n: R.rk.length, akLidera: lid === AKAD && a.pe > 0, tem: a.pe > 0 };
     });
-    const conta = (f) => itens.filter(f).length;
-    const filtros = [
-      ["todos", "Todos", () => true],
-      ["lider", "Akad lidera", (x) => x.akLidera],
-      ["sobe", "Ganhando", (x) => x.tend === "sobe"],
-      ["cai", "Perdendo", (x) => x.tend === "cai"],
-      ["neutro", "Estável", (x) => x.tend === "neutro"],
-      ["sem", "Sem prêmio", (x) => x.tend === "sem"],
-    ].filter(([k, , f]) => k === "todos" || conta(f) > 0);
-    if (!filtros.some(([k]) => k === S.rcFiltro)) S.rcFiltro = "todos";
+    const naMatriz = itens.filter((x) => x.q);
+    const fora = itens.filter((x) => !x.q);
+    const totA = naMatriz.reduce((s, x) => s + x.a.pe, 0);
+
+    // ----- equilíbrio da carteira
+    const porQ = QORD.map((k) => {
+      const lst = naMatriz.filter((x) => x.q === k).sort((p, q) => q.a.pe - p.a.pe);
+      const pe = lst.reduce((s, x) => s + x.a.pe, 0);
+      const peP = lst.reduce((s, x) => s + (x.a.peP || 0), 0);
+      return { k, lst, pe, peP, part: totA > 0 ? (pe / totA) * 100 : 0, cr: cresc(pe, peP) };
+    });
+    const barraEq = porQ.filter((g) => g.part > 0).map((g) => `<span class="tr-eq-seg" data-q="${g.k}" style="width:${g.part}%;background:${QUAD[g.k].cor}" title="${QUAD[g.k].nome}: ${pct(g.part)}"></span>`).join("");
+    const linhasEq = porQ.map((g) => `
+      <li class="tr-eq-l" data-q="${g.k}">
+        <span class="tr-dot" style="background:${QUAD[g.k].cor}"></span>
+        <div class="tr-eq-t">
+          <p class="tr-eq-n"><b>${QUAD[g.k].nome}</b> <span>${g.lst.length} ${g.lst.length === 1 ? "ramo" : "ramos"}</span></p>
+          <p class="tr-eq-d">${QUAD[g.k].desc}</p>
+          <p class="tr-eq-r">${g.lst.length ? g.lst.slice(0, 3).map((x) => esc(rotCurto(x.l.nome))).join(", ") + (g.lst.length > 3 ? ` e mais ${g.lst.length - 3}` : "") : "Nenhum ramo no período"}</p>
+        </div>
+        <div class="tr-eq-v">
+          <b>${pct(g.part)}</b>
+          <span>${reais(g.pe)}</span>
+          ${g.cr != null ? varHtml(g.cr) : ""}
+        </div>
+      </li>`).join("");
+
+    // ----- tabela comparativa
+    if (!S.trOrd) S.trOrd = { col: "merc", dir: -1 };
+    if (!S.trFiltro) S.trFiltro = "todos";
+    const filtros = [["todos", "Todos", () => true], ...QORD.map((k) => [k, QUAD[k].nome, (x) => x.q === k]), ["lider", "Akad lidera", (x) => x.akLidera], ["sem", "Sem prêmio", (x) => !x.tem]]
+      .filter(([k, , f]) => k === "todos" || itens.some(f));
+    if (!filtros.some(([k]) => k === S.trFiltro)) S.trFiltro = "todos";
+    const val = {
+      nome: (x) => x.l.nome, q: (x) => (x.q ? QORD.indexOf(x.q) : 9), merc: (x) => x.merc, crM: (x) => x.crM,
+      share: (x) => x.a.share, dShare: (x) => x.a.dShare, pos: (x) => x.a.pos, rel: (x) => (x.rel === Infinity ? 1e9 : x.rel),
+    };
+    const ths = [["nome", "Ramo", ""], ["q", "Quadrante", ""], ["merc", "Mercado", "n", "tMerc"], ["crM", "Cresc. do mercado", "n", "tCrescM"], ["share", "Market share", "n", "tShare"], ["dShare", "Variação", "n", "tPP"], ["pos", "Posição", "n", "tRank"], ["rel", "Share relativo", "n", "trRel"], [null, "Quem lidera", ""]];
+    const tagQ = (x) => x.q ? `<span class="tr-tag" style="--c:${QUAD[x.q].cor}"><i></i>${QUAD[x.q].nome}</span>` : `<span class="sub-i">${x.tem ? "sem base" : "sem prêmio"}</span>`;
+    const linhaTr = (x) => `
+      <tr data-linha="${x.l.id}" data-q="${x.q || ""}" data-lider="${x.akLidera ? 1 : 0}" data-sem="${x.tem ? 0 : 1}" data-busca="${esc((x.l.nome + " " + x.l.ramos.join(" ")).toLowerCase())}">
+        <td class="nome"><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></td>
+        <td>${tagQ(x)}</td>
+        <td class="n">${x.merc > 0 ? reais(x.merc) : '<span class="sub-i">sem dados</span>'}</td>
+        <td class="n">${crescNeutro(x.crM)}</td>
+        <td class="n"><b>${x.tem ? pctPart(x.a.share) : "–"}</b></td>
+        <td class="n">${x.tem ? ppSeta(x.a.dShare) : '<span class="var zero">–</span>'}</td>
+        <td class="n">${x.a.pos ? `${x.a.pos}º <span class="sub-i">de ${x.n}</span>` : '<span class="sub-i">–</span>'}</td>
+        <td class="n">${x.rel == null ? '<span class="sub-i">–</span>' : x.rel === Infinity ? "única" : fmtX(x.rel)}</td>
+        <td class="ref" title="${x.lid != null ? esc(x.lid === AKAD ? (x.conc != null ? `2º lugar: ${nomeEnt(x.conc)}` : "Única seguradora no ramo") : nomeEnt(x.lid)) : ""}">${x.lid == null ? '<span class="sub-i">sem dados</span>' : x.lid === AKAD ? '<b class="lid-ak">Akad</b>' : esc(curto(nomeEnt(x.lid)))}</td>
+      </tr>`;
+    const ordenar = () => {
+      const { col, dir } = S.trOrd;
+      const f = val[col];
+      return [...itens].sort((p, q) => {
+        const va = f(p), vb = f(q);
+        if (va == null && vb == null) return 0;
+        if (va == null) return 1;
+        if (vb == null) return -1;
+        return typeof va === "string" ? va.localeCompare(vb, "pt-BR") * dir : (va - vb) * dir;
+      });
+    };
+
     el.innerHTML = `
       <div class="cab-aba">
         <div>
           <h2>Todos os ramos</h2>
-          <p>Os ${IDX.linhas.length} ramos da SUSEP em que a Akad atua, ${per}. Clique num ramo para ver o detalhe.</p>
+          <p>Compare os ${IDX.linhas.length} mercados em que a Akad atua e descubra onde ela está forte, onde perde espaço e onde há oportunidade. ${per}. ${ajuda("trBcg", "matriz BCG")}</p>
         </div>
       </div>
-      <div class="rc-filtros">
-        <label class="rc-busca"><input type="search" id="rc-q" aria-label="Buscar ramo por nome ou código" placeholder="Buscar por nome ou código" value="${esc(S.rcBusca || "")}" autocomplete="off"></label>
-        <div class="seg-ctrl rc-seg" role="group" aria-label="Filtrar ramos">
-          ${filtros.map(([k, n, f]) => `<button type="button" data-f="${k}" aria-pressed="${S.rcFiltro === k}">${n} <span class="rc-n">${conta(f)}</span></button>`).join("")}
-        </div>
+      <div class="tr-topo">
+        <section class="tr-card" aria-labelledby="h-bcg">
+          <div class="tr-cab"><h3 id="h-bcg" class="tr-tit">Matriz BCG dos ramos</h3><span class="tr-nota">Bolha = GWP da Akad no ramo</span></div>
+          <div class="tr-mat" id="tr-mat"></div>
+          <p class="tr-rodape">Share relativo = GWP da Akad ÷ GWP do maior concorrente no ramo. Linhas de corte em ${fmtX(CORTE_REL)} e no crescimento do mercado dos ${IDX.linhas.length} ramos (${crescNeutro(cMed)}). Clique numa bolha para abrir o ramo.${fora.length ? ` Fora da matriz (Akad sem prêmio): ${fora.map((x) => esc(rotCurto(x.l.nome))).join(", ")}.` : ""}</p>
+        </section>
+        <section class="tr-card" aria-labelledby="h-eq">
+          <div class="tr-cab"><h3 id="h-eq" class="tr-tit">Equilíbrio da carteira</h3></div>
+          <p class="tr-sub">Como o GWP da Akad (${reais(totA)}) se divide entre os quadrantes da matriz. A variação é contra os mesmos meses do ano anterior.</p>
+          <div class="tr-eq-bar">${barraEq}</div>
+          <ul class="tr-eq">${linhasEq}</ul>
+        </section>
       </div>
-      <ul class="rc-grade">${itens.map((x) => x.html).join("")}</ul>
-      <p class="rc-vazio" hidden>Nenhum ramo encontrado com esse filtro.</p>`;
+      <section class="tr-card" aria-labelledby="h-comp">
+        <div class="tr-cab tr-cab-t"><h3 id="h-comp" class="tr-tit">Comparativo dos ramos</h3>
+          <div class="tr-ctrls">
+            <label class="rc-busca"><input type="search" id="tr-q" aria-label="Buscar ramo por nome ou código" placeholder="Buscar por nome ou código" value="${esc(S.rcBusca || "")}" autocomplete="off"></label>
+            <label class="pr-ord"><span class="ctrl-rot">Mostrar</span><select id="tr-f" class="pr-sel" aria-label="Filtrar ramos">
+              ${filtros.map(([k, n, f]) => `<option value="${k}"${S.trFiltro === k ? " selected" : ""}>${n} (${itens.filter(f).length})</option>`).join("")}
+            </select></label>
+          </div>
+        </div>
+        <div class="tab-wrap"><table class="tr-tab">
+          <thead><tr>${ths.map(([c, r, cls, aj]) => c ? `<th class="ord ${cls}" data-col="${c}"${S.trOrd.col === c ? ` aria-sort="${S.trOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${r}</button>${aj ? " " + ajuda(aj, r) : ""}</th>` : `<th>${r}</th>`).join("")}</tr></thead>
+          <tbody>${ordenar().map(linhaTr).join("")}</tbody>
+        </table></div>
+        <p class="rc-vazio" hidden>Nenhum ramo encontrado com esse filtro.</p>
+      </section>`;
+
+    // ----- desenho da matriz (SVG na largura real do card, para o texto não encolher)
+    const host = el.querySelector("#tr-mat");
+    const W = Math.max(300, Math.round(host.clientWidth || 700));
+    const peq = W < 560;
+    const H = peq ? 400 : 500;
+    const L = 52, Rr = 14, T = 12, B = 46;
+    const rels = naMatriz.map((x) => (x.rel === Infinity ? 3 : x.rel));
+    const lx1 = Math.log10(3.4);
+    const lx0 = Math.log10(Math.max(1e-4, Math.min(0.001, ...rels.map((v) => v * 0.7))));
+    const xs = (v) => { v = Math.max(10 ** lx0, Math.min(v === Infinity ? 10 ** lx1 : v, 10 ** lx1)); return L + ((lx1 - Math.log10(v)) / (lx1 - lx0)) * (W - L - Rr); };
+    const crs = naMatriz.map((x) => x.crM);
+    const ymaxR = Math.max(corteY + 10, ...crs.filter((v) => v < 60));
+    const ymin = Math.floor((Math.min(corteY - 10, ...crs) - 5) / 10) * 10;
+    const ymax = Math.ceil((ymaxR + 5) / 10) * 10;
+    const ys = (v) => { v = Math.max(ymin, Math.min(v, ymax)); return H - B - ((v - ymin) / (ymax - ymin)) * (H - B - T); };
+    const xc = xs(CORTE_REL), yc = ys(corteY);
+    const isDark = document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && window.matchMedia?.("(prefers-color-scheme: dark)").matches);
+    const fundo = isDark ? { est: "rgba(49,156,0,.14)", int: "rgba(227,23,94,.12)", vac: "rgba(124,151,184,.16)", aba: "rgba(158,158,158,.10)" } : { est: "#F1FCEB", int: "#FFF2F6", vac: "#EEF3F8", aba: "#F7F7F7" };
+    const corQ = (k) => (isDark && k === "vac" ? "#7C97B8" : QUAD[k].cor);
+    let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Matriz BCG: crescimento do mercado de cada ramo contra o share relativo da Akad">`;
+    s += `<rect x="${L}" y="${T}" width="${xc - L}" height="${yc - T}" fill="${fundo.est}"/><rect x="${xc}" y="${T}" width="${W - Rr - xc}" height="${yc - T}" fill="${fundo.int}"/><rect x="${L}" y="${yc}" width="${xc - L}" height="${H - B - yc}" fill="${fundo.vac}"/><rect x="${xc}" y="${yc}" width="${W - Rr - xc}" height="${H - B - yc}" fill="${fundo.aba}"/>`;
+    const passo = ymax - ymin > 60 ? 20 : 10;
+    for (let v = Math.ceil(ymin / passo) * passo; v <= ymax; v += passo) s += `<line x1="${L}" x2="${W - Rr}" y1="${ys(v)}" y2="${ys(v)}" class="tr-grid"/><text x="${L - 6}" y="${ys(v) + 4}" text-anchor="end" class="tr-ax">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}%</text>`;
+    for (const v of [10, 1, 0.1, 0.01, 0.001]) if (Math.log10(v) <= lx1 && Math.log10(v) >= lx0 && (!peq || (v !== 0.01 && v !== 0.1))) s += `<text x="${xs(v)}" y="${H - B + 16}" text-anchor="middle" class="tr-ax">${fmtX(v)}</text>`;
+    s += `<text x="${xc}" y="${H - B + 16}" text-anchor="middle" class="tr-ax tr-ax-c">${fmtX(CORTE_REL)}</text>`;
+    s += `<line x1="${xs(1)}" x2="${xs(1)}" y1="${T}" y2="${H - B}" class="tr-um"/>`;
+    s += `<line x1="${xc}" x2="${xc}" y1="${T}" y2="${H - B}" class="tr-corte"/><line x1="${L}" x2="${W - Rr}" y1="${yc}" y2="${yc}" class="tr-corte"/>`;
+    s += `<text x="${(W + L) / 2}" y="${H - 6}" text-anchor="middle" class="tr-ax-t">${peq ? "← Share relativo vs. maior concorrente" : "← Share relativo: Akad comparada ao maior concorrente"}</text>`;
+    s += `<text transform="translate(12,${(H - B + T) / 2}) rotate(-90)" text-anchor="middle" class="tr-ax-t">Crescimento do mercado →</text>`;
+    const ocup = [];
+    const qLab = { est: [xc - 8, yc - 8, "end"], int: [W - Rr - 8, T + 16, "end"], vac: [L + 8, H - B - 8, "start"], aba: [W - Rr - 8, H - B - 8, "end"] };
+    for (const k of QORD) {
+      const [x, y, anc] = qLab[k];
+      const w = QUAD[k].nome.length * 8.2;
+      const x0 = anc === "start" ? x : x - w;
+      ocup.push([x0, y - 12, x0 + w, y + 2]);
+      s += `<text x="${x}" y="${y}" text-anchor="${anc}" class="tr-q" fill="${corQ(k)}">${QUAD[k].nome.toUpperCase()}</text>`;
+    }
+    const maxA = Math.max(...naMatriz.map((x) => x.a.pe));
+    const rMax = peq ? 20 : 26;
+    const circ = [];
+    const ord = [...naMatriz].sort((p, q) => q.a.pe - p.a.pe);
+    for (const x of ord) {
+      const r = 4 + Math.sqrt(x.a.pe / maxA) * (rMax - 4);
+      const cx = xs(x.rel), cy = ys(x.crM);
+      x._b = [cx, cy, r];
+      circ.push([cx, cy, r]);
+      s += `<circle class="tr-b" data-linha="${x.l.id}" data-q="${x.q}" cx="${cx}" cy="${cy}" r="${r}" fill="${corQ(x.q)}" fill-opacity=".3" stroke="${corQ(x.q)}" stroke-width="1.5" tabindex="0" role="button" aria-label="${esc(x.l.nome)}: ${QUAD[x.q].nome}"/>`;
+    }
+    const bate = (b) => ocup.some((p) => !(b[2] < p[0] || b[0] > p[2] || b[3] < p[1] || b[1] > p[3]))
+      || circ.some(([cx, cy, r]) => b[0] < cx + r * 0.6 && b[2] > cx - r * 0.6 && b[1] < cy + r * 0.6 && b[3] > cy - r * 0.6)
+      || b[0] < L + 2 || b[2] > W - Rr - 2 || b[1] < T || b[3] > H - B;
+    let rotulos = "";
+    for (const x of ord) {
+      const [cx, cy, r] = x._b;
+      const t = rotCurto(x.l.nome) + (x.crM > ymax ? " ↑" : "");
+      const w = t.length * 6.2;
+      for (const [anc, tx, ty] of [["start", cx + r + 3, cy + 4], ["end", cx - r - 3, cy + 4], ["middle", cx, cy - r - 4], ["middle", cx, cy + r + 12], ["start", cx + r + 2, cy - r], ["start", cx + r + 2, cy + r + 8]]) {
+        const x0 = anc === "start" ? tx : anc === "end" ? tx - w : tx - w / 2;
+        const b = [x0, ty - 10, x0 + w, ty + 2];
+        if (!bate(b)) { ocup.push(b); rotulos += `<text x="${tx}" y="${ty}" text-anchor="${anc}" class="tr-rot" data-linha="${x.l.id}">${esc(t)}</text>`; break; }
+      }
+    }
+    host.innerHTML = s + rotulos + "</svg>";
+
+    // ----- interações
+    const tipB = (x) => `<b>${esc(x.l.nome)}</b><div style="color:${corQ(x.q)};font-weight:600">${QUAD[x.q].nome}</div>
+      <div>Mercado: ${reais(x.merc)} (${x.crM > 999 ? "> +999" : (x.crM > 0 ? "+" : x.crM < 0 ? "−" : "") + nf1.format(Math.abs(x.crM))}%)</div>
+      <div>GWP da Akad: ${reais(x.a.pe)}</div>
+      <div>Market share: ${pctPart(x.a.share)}${x.a.pos ? ` · ${x.a.pos}º de ${x.n}` : ""}</div>
+      <div>Share relativo: ${x.rel === Infinity ? "única no ramo" : x.rel > 3 ? fmtX(x.rel) + " (fora da escala)" : fmtX(x.rel)}${x.lid === AKAD ? " (Akad lidera)" : x.conc != null ? ` vs. ${esc(curto(nomeEnt(x.conc)))}` : ""}</div>`;
+    const porId = Object.fromEntries(itens.map((x) => [x.l.id, x]));
+    const hlQ = (q) => { host.querySelector("svg").classList.toggle("foco", !!q); host.querySelectorAll(".tr-b").forEach((c) => c.classList.toggle("on", c.dataset.q === q)); };
+    host.querySelectorAll(".tr-b, .tr-rot").forEach((c) => {
+      const x = porId[c.dataset.linha];
+      c.addEventListener("mouseenter", (ev) => { mostrarTip(tipB(x), ev); host.querySelector(`.tr-b[data-linha="${x.l.id}"]`).classList.add("hov"); });
+      c.addEventListener("mousemove", (ev) => mostrarTip(tipB(x), ev));
+      c.addEventListener("mouseleave", () => { esconderTip(); host.querySelectorAll(".hov").forEach((n) => n.classList.remove("hov")); });
+      c.addEventListener("click", () => abrirR(x.l.id));
+      c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirR(x.l.id); } });
+    });
+    el.querySelectorAll(".tr-eq-l, .tr-eq-seg").forEach((n) => {
+      n.addEventListener("mouseenter", () => hlQ(n.dataset.q));
+      n.addEventListener("mouseleave", () => hlQ(null));
+    });
     const aplicar = () => {
       const q = (S.rcBusca || "").trim().toLowerCase();
+      const f = S.trFiltro;
       let n = 0;
-      el.querySelectorAll(".rc-grade > li").forEach((li) => {
-        const f = S.rcFiltro;
-        const okF = f === "todos" || (f === "lider" ? li.dataset.lider === "1" : li.dataset.tend === f);
-        const ok = okF && (!q || li.dataset.busca.includes(q));
-        li.hidden = !ok; if (ok) n++;
+      el.querySelectorAll(".tr-tab tbody tr").forEach((tr) => {
+        const okF = f === "todos" || (f === "lider" ? tr.dataset.lider === "1" : f === "sem" ? tr.dataset.sem === "1" : tr.dataset.q === f);
+        const ok = okF && (!q || tr.dataset.busca.includes(q));
+        tr.hidden = !ok; if (ok) n++;
       });
       el.querySelector(".rc-vazio").hidden = n > 0;
     };
-    el.querySelector("#rc-q").addEventListener("input", (e) => { S.rcBusca = e.target.value; aplicar(); });
-    el.querySelectorAll(".rc-seg button").forEach((b) => b.addEventListener("click", () => {
-      S.rcFiltro = b.dataset.f;
-      el.querySelectorAll(".rc-seg button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-      aplicar();
+    el.querySelector("#tr-q").addEventListener("input", (e) => { S.rcBusca = e.target.value; aplicar(); });
+    el.querySelector("#tr-f").addEventListener("change", (e) => { S.trFiltro = e.target.value; aplicar(); });
+    el.querySelectorAll(".tr-tab th.ord > button").forEach((b) => b.addEventListener("click", () => {
+      const c = b.parentElement.dataset.col;
+      S.trOrd = S.trOrd.col === c ? { col: c, dir: -S.trOrd.dir } : { col: c, dir: c === "nome" || c === "q" || c === "pos" ? 1 : -1 };
+      renderCatalogo(el, P);
     }));
+    el.querySelectorAll(".tr-tab tbody tr").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest(".ajuda")) abrirR(tr.dataset.linha); }));
     aplicar();
-    el.querySelectorAll("[data-abrir]").forEach((b) => b.addEventListener("click", () => { abrirDe("linhas", () => { S.linha = b.dataset.abrir; }); }));
   }
 
   function renderLinhas() {
