@@ -1152,3 +1152,5 @@ body { color: var(--ink); }
   #aba-geral table.tg-part td.nome { min-width: 196px; max-width: 220px; }
   #aba-geral table.tg-part .pos-grp, #aba-geral table.tg-part .th-pos { width: 58px; gap: 4px; }
 }
+#aba-geral table.tg-part .th-pos-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; white-space: nowrap; }
+#aba-geral table.tg-part .th-pos-btn:hover, #aba-geral table.tg-part .th-pos-btn[aria-sort] { color: var(--ink); }
