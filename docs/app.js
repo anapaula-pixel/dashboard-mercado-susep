@@ -33,7 +33,7 @@
     ufOrdR: "merc",
     ufTodos: false,
     rankOrd: { col: "pe", dir: -1 },
-    geralOrd: "ganhoRs",
+    geralOrd: "pe",
     geralTab: null,
     geralModo: "resumo",
     geralSel: null,
@@ -676,8 +676,8 @@
     // a mesma ordem e as mesmas colunas-base; o Detalhado só acrescenta colunas.
     const modo = S.geralModo === "detalhado" ? "detalhado" : "resumo";
     const det = modo === "detalhado";
-    const ORD_TAB = { pe: { col: "pe", dir: -1 }, ganhoRs: { col: "dPe", dir: -1 }, pos: { col: "pos", dir: 1 }, share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 } };
-    const T = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.ganhoRs);
+    const ORD_TAB = { pe: { col: "pe", dir: -1 }, pos: { col: "pos", dir: 1 }, share: { col: "share", dir: -1 }, ganho: { col: "dShare", dir: -1 } };
+    const T = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.pe);
     const val = (x, c) => ({
       nome: x.l.nome, pos: x.a.pos, mov: x.dPos, share: x.temAkad ? x.a.share : null, dShare: x.a.dShare, pe: x.temAkad ? x.a.pe : null,
       dPe: x.dPe, cresc: x.a.cresc, vs: x.a.cresc != null && x.crescM != null ? x.a.cresc - x.crescM : null,
@@ -750,7 +750,7 @@
         <div class="tab-wrap"><table class="tg tg-part ${det ? "tg-det" : "tg-res"}">
           <thead>
             <tr class="grupo">
-              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><div class="th-ramo"><button type="button">Ramo</button><span class="th-pos">Posição</span></div></th>
+              <th rowspan="2" class="ord" data-col="nome" ${T.col === "nome" ? `aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}><div class="th-ramo"><button type="button">Ramo</button><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${T.col === "pos" ? ` aria-sort="${T.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${T.col === "pos" ? (T.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
               <th colspan="${det ? 1 : 2}" class="g">Market share da Akad</th>
               <th colspan="${det ? 3 : 1}" class="g">Vendas da Akad</th>
               ${det ? `<th class="g">Mercado do ramo</th>
@@ -772,9 +772,9 @@
         </table></div>`;
 
     const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
-    const ORD_ROT = { pe: "Maior GWP", ganhoRs: "Maior ganho de GWP (R$)", pos: "Melhor posição no ranking", share: "Maior market share", ganho: "Mais ganhou market share" };
+    const ORD_ROT = { pe: "Maior GWP", pos: "Melhor posição no ranking", share: "Maior market share", ganho: "Mais ganhou market share" };
     const ordSel = `<select id="pr-ord" class="pr-sel" aria-label="Ordenar ramos por">
-      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição no mercado" }[T.col] || "Coluna da tabela"}</option>`}
+      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição no ranking (do último ao 1º)" }[T.col] || "Coluna da tabela"}</option>`}
       ${Object.keys(ORD_ROT).map((k) => `<option value="${k}"${ordAtivo === k ? " selected" : ""}>${ORD_ROT[k]}</option>`).join("")}
     </select>`;
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
@@ -811,16 +811,17 @@
     });
     el.querySelector("#pr-ord")?.addEventListener("change", (e) => { if (!e.target.value) return; S.geralOrd = e.target.value; S.geralTab = null; renderGeral(); el.querySelector("#pr-ord")?.focus(); });
     el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
-    el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
-      const c = thEl.dataset.col;
+    const porColuna = (c, foco) => {
       const padrao = c === "pos" || c === "nome" ? 1 : -1;
-      const atual = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.ganhoRs);
+      const atual = S.geralTab || (ORD_TAB[S.geralOrd] || ORD_TAB.pe);
       S.geralTab = { col: c, dir: atual.col === c ? -atual.dir : padrao };
       const k = Object.keys(ORD_TAB).find((o) => ORD_TAB[o].col === c && ORD_TAB[o].dir === S.geralTab.dir);
       if (k) S.geralOrd = k;
       renderGeral();
-      el.querySelector(`th[data-col="${c}"] button`)?.focus();
-    }));
+      el.querySelector(foco)?.focus();
+    };
+    el.querySelectorAll("th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => porColuna(thEl.dataset.col, `th[data-col="${thEl.dataset.col}"] button`)));
+    el.querySelector(".th-pos-btn")?.addEventListener("click", () => porColuna("pos", ".th-pos-btn"));
   }
 
   /* ---------- Linhas de produto ---------- */
