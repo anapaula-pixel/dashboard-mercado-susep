@@ -18,6 +18,7 @@ import os
 import sys
 import tempfile
 import time
+import urllib.error
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
@@ -96,7 +97,22 @@ def mil(v):
     return round(v / 1000, 1)
 
 
-def baixar(destino):
+def baixar(destino, tentativas=3, espera=300):
+    """Baixa a base da SUSEP. O servidor às vezes fica fora do ar ou lento,
+    então tenta de novo algumas vezes (com intervalo) antes de desistir."""
+    for n in range(1, tentativas + 1):
+        try:
+            _baixar_uma_vez(destino)
+            return
+        except (OSError, urllib.error.URLError) as e:
+            print(f"  Tentativa {n} de {tentativas} falhou: {e}", flush=True)
+            if n == tentativas:
+                raise
+            print(f"  Nova tentativa em {espera // 60} min ...", flush=True)
+            time.sleep(espera)
+
+
+def _baixar_uma_vez(destino):
     print(f"Baixando {ZIP_URL} ...", flush=True)
     req = urllib.request.Request(ZIP_URL, headers={"User-Agent": "Mozilla/5.0 (dashboard-mercado-akad)"})
     t0 = time.time()
