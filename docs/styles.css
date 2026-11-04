@@ -338,7 +338,17 @@ td .sub { display: block; font-size: .76rem; color: var(--muted); font-weight: 4
 /* Mapa em mosaico */
 .mapa-wrap { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 24px; align-items: start; }
 @media (max-width: 900px) { .mapa-wrap { grid-template-columns: minmax(0, 1fr); } }
-.mapa { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; max-width: 440px; }
+.mapa { max-width: 520px; }
+.mapa svg { display: block; width: 100%; height: auto; }
+.mapa .uf-p { stroke: var(--surface); stroke-width: 1.2; stroke-linejoin: round; cursor: pointer; transition: opacity .12s; }
+.mapa .uf-p:hover, .mapa .uf-p:focus-visible { stroke: var(--ink); stroke-width: 2; outline: none; }
+.mapa svg:has(.uf-p:hover) .uf-p:not(:hover) { opacity: .75; }
+.mapa .uf-r { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; pointer-events: none; }
+.mapa .uf-r .uf-s { font-size: 14px; font-weight: 700; }
+.mapa .uf-r.fora { fill: var(--ink-2); stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; paint-order: stroke; }
+.mapa .uf-r.fora .uf-s { fill: var(--ink); }
+.mapa .uf-g { stroke: var(--muted); stroke-width: .8; }
+.mapa .uf-pt { fill: var(--ink-2); pointer-events: none; }
 .uf {
   aspect-ratio: 1; border-radius: 6px; border: 0; padding: 0; cursor: pointer;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
