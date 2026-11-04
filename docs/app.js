@@ -520,12 +520,12 @@
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz BCG (Boston Consulting Group), adaptada. Cruza duas perguntas: o mercado do ramo está crescendo? E a Akad tem posição forte nele? Crescimento: quanto o mercado do ramo cresceu nos últimos 12 meses contra os 12 meses anteriores; a linha é a média dos ramos acompanhados. Posição forte: Akad entre as 5 maiores seguradoras do ramo. Na BCG original, só o líder do mercado conta como posição forte; adaptamos porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras, e estar no top 5 já significa escala relevante. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
-    ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Ganhando espaço: mais aumentaram esse share. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
+    ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Em expansão: maiores ganhos de participação. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
     ccQual: "Margem técnica = prêmio ganho menos sinistros e custo de comercialização, dividido pelo prêmio ganho. É 100% menos o índice combinado parcial. Parcial porque a SUSEP não abre despesa administrativa por ramo, então a margem real é menor. vs. mercado: diferença entre a margem da Akad e a do mercado no ramo, em pontos percentuais (verde quando a Akad está melhor). Deficitário: índice combinado acima de 100%, o prêmio não cobre nem sinistro e comissão.",
     ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
-    ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Quem mais ganhou: a seguradora que mais aumentou o market share no ramo.",
+    ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
     ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (com a do mercado no ramo ao lado), custo de comercialização e a posição da Akad no mesmo ramo.",
     ccComp: "Últimos 12 meses até o fim do período escolhido. Sinistralidade e custo de comercialização são calculados sobre o prêmio ganho; resseguro cedido, sobre o GWP. Em ramos pequenos esses índices oscilam bastante.",
     ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização. É principalmente a comissão paga ao corretor, mais agenciamento, pró-labore e outros custos de venda. Calculado sobre o prêmio ganho, por isso fica próximo, mas não igual, ao percentual de comissão negociado.",
@@ -814,8 +814,8 @@
         <h2 id="h-mov" class="sec-tit">Destaques do período</h2>
         <div class="mv-grade">
           ${coluna("Onde a Akad lidera", lidera, "lider", "A Akad não lidera nenhum ramo no período.")}
-          ${coluna("Mais ganharam market share", ganhos, "g", "Nenhum ramo ganhou market share no período.")}
-          ${coluna("Mais perderam market share", perdas, "p", "Nenhum ramo perdeu market share no período.")}
+          ${coluna("Maiores ganhos de participação", ganhos, "g", "Nenhum ramo ganhou market share no período.")}
+          ${coluna("Maiores perdas de participação", perdas, "p", "Nenhum ramo perdeu market share no período.")}
         </div>
       </section>`;
 
@@ -1281,11 +1281,11 @@
       const lin = (y) => y.k === AKAD ? `<div class="gp-li ak"><span class="gp-nm">Akad</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></div>` : `<button type="button" class="gp-li" data-ent="${esc(y.k)}"><span class="gp-nm">${esc(nomeCurtoCia(nomeEnt(y.k)))}</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></button>`;
       gpHtml = `
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Quem ganhou e quem perdeu espaço</h2><p class="nota">Variação do market share em ${periodoLabel(P.a, P.b)} contra ${perR}. Clique numa seguradora para abrir a ficha dela.</p></div>
-          <p class="gp-ak">Akad: <b class="${!dAk ? "" : dAk.d > 0 ? "bom" : "ruim"}">${dAk ? pp(dAk.d) : "sem variação"}</b> de market share</p>
+          <div class="bloco-cab"><h2>Variação de market share</h2><p class="nota">Variação do market share em ${periodoLabel(P.a, P.b)} contra ${perR}. Clique numa seguradora para abrir a ficha dela.</p></div>
+          <p class="gp-ak">Akad: <b class="${!dAk ? "" : dAk.d > 0 ? "bom" : "ruim"}">${dAk ? pp(dAk.d) : "sem variação"}</b> no período</p>
           <div class="gp-g2">
-            <div><p class="gp-lt">Mais ganharam</p>${gan.map(lin).join("") || '<p class="nota">Ninguém ganhou espaço.</p>'}</div>
-            <div><p class="gp-lt">Mais perderam</p>${per.map(lin).join("") || '<p class="nota">Ninguém perdeu espaço.</p>'}</div>
+            <div><p class="gp-lt">Maiores ganhos de participação</p>${gan.map(lin).join("") || '<p class="nota">Ninguém ganhou espaço.</p>'}</div>
+            <div><p class="gp-lt">Maiores perdas de participação</p>${per.map(lin).join("") || '<p class="nota">Ninguém perdeu espaço.</p>'}</div>
           </div>
         </div>`;
     }
@@ -1604,7 +1604,7 @@
          <p class="c2-lg"><i style="background:var(--akad)"></i>1º lugar <i class="c2-lg25"></i>2º a 5º<span class="c2-lgd">ordem: peso na carteira</span></p>`, "ccTop5");
       const lost = atua.filter((x) => x.d != null && x.d < -0.05), won = atua.filter((x) => x.d != null && x.d > 0.05);
       const pl = lost.reduce((s, x) => s + x.peso, 0), pw = won.reduce((s, x) => s + x.peso, 0), pe = Math.max(0, 100 - pl - pw);
-      k3 = card("Perdeu market share em", `${lost.length} <small>de ${atua.length} ramos</small>`, `que somam <b>${nf0.format(pl)}%</b> do faturamento da Akad`,
+      k3 = card("Ramos com perda de participação", `${lost.length} <small>de ${atua.length} ramos</small>`, `que somam <b>${nf0.format(pl)}%</b> do faturamento da Akad`,
         `<div class="c2-seg">${[["Perdeu market share", lost, pl, "var(--ruim)"], ["Ganhou market share", won, pw, "var(--bom)"], ["Estável ou sem comparação", atua.filter((x) => !lost.includes(x) && !won.includes(x)), pe, "var(--axis)"]]
           .map(([t, l, w, c]) => w > 0 ? `<i style="width:${w}%;background:${c}" data-tip="${esc(`<b>${t}: ${l.length} ${l.length === 1 ? "ramo" : "ramos"} (${nf0.format(w)}% do faturamento)</b><div style="opacity:.75">do maior para o menor peso na carteira</div>${l.slice(0, 12).map((x) => `<div>${esc(x.l.nome)}: ${x.d == null ? "novo" : ppTxt(x.d)} (peso ${nf1.format(x.peso)}%)</div>`).join("")}${l.length > 12 ? `<div>e mais ${l.length - 12}</div>` : ""}`)}"></i>` : "").join("")}</div>
          <p class="c2-lg"><i style="background:var(--ruim)"></i>Perdeu ${nf0.format(pl)}% <i style="background:var(--bom)"></i>Ganhou ${nf0.format(pw)}% <i style="background:var(--axis)"></i>Estável</p>`, "ccPerdeu");
@@ -1649,7 +1649,7 @@
         <div class="c2-g3">
           ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
           ${colC("Perfil parecido", "var(--cc-link)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
-          ${colC("Ganhando espaço", "#C78800", umRamo ? "Mais ganharam market share no ramo" : "Mais ganharam share nos ramos da Akad", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
+          ${colC("Em expansão", "#C78800", umRamo ? "Maiores ganhos de participação no ramo" : "Maiores ganhos de participação nos ramos da Akad", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
         </div>
       </section>`;
 
@@ -1661,9 +1661,9 @@
       const ds = deltas(atua[0]).filter((y) => y.k !== AKAD);
       const gan = ds.filter((y) => y.d > 0).sort((p, q) => q.d - p.d).slice(0, 5), per = ds.filter((y) => y.d < 0).sort((p, q) => p.d - q.d).slice(0, 5);
       const x = atua[0];
-      corpoGP = `<p class="c2-akd">Akad: <b class="${clsV(x.d || 0)}">${x.d == null ? `sem prêmio em ${perA}` : ppTxt(x.d)}</b> de market share</p>
-        <div class="c2-g2"><div><p class="c2-lt">Mais ganharam</p>${gan.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém ganhou espaço.</p>'}</div>
-        <div><p class="c2-lt">Mais perderam</p>${per.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém perdeu espaço.</p>'}</div></div>`;
+      corpoGP = `<p class="c2-akd">Akad: <b class="${clsV(x.d || 0)}">${x.d == null ? `sem prêmio em ${perA}` : ppTxt(x.d)}</b> no período</p>
+        <div class="c2-g2"><div><p class="c2-lt">Maiores ganhos de participação</p>${gan.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém ganhou espaço.</p>'}</div>
+        <div><p class="c2-lt">Maiores perdas de participação</p>${per.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém perdeu espaço.</p>'}</div></div>`;
     } else {
       const N_VIS = 10;
       const vis = S.ccTodos ? atua : atua.slice(0, N_VIS);
@@ -1683,13 +1683,13 @@
         </div>`;
       };
       corpoGP = `<div class="c2-dvt" role="table" aria-label="Variação do market share da Akad por ramo">
-        <div class="c2-dv c2-dvh" role="row"><span role="columnheader">Ramo</span><span role="columnheader" class="r">Peso na carteira ${ajuda("tPeso", "peso na carteira")}</span><span role="columnheader" class="c">perdeu ← Akad → ganhou</span><span role="columnheader" class="r">Akad</span><span role="columnheader">Quem mais ganhou</span></div>
+        <div class="c2-dv c2-dvh" role="row"><span role="columnheader">Ramo</span><span role="columnheader" class="r">Peso na carteira ${ajuda("tPeso", "peso na carteira")}</span><span role="columnheader" class="c">perdeu ← Akad → ganhou</span><span role="columnheader" class="r">Akad</span><span role="columnheader">Maior ganho de participação</span></div>
         ${vis.map(lin).join("")}</div>
         ${atua.length > N_VIS ? `<button type="button" class="c2-mais" id="c2-mais" aria-expanded="${S.ccTodos ? "true" : "false"}">${S.ccTodos ? "Mostrar só os 10 maiores ↑" : `Ver todos os ${atua.length} ramos ↓`}</button>` : ""}`;
     }
     const bGP = `
       <section class="c2-sec" aria-labelledby="h-c2b">
-        <h3 id="h-c2b" class="c2-tit">Quem ganhou e quem perdeu espaço ${ajuda("ccGanho", "ganhos e perdas")}</h3>
+        <h3 id="h-c2b" class="c2-tit">Variação de market share da Akad por ramo ${ajuda("ccGanho", "ganhos e perdas")}</h3>
         <p class="c2-sub">${umRamo ? `Variação de market share em ${esc(linhasSel[0].nome)}, nos últimos 12 meses contra os 12 anteriores.` : `Variação do market share da Akad em cada ramo (${perC} contra ${perA}), do ramo que mais pesa na carteira para o que menos pesa.`}</p>
         <div class="c2-card">${corpoGP}</div>
       </section>`;
@@ -2066,10 +2066,12 @@
       if (ativo < 0 && filtradas.length) ativo = 0;
       desenhar();
     };
-    const abrir = () => { if (aberto) return; aberto = true; lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); filtrar(""); inp.select(); };
-    const fechar = () => { aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); mostrarValor(); };
+    // ao abrir, o campo fica vazio e com o cursor, pronto para digitar a busca; o valor atual aparece como dica
+    const abrir = () => { if (aberto) return; aberto = true; lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); const o = atual(); inp.placeholder = o ? `${o.t} · digite para buscar` : (cfg.placeholder || "Buscar"); inp.value = ""; filtrar(""); };
+    const fechar = () => { aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); inp.placeholder = cfg.placeholder || "Buscar"; mostrarValor(); };
     const escolher = (o) => { if (!o) return; const mudou = o.v !== cfg.valor(); fechar(); inp.value = o.t; if (mudou) cfg.aoEscolher(o.v); };
     inp.addEventListener("focus", abrir);
+    host.querySelector(".cb").addEventListener("mousedown", (e) => { if (e.target !== inp && !e.target.closest(".cb-lista")) { e.preventDefault(); inp.focus(); abrir(); } });
     inp.addEventListener("click", abrir);
     inp.addEventListener("input", () => { if (!aberto) abrir(); filtrar(inp.value); });
     inp.addEventListener("keydown", (e) => {
@@ -2177,8 +2179,12 @@
     const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" }];
     // grupos: aparecem logo abaixo de "Todos"; os ramos do grupo continuam disponíveis sozinhos na lista
     for (const g of GRUPOS_RAMOS) op.push({ v: selDeIds(g.ids), t: g.nome, sub: g.ids.map((x) => IDX.linhaPorId[x].nome).join(" + ") });
-    for (const l of IDX.linhas) {
-      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") });
+    // ramos em ordem de GWP da Akad no período do filtro (ramos sem prêmio da Akad no fim, pelo tamanho do mercado)
+    const P = periodo();
+    const gw = IDX.linhas.map((l) => { const R = resumo(l.idx, P); return { l, ak: ((R.cur.get(AKAD) || [0])[0]) || 0, mk: R.tc[0] || 0 }; });
+    gw.sort((p, q) => (q.ak > 0) - (p.ak > 0) || q.ak - p.ak || q.mk - p.mk);
+    for (const { l, ak } of gw) {
+      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") + (ak > 0 ? ` · GWP Akad ${reaisCurto(ak)}` : " · Akad sem prêmio") });
       if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true });
     }
     return op;
