@@ -1346,3 +1346,71 @@ body.c2-trava { overflow: hidden; }
 #aba-linhas .gp-li b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 760px) { #aba-linhas .gp-g2 { grid-template-columns: minmax(0, 1fr); } #aba-linhas .gp-li { grid-template-columns: minmax(0, 1fr) 60px 70px; } }
 #aba-linhas .gp-li.ak { background: var(--linha-akad); font-weight: 700; cursor: default; }
+/* Comparativo dos ramos: Akad x mercado */
+.tr-tab .pos-grp { flex: none; width: 66px; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.tr-tab .selo-pos { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+.tr-tab .selo-pos.num { width: 24px; height: 24px; border-radius: 50%; background: #F5F5F5; color: #616161; font: 600 .7rem var(--font-display); box-shadow: inset 0 0 0 1px #E0E0E0; }
+.tr-tab .mov { font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.tr-tab .mov.up { color: var(--bom); } .tr-tab .mov.down { color: var(--ruim); } .tr-tab .mov.zero { color: var(--muted); font-weight: 400; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tr-tab .selo-pos.num { background: #424242; color: #E0E0E0; box-shadow: none; }
+  :root:not([data-theme="light"]) .tr-tab .selo-pos .fita { stroke: #7C97B8; }
+}
+:root[data-theme="dark"] .tr-tab .selo-pos.num { background: #424242; color: #E0E0E0; box-shadow: none; }
+:root[data-theme="dark"] .tr-tab .selo-pos .fita { stroke: #7C97B8; }
+.tr-tab .cp { display: grid; grid-template-columns: 50px minmax(56px, 1fr) 40px 66px; column-gap: 8px; row-gap: 3px; align-items: center; font-size: .76rem; min-width: 230px; }
+.tr-tab .cp-r { color: var(--ink-2); }
+.tr-tab .cp-t { height: 7px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+.tr-tab .cp-t i { display: block; height: 100%; background: var(--axis); border-radius: 4px; }
+.tr-tab .cp-t i.ak { background: var(--akad); }
+.tr-tab .cp b, .tr-tab .cp .cp-v { text-align: right; font-variant-numeric: tabular-nums; }
+.tr-tab .cp-d { grid-column: 4; grid-row: 1 / span 2; justify-self: end; font-weight: 700; font-size: .76rem; white-space: nowrap; padding: 2px 6px; border-radius: 4px; }
+.tr-tab .cp-d.ruim { color: var(--ruim); background: rgba(224, 27, 27, .08); } .tr-tab .cp-d.bom { color: var(--bom); background: rgba(49, 156, 0, .1); } .tr-tab .cp-d.zero { color: var(--muted); }
+.tr-tab .cp-peq { display: inline-block; margin-top: 4px; font-size: .68rem; color: #8A6100; background: #FFF4D6; border-radius: 4px; padding: 1px 6px; }
+.tr-tab .tr-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--c); margin-right: 6px; vertical-align: middle; }
+.tr-tab td.nome .lk { display: inline; }
+.tr-tab .nome-in { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.tr-tab .pos-grp { flex: none; width: 62px; display: inline-flex; align-items: center; gap: 6px; }
+.tr-tab td .sub { display: block; font-size: .72rem; color: var(--muted); }
+.tr-tab tr.semak td { opacity: .75; }
+.tr-tab .peso-in { display: inline-flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.tr-tab .peso-bar { width: 40px; height: 6px; border-radius: 3px; background: var(--grid); overflow: hidden; display: inline-block; }
+.tr-tab .peso-bar i { display: block; height: 100%; background: #7C97B8; }
+#aba-linhas .pr-leg .pr-leg-ln { width: 16px; height: 2px; border-radius: 1px; background: var(--mercado); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #g-prod .pr-tend { stroke: #9DB4D1; } :root:not([data-theme="light"]) #aba-linhas .pr-leg .pr-leg-ln { background: #9DB4D1; } }
+:root[data-theme="dark"] #g-prod .pr-tend { stroke: #9DB4D1; } :root[data-theme="dark"] #aba-linhas .pr-leg .pr-leg-ln { background: #9DB4D1; }
+/* Ramo: projeção do ano */
+#b-proj .pj-g { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 16px 32px; align-items: center; }
+#b-proj .pj-frase { margin: 0 0 6px; font-size: 1.02rem; line-height: 1.45; color: var(--ink); }
+#b-proj .pj-frase b.bom { color: var(--bom); } #b-proj .pj-frase b.ruim { color: var(--ruim); }
+#b-proj .pj-sub { margin: 0; font-size: .82rem; color: var(--ink-2); line-height: 1.5; }
+#b-proj .pj-row { display: grid; grid-template-columns: 44px minmax(0, 1fr) 70px; gap: 10px; align-items: center; margin-bottom: 8px; font-size: .82rem; }
+#b-proj .pj-row b { text-align: right; font-variant-numeric: tabular-nums; }
+#b-proj .pj-rot { color: var(--ink-2); font-weight: 600; }
+#b-proj .pj-tr { position: relative; height: 18px; background: var(--grid); border-radius: 4px; }
+#b-proj .pj-tr i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; }
+#b-proj i.ant { background: #F5B3CA; }
+#b-proj i.real { background: var(--akad); }
+#b-proj i.proj { background: repeating-linear-gradient(135deg, #F5B3CA 0 5px, #FBE0EA 5px 10px); }
+#b-proj .pj-tr i.faixa { top: -3px; bottom: -3px; background: none; border: 1.5px solid var(--ink-2); border-radius: 3px; }
+#b-proj .pj-lg { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: .74rem; color: var(--ink-2); margin: 4px 0 0 54px; }
+#b-proj .pj-lg i { display: inline-block; width: 12px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; position: static; }
+#b-proj .pj-lg i.faixa { border: 1.5px solid var(--ink-2); width: 12px; }
+@media (max-width: 760px) { #b-proj .pj-g { grid-template-columns: minmax(0, 1fr); } }
+.tr-tab .ix { font-size: .95rem; }
+.tr-tab td.n .cp-d { display: inline-block; }
+/* Concorrentes: crescimento e margem técnica */
+.mt-tab { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.mt-tab th { font-size: .66rem; text-transform: uppercase; letter-spacing: .05em; color: var(--cc-label); font-weight: 600; text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--cc-rule); vertical-align: bottom; }
+.mt-tab th small { display: block; text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .72rem; }
+.mt-tab td { padding: 10px; border-bottom: 1px solid var(--cc-rule); vertical-align: middle; }
+.mt-tab .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.mt-tab .mt-m { color: var(--cc-label); font-size: .78rem; }
+.mt-tab .cp-d { font-weight: 700; font-size: .78rem; padding: 2px 6px; border-radius: 4px; }
+.mt-tab .cp-d.ruim { color: var(--ruim); background: rgba(224, 27, 27, .08); } .mt-tab .cp-d.bom { color: var(--bom); background: rgba(49, 156, 0, .1); } .mt-tab .cp-d.zero { color: var(--muted); }
+.mt-tab .cp-peq { margin-left: 8px; font-size: .68rem; color: #8A6100; background: #FFF4D6; border-radius: 4px; padding: 1px 6px; }
+.mt-s { display: inline-block; font-size: .74rem; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+.mt-s.def { background: rgba(224, 27, 27, .1); color: var(--ruim); } .mt-s.ab { background: rgba(199, 136, 0, .12); color: #8A6100; } .mt-s.ac { background: rgba(49, 156, 0, .1); color: var(--bom); }
+#b-proj .pj-passos { margin: 8px 0 8px; padding-left: 18px; font-size: .82rem; color: var(--ink-2); line-height: 1.5; }
+#b-proj .pj-passos li { margin-bottom: 3px; } #b-proj .pj-passos b { color: var(--ink); font-weight: 600; }
+.tr-tab .ix.neg { color: var(--ruim); }
