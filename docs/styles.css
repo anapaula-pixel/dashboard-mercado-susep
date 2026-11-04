@@ -1100,6 +1100,16 @@ body { color: var(--ink); }
 .tr-mat .tr-um { stroke: var(--axis); stroke-dasharray: 2 3; }
 .tr-mat .tr-corte { stroke: var(--ink-2); stroke-dasharray: 5 3; }
 .tr-mat .tr-q { font-family: var(--font-display); font-size: 12.5px; font-weight: 700; letter-spacing: .02em; }
+.tr-mat .tr-q.peq { font-size: 10.5px; }
+.tr-mat .tr-ref { font-size: 11.5px; font-weight: 600; fill: var(--ink-2); stroke: var(--surface); stroke-width: 3px; stroke-linejoin: round; paint-order: stroke; }
+.tr-refs { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: .78rem; color: var(--ink-2); margin: 0 0 8px; }
+.tr-refs span { display: inline-flex; align-items: center; gap: 6px; }
+.tr-refs i { display: inline-block; flex: none; }
+.tr-refs i.v { width: 0; height: 14px; border-left: 1.5px dashed var(--ink-2); }
+.tr-refs i.h { width: 16px; height: 0; border-top: 1.5px dashed var(--ink-2); }
+.tr-interp { margin-top: 20px; padding: 12px 14px; border-radius: 6px; background: var(--grid); font-size: .8rem; line-height: 1.5; color: var(--tr-label); }
+.tr-interp b { display: block; color: var(--ink); font-size: .82rem; margin-bottom: 2px; }
+.tr-interp p { margin: 0; }
 .tr-mat .tr-rot { font-size: 10.5px; font-weight: 600; fill: var(--ink); cursor: pointer; }
 .tr-mat .tr-b { cursor: pointer; transition: opacity .15s, fill-opacity .15s; }
 .tr-mat .tr-b:hover, .tr-mat .tr-b.hov, .tr-mat .tr-b:focus-visible { fill-opacity: .65; outline: none; stroke-width: 2.5; }
