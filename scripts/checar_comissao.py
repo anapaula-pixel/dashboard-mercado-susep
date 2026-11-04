@@ -128,6 +128,31 @@ def main():
         out(f"Linhas lidas com campos de custo de venda em {ANO}: {n}")
         out("")
 
+    # 2b) raio-x da tabela de valores: anos, quadros, ramos e linhas da Akad
+    cab, rows = tabela(zf, "ses_valoresmovramos.csv")
+    if cab:
+        i_e, i_m, i_c, i_r, i_q = col(cab, "coenti"), col(cab, "damesano"), col(cab, "cmpid"), col(cab, "ramcodigo"), col(cab, "quadro")
+        anos, quadros, ramos_vistos, exemplos, ak_anos = defaultdict(int), defaultdict(int), defaultdict(int), [], defaultdict(int)
+        for r in rows:
+            if len(r) <= max(i_e, i_m, i_c, i_r, i_q):
+                continue
+            anos[r[i_m].strip()[:4]] += 1
+            quadros[r[i_q].strip()] += 1
+            ramos_vistos[r[i_r].strip()] += 1
+            if r[i_e].strip() == AKAD:
+                ak_anos[r[i_m].strip()[:4]] += 1
+            if len(exemplos) < 12 and r[i_m].strip()[:4] >= "2024":
+                exemplos.append(" | ".join(x.strip() for x in r))
+        out("## Raio-x de SES_ValoresMovRamos")
+        out("Linhas por ano: " + ", ".join(f"{k}: {v}" for k, v in sorted(anos.items())))
+        out("Linhas da Akad por ano: " + (", ".join(f"{k}: {v}" for k, v in sorted(ak_anos.items())) or "nenhuma"))
+        out("Quadros: " + ", ".join(f"{k}: {v}" for k, v in sorted(quadros.items(), key=lambda kv: -kv[1])[:15]))
+        out("Ramos (amostra): " + ", ".join(f"{k}: {v}" for k, v in sorted(ramos_vistos.items(), key=lambda kv: -kv[1])[:25]))
+        out("Exemplos de linhas recentes:")
+        for e in exemplos:
+            out("    " + e)
+        out("")
+
     # 3) despesa comercial total (o que o painel usa hoje)
     cab, rows = tabela(zf, "ses_seguros.csv")
     dc_a, dc_m, pg_a, pg_m = defaultdict(float), defaultdict(float), defaultdict(float), defaultdict(float)
