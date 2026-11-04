@@ -487,11 +487,11 @@
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz BCG (Boston Consulting Group), adaptada. Cruza duas perguntas: o mercado do ramo está crescendo? E a Akad tem posição forte nele? Crescimento: quanto o mercado do ramo cresceu nos últimos 12 meses contra os 12 meses anteriores; a linha é a média dos ramos acompanhados. Posição forte: Akad entre as 5 maiores seguradoras do ramo. Na BCG original, só o líder do mercado conta como posição forte; adaptamos porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras, e estar no top 5 já significa escala relevante. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
-    ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra os 12 meses anteriores. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Ganhando espaço: mais aumentaram esse share. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
-    ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP nos últimos 12 meses. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
-    ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. nos últimos 12 meses contra os 12 anteriores. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
+    ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Ganhando espaço: mais aumentaram esse share. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
+    ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
+    ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
-    ccGanho: "Diferença do market share da Akad em cada ramo nos últimos 12 meses contra os 12 anteriores, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Quem mais ganhou: a seguradora que mais aumentou o market share no ramo.",
+    ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Quem mais ganhou: a seguradora que mais aumentou o market share no ramo.",
     ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (com a do mercado no ramo ao lado), custo de comercialização e a posição da Akad no mesmo ramo.",
     ccComp: "Últimos 12 meses até o fim do período escolhido. Sinistralidade e custo de comercialização são calculados sobre o prêmio ganho; resseguro cedido, sobre o GWP. Em ramos pequenos esses índices oscilam bastante.",
     ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização. É principalmente a comissão paga ao corretor, mais agenciamento, pró-labore e outros custos de venda. Calculado sobre o prêmio ganho, por isso fica próximo, mas não igual, ao percentual de comissão negociado.",
@@ -1203,6 +1203,32 @@
     const linhasTab = lista.map((k) => ({ k, ...infoEnt(R, k) }));
     const o = S.rankOrd;
     const perR = P.pa != null ? periodoLabel(P.pa, P.pb) : "período anterior";
+    // quem ganhou e quem perdeu market share no ramo (período do filtro contra o mesmo período do ano anterior)
+    let gpHtml = "";
+    if (P.pa != null && R.tp[0] > 0) {
+      const ks = new Set([...R.cur.keys(), ...R.prev.keys()]);
+      const ds = [...ks].map((k) => {
+        const sc = R.tc[0] > 0 ? (((R.cur.get(k) || [0])[0]) / R.tc[0]) * 100 : 0;
+        const sp = (((R.prev.get(k) || [0])[0]) / R.tp[0]) * 100;
+        return { k, d: sc - sp };
+      }).filter((y) => Math.abs(y.d) >= 0.05);
+      const dAk = ds.find((y) => y.k === AKAD);
+      const outros = ds.filter((y) => y.k !== AKAD);
+      const gan = outros.filter((y) => y.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
+      const per = outros.filter((y) => y.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
+      const mx = Math.max(0.5, ...gan.map((y) => y.d), ...per.map((y) => -y.d), dAk ? Math.abs(dAk.d) : 0);
+      const pp = (v) => `${v > 0 ? "+" : "−"}${nf1.format(Math.abs(v))} p.p.`;
+      const lin = (y) => `<button type="button" class="gp-li" data-ent="${esc(y.k)}"><span class="gp-nm">${esc(nomeCurtoCia(nomeEnt(y.k)))}</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></button>`;
+      gpHtml = `
+        <div class="bloco c12">
+          <div class="bloco-cab"><h2>Quem ganhou e quem perdeu espaço</h2><p class="nota">Variação do market share em ${periodoLabel(P.a, P.b)} contra ${perR}. Clique numa seguradora para abrir a ficha dela.</p></div>
+          <p class="gp-ak">Akad: <b class="${!dAk ? "" : dAk.d > 0 ? "bom" : "ruim"}">${dAk ? pp(dAk.d) : "sem variação"}</b> de market share</p>
+          <div class="gp-g2">
+            <div><p class="gp-lt">Mais ganharam</p>${gan.map(lin).join("") || '<p class="nota">Ninguém ganhou espaço.</p>'}</div>
+            <div><p class="gp-lt">Mais perderam</p>${per.map(lin).join("") || '<p class="nota">Ninguém perdeu espaço.</p>'}</div>
+          </div>
+        </div>`;
+    }
     linhasTab.sort((p, q) => {
       const va = p[o.col], vb = q[o.col];
       if (va == null) return 1;
@@ -1248,7 +1274,7 @@
               <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
               <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Market share</th>
               <th class="n ord" data-col="dShare">Variação do share</th><th class="n ord" data-col="cresc">Crescimento</th>
-              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com">Desp. comercial</th>
+              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com" title="Comissão do corretor, agenciamento, pró-labore e outros custos de venda, sobre o prêmio ganho">Custo de comercialização</th>
             </tr></thead>
             <tbody>${linhasTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}" data-ent="${esc(x.k)}">
@@ -1263,6 +1289,7 @@
             </tbody>
           </table></div>
         </div>
+        ${gpHtml}
       </div>`;
 
     el.querySelectorAll(".rk-tab .pos-grp").forEach((g) => {
@@ -1277,7 +1304,7 @@
         renderLinhas();
       });
     });
-    el.querySelectorAll("tr.clic[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
+    el.querySelectorAll("tr.clic[data-ent], .gp-li[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
       S.ccAbrir = tr.dataset.ent;
       abrirDe("conc");
     }));
@@ -1358,9 +1385,10 @@
     ligarAjuda();
     const P = periodo();
     const el = $("#aba-conc");
-    const b = P.b, a12 = b - 11;
-    const per12 = a12 >= 0 ? `${mesLabel(a12, true)} a ${mesLabel(b, true)}` : "";
-    const ramosSel = ramosDaSel(S.linha);
+    // Usa o período do filtro, comparado com o mesmo período do ano anterior, sempre na carteira toda
+    const b = P.b, a0 = P.a, pa = P.pa == null ? -1 : P.pa, pb = P.pb == null ? -1 : P.pb;
+    const perC = periodoLabel(a0, b), perA = P.pa == null ? "período anterior" : periodoLabel(P.pa, P.pb);
+    const ramosSel = D.ramos.map((_, i) => i);
     const linhasSel = IDX.linhas.filter((l) => l.idx.some((i) => ramosSel.includes(i)));
     const umRamo = linhasSel.length === 1;
     const shareDe = (m, t, k) => (t > 0 ? (((m.get(k) || [0])[0]) / t) * 100 : 0);
@@ -1370,9 +1398,9 @@
     const bi2 = (v, curto) => (v >= 1e6 ? `${curto ? "" : "R$ "}${(v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} bi` : curto ? reaisCurto(v) : reais(v));
     const clsV = (v, lim = 0.05) => (v > lim ? "up" : v < -lim ? "dn" : "zero");
 
-    // ----- por ramo: 12 meses e 12 anteriores
+    // ----- por ramo: período do filtro e mesmo período do ano anterior
     const porL = linhasSel.map((l) => {
-      const c = agg5(l.idx, a12, b), p = agg5(l.idx, a12 - 12, b - 12);
+      const c = agg5(l.idx, a0, b), p = agg5(l.idx, pa, pb);
       const tc = soma5(c)[0], tp = soma5(p)[0];
       const rk = rkDe(c), rkp = rkDe(p);
       return { l, c, p, tc, tp, rk, rkp, ak: gw(c, AKAD), akp: gw(p, AKAD), pos: rk.indexOf(AKAD) + 1, posP: rkp.indexOf(AKAD) + 1, sh: shareDe(c, tc, AKAD), shP: tp > 0 ? shareDe(p, tp, AKAD) : null };
@@ -1381,17 +1409,17 @@
     const akT = atua.reduce((s, x) => s + x.ak, 0);
     const akTp = porL.reduce((s, x) => s + x.akp, 0);
     atua.forEach((x) => { x.peso = akT > 0 ? (x.ak / akT) * 100 : 0; x.d = x.shP != null ? x.sh - x.shP : null; });
-    const nomeSelR = S.linha === "todas" ? `em todos os ${atua.length} ramos em que a Akad vende` : umRamo ? `em ${esc(linhasSel[0].nome)}` : `em ${esc(nomeSel(S.linha))}`;
+    const nomeSelR = `em todos os ${atua.length} ramos em que a Akad vende`;
 
     if (!atua.length) {
-      el.innerHTML = `<div class="cab-aba"><div><h2>Concorrentes</h2><p>A Akad não tem prêmio ${S.linha === "todas" ? "no período" : `em ${esc(nomeSel(S.linha))}`} nos últimos 12 meses (${per12}). Escolha outro ramo no filtro.</p></div></div>`;
+      el.innerHTML = `<div class="cab-aba"><div><h2>Concorrentes</h2><p>A Akad não tem prêmio ${S.linha === "todas" ? "no período" : `em ${esc(nomeSel(S.linha))}`} em ${perC}.</p></div></div>`;
       return;
     }
 
     // ----- cards
     const ramosAk = atua.flatMap((x) => x.l.idx.filter((i) => ramosSel.includes(i)));
     const X = soma5(new Map(atua.map((x, i) => [i, x.c.get(AKAD) || [0, 0, 0, 0, 0]])));
-    const MT = soma5(agg5(ramosAk, a12, b));
+    const MT = soma5(agg5(ramosAk, a0, b));
     const sinA = X[1] > 0 ? (X[2] / X[1]) * 100 : null, comA = X[1] > 0 ? (X[3] / X[1]) * 100 : null;
     const sinM = MT[1] > 0 ? (MT[2] / MT[1]) * 100 : null, comM = MT[1] > 0 ? (MT[3] / MT[1]) * 100 : null;
     const crA = cresc(akT, akTp);
@@ -1399,17 +1427,17 @@
     const card = (tit, num, desc, vis, aj) => `<div class="c2-kc"><p class="c2-kt">${tit}${aj ? " " + ajuda(aj, tit) : ""}</p><p class="c2-kn">${num}</p><p class="c2-kd">${desc}</p><div class="c2-kv">${vis}</div></div>`;
     const mxG = Math.max(akT, akTp);
     const k1 = card(umRamo ? "GWP da Akad no ramo" : "GWP da Akad", bi2(akT),
-      crA == null ? "sem prêmio nos 12 meses anteriores" : `<b class="${crA < 0 ? "dn" : "up"}">${crA < 0 ? "▼" : "▲"} ${crA > 999 ? "> 999" : nf1.format(Math.abs(crA))}%</b> em 12 meses`,
-      hb("12 meses antes", akTp, mxG, "#F9C9DA", bi2(akTp, true)) + hb("Últimos 12 meses", akT, mxG, "var(--akad)", bi2(akT, true), true));
+      crA == null ? `sem prêmio em ${perA}` : `<b class="${crA < 0 ? "dn" : "up"}">${crA < 0 ? "▼" : "▲"} ${crA > 999 ? "> 999" : nf1.format(Math.abs(crA))}%</b> contra ${perA}`,
+      hb(perA, akTp, mxG, "#F9C9DA", bi2(akTp, true)) + hb(perC, akT, mxG, "var(--akad)", bi2(akT, true), true));
     let k2, k3;
     if (umRamo) {
       const x = atua[0];
       const dP = x.posP ? x.posP - x.pos : null;
-      k2 = card("Posição da Akad", `${x.pos}º <small>de ${x.rk.length}</small>`, dP == null ? "sem prêmio nos 12 meses anteriores" : dP === 0 ? "mesma posição de 12 meses antes" : `<b class="${dP > 0 ? "up" : "dn"}">${dP > 0 ? "▲ subiu" : "▼ caiu"} ${Math.abs(dP)}</b> (era ${x.posP}º)`,
+      k2 = card("Posição da Akad", `${x.pos}º <small>de ${x.rk.length}</small>`, dP == null ? `sem prêmio em ${perA}` : dP === 0 ? `mesma posição de ${perA}` : `<b class="${dP > 0 ? "up" : "dn"}">${dP > 0 ? "▲ subiu" : "▼ caiu"} ${Math.abs(dP)}</b> (era ${x.posP}º)`,
         `<div class="c2-rk">${x.rk.slice(0, Math.min(10, x.rk.length)).map((k, i) => `<span class="${k === AKAD ? "on" : ""}" title="${i + 1}º ${esc(nomeC(k))}">${i + 1}</span>`).join("")}</div>`);
       const mxS = Math.max(x.sh, x.shP || 0);
-      k3 = card("Market share da Akad", pctPart(x.sh), x.d == null ? "sem prêmio nos 12 meses anteriores" : `<b class="${clsV(x.d)}">${x.d < -0.05 ? "▼ " : x.d > 0.05 ? "▲ " : ""}${ppTxt(x.d)}</b> em 12 meses`,
-        hb("12 meses antes", x.shP || 0, mxS, "#F9C9DA", pctPart(x.shP)) + hb("Últimos 12 meses", x.sh, mxS, "var(--akad)", pctPart(x.sh), true));
+      k3 = card("Market share da Akad", pctPart(x.sh), x.d == null ? `sem prêmio em ${perA}` : `<b class="${clsV(x.d)}">${x.d < -0.05 ? "▼ " : x.d > 0.05 ? "▲ " : ""}${ppTxt(x.d)}</b> contra ${perA}`,
+        hb(perA, x.shP || 0, mxS, "#F9C9DA", pctPart(x.shP)) + hb(perC, x.sh, mxS, "var(--akad)", pctPart(x.sh), true));
     } else {
       const top5 = atua.filter((x) => x.pos && x.pos <= 5);
       const lid = atua.filter((x) => x.pos === 1).map((x) => esc(x.l.nome));
@@ -1428,7 +1456,7 @@
       stk("Mercado", sinM, comM) + stk("Akad", sinA, comA, true) + `<p class="c2-lg"><i style="background:var(--mercado)"></i>Sinistros <i style="background:#7C97B8"></i>Comercialização</p>`, "ccSinCom");
 
     // ----- quem são os concorrentes (share médio ponderado pelo peso na carteira da Akad)
-    const todosL = IDX.linhas.map((l) => agg5(l.idx, a12, b));
+    const todosL = IDX.linhas.map((l) => agg5(l.idx, a0, b));
     const akVec = todosL.map((m) => gw(m, AKAD));
     const nAk = Math.sqrt(akVec.reduce((s, v) => s + v * v, 0));
     const ents = new Set(); for (const x of atua) { for (const k of x.c.keys()) if (k !== AKAD) ents.add(k); for (const k of x.p.keys()) if (k !== AKAD) ents.add(k); }
@@ -1458,7 +1486,7 @@
     const bQuem = `
       <section class="c2-sec" aria-labelledby="h-c2a">
         <h3 id="h-c2a" class="c2-tit">Quem são os concorrentes ${ajuda("ccTipos", "tipos de concorrente")}</h3>
-        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : "Share médio nos ramos da Akad, dando mais peso aos ramos que mais pesam na carteira dela, e variação em 12 meses."} Clique num nome para abrir a ficha do concorrente.</p>
+        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Share médio nos ramos da Akad, dando mais peso aos ramos que mais pesam na carteira dela, e variação contra ${perA}.`} Clique num nome para abrir a ficha do concorrente.</p>
         <div class="c2-g3">
           ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
           ${colC("Perfil parecido", "var(--cc-link)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
@@ -1474,13 +1502,14 @@
       const ds = deltas(atua[0]).filter((y) => y.k !== AKAD);
       const gan = ds.filter((y) => y.d > 0).sort((p, q) => q.d - p.d).slice(0, 5), per = ds.filter((y) => y.d < 0).sort((p, q) => p.d - q.d).slice(0, 5);
       const x = atua[0];
-      corpoGP = `<p class="c2-akd">Akad: <b class="${clsV(x.d || 0)}">${x.d == null ? "sem prêmio nos 12 meses anteriores" : ppTxt(x.d)}</b> de market share</p>
+      corpoGP = `<p class="c2-akd">Akad: <b class="${clsV(x.d || 0)}">${x.d == null ? `sem prêmio em ${perA}` : ppTxt(x.d)}</b> de market share</p>
         <div class="c2-g2"><div><p class="c2-lt">Mais ganharam</p>${gan.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém ganhou espaço.</p>'}</div>
         <div><p class="c2-lt">Mais perderam</p>${per.map((y) => `<div class="c2-pp">${quemNm(y)}</div>`).join("") || '<p class="c2-vz">Ninguém perdeu espaço.</p>'}</div></div>`;
     } else {
       const N_VIS = 10;
       const vis = S.ccTodos ? atua : atua.slice(0, N_VIS);
-      const mxD = Math.max(0.5, ...atua.slice(0, N_VIS).map((x) => Math.abs(x.d || 0))) * 1.15;
+      // escala limitada a 10 p.p. para um ramo pequeno com variação enorme não achatar os outros
+      const mxD = Math.min(10, Math.max(0.5, ...atua.slice(0, N_VIS).map((x) => Math.abs(x.d || 0)))) * 1.15;
       const pesoMx = atua[0].peso;
       const lin = (x) => {
         const ds = deltas(x).filter((y) => y.k !== AKAD && y.d > 0).sort((p, q) => q.d - p.d);
@@ -1502,12 +1531,12 @@
     const bGP = `
       <section class="c2-sec" aria-labelledby="h-c2b">
         <h3 id="h-c2b" class="c2-tit">Quem ganhou e quem perdeu espaço ${ajuda("ccGanho", "ganhos e perdas")}</h3>
-        <p class="c2-sub">${umRamo ? `Variação de market share em ${esc(linhasSel[0].nome)}, nos últimos 12 meses contra os 12 anteriores.` : "Variação do market share da Akad em cada ramo, do ramo que mais pesa na carteira para o que menos pesa."}</p>
+        <p class="c2-sub">${umRamo ? `Variação de market share em ${esc(linhasSel[0].nome)}, nos últimos 12 meses contra os 12 anteriores.` : `Variação do market share da Akad em cada ramo (${perC} contra ${perA}), do ramo que mais pesa na carteira para o que menos pesa.`}</p>
         <div class="c2-card">${corpoGP}</div>
       </section>`;
 
     el.innerHTML = `
-      <div class="cab-aba"><div><h2>Concorrentes</h2><p>Quem disputa mercado com a Akad e quem está ganhando espaço. Últimos 12 meses (${per12}) contra os 12 anteriores, ${nomeSelR}.</p></div></div>
+      <div class="cab-aba"><div><h2>Concorrentes</h2><p>Quem disputa mercado com a Akad e quem está ganhando espaço. ${perC} contra ${perA}, ${nomeSelR}.</p></div></div>
       <div class="c2-kcs">${k1}${k2}${k3}${k4}</div>
       ${bQuem}${bGP}
       <div id="c2-ficha-host"></div>`;
@@ -1528,7 +1557,7 @@
       const rows = [];
       let G = [0, 0, 0, 0, 0], Gp = 0;
       IDX.linhas.forEach((l) => {
-        const c = agg5(l.idx, a12, b), p = agg5(l.idx, a12 - 12, b - 12);
+        const c = agg5(l.idx, a0, b), p = agg5(l.idx, pa, pb);
         const x = c.get(k), xp = gw(p, k);
         Gp += xp;
         if (!x || x[0] <= 0) return;
@@ -1549,7 +1578,7 @@
         <aside class="c2-dr" role="dialog" aria-modal="true" aria-labelledby="c2-fn" tabindex="-1">
           <div class="c2-drh"><div><p class="c2-fk">Concorrente</p><h3 id="c2-fn" class="c2-fn">${esc(nomeC(k))}</h3><p class="c2-fs">${esc(nomeEnt(k))}</p></div><button type="button" class="c2-x" data-fechar aria-label="Fechar ficha">×</button></div>
           <div class="c2-fm">
-            <div><span>GWP 12 meses</span><b>${reais(G[0])}</b></div>
+            <div><span>GWP ${perC}</span><b>${reais(G[0])}</b></div>
             <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sgn(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
             <div><span>Sinistralidade</span><b>${G[1] > 0 ? nf0.format((G[2] / G[1]) * 100) + "%" : "–"}</b></div>
             <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
@@ -1559,7 +1588,7 @@
           <tbody>${rows.map((r) => `<tr class="clic" data-abrir="${r.l.id}" tabindex="0"><td class="c2-atn">${esc(r.l.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${pctPart(r.sh)}</td>
             <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppTxt(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? "novo" : r.cr > 999 ? "> +999%" : sgn(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
             <td class="n">${sinCel(r)}</td><td class="n">${r.com == null ? "–" : nf0.format(r.com) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`).join("")}</tbody></table></div>
-          <p class="c2-fnota">Últimos 12 meses (${per12}) contra os 12 anteriores, em todos os ramos em que a seguradora vende. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Clique num ramo para abrir a visão do ramo.</p>
+          <p class="c2-fnota">${perC} contra ${perA}, em todos os ramos em que a seguradora vende. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Clique num ramo para abrir a visão do ramo.</p>
         </aside>`;
       document.body.classList.add("c2-trava");
       const dr = host.querySelector(".c2-dr");
@@ -1799,7 +1828,7 @@
   /* ---------- Navegação e filtros ---------- */
   const ABAS = ["geral", "linhas", "conc", "uf"];
   // Quais filtros cada página usa (o período vale para todas)
-  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: ["linha"], uf: ["linha", "uf"] };
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: [], uf: ["linha", "uf"] };
 
   function irPara(aba, manterVoltar) {
     if (!manterVoltar) S.pilha = [];
