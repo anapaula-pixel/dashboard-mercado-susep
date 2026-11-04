@@ -355,6 +355,78 @@
     });
   }
 
+  /** Produção da Akad no ramo: barras por mês (últimos 24 meses até o fim do período) ou por ano; GWP ou market share */
+  const TONS_ANO = ["#E3175E", "#EE7EA5", "#F9C9DA"]; // ano mais recente -> mais antigo
+  function graficoProducao(el, sm, P) {
+    const met = S.prodMet || "gwp", vis = S.prodVis || "mes";
+    const A = Array.from(sm.ent.get(AKAD)), T = Array.from(sm.mercado);
+    const W = Math.max(280, el.clientWidth || 600), peq = W < 560, H = peq ? 230 : 280;
+    const m = { t: vis === "ano" ? (peq ? 26 : 46) : 14, r: 6, b: vis === "mes" ? 36 : 22, l: 40 };
+    const fim = P.b;
+    let itens = [];
+    if (vis === "mes") {
+      const n = peq ? 12 : 24;
+      for (let i = Math.max(0, fim - n + 1); i <= fim; i++) {
+        const ym = D.meses[i];
+        const sh = T[i] > 0 ? (A[i] / T[i]) * 100 : null;
+        const iP = i - 12;
+        itens.push({ l1: MESES_PT[+ym.slice(4) - 1], l2: ym.slice(0, 4), ano: ym.slice(0, 4), v: met === "gwp" ? A[i] : sh, a: A[i], sh,
+          tit: mesLabel(i, true), cr: iP >= 0 ? cresc(A[i], A[iP]) : null, dsh: iP >= 0 && T[iP] > 0 && sh != null ? sh - (A[iP] / T[iP]) * 100 : null, refP: iP >= 0 ? mesLabel(iP, true) : null });
+      }
+      const anos = [...new Set(itens.map((x) => x.ano))].reverse();
+      itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anos.indexOf(x.ano), TONS_ANO.length - 1)]; });
+    } else {
+      const yFim = D.meses[fim].slice(0, 4), mFim = +D.meses[fim].slice(4);
+      const anos = [...new Set(D.meses.map((x) => x.slice(0, 4)))].filter((y) => y <= yFim);
+      const soma = (y, ate) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { if (ym.slice(0, 4) === y && +ym.slice(4) <= ate && i <= fim) { a += A[i]; t += T[i]; } }); return [a, t]; };
+      anos.forEach((y, k) => {
+        const parc = y === yFim && mFim < 12;
+        const [a, t] = soma(y, parc ? mFim : 12);
+        const sh = t > 0 ? (a / t) * 100 : null;
+        let cr = null, dsh = null;
+        if (k > 0) { const [ap, tp] = soma(anos[k - 1], parc ? mFim : 12); cr = cresc(a, ap); dsh = sh != null && tp > 0 ? sh - (ap / tp) * 100 : null; }
+        itens.push({ l1: y + (parc ? "*" : ""), v: met === "gwp" ? a : sh, a, sh, cr, dsh, parc, tit: parc ? `${y} (jan a ${MESES_PT[mFim - 1]})` : y, refP: k > 0 ? (parc ? `jan a ${MESES_PT[mFim - 1]}/${anos[k - 1]}` : anos[k - 1]) : null, cor: y === yFim ? TONS_ANO[0] : "#F5B3CA" });
+      });
+    }
+    const vals = itens.map((x) => x.v || 0);
+    const vMax = Math.max(met === "gwp" ? 1 : 0.5, ...vals) * 1.05;
+    const passo = niceMax(vMax / 4);
+    const nT = Math.max(1, Math.ceil(vMax / passo));
+    const max = passo * nT;
+    const Y = (v) => m.t + (1 - Math.max(0, v) / max) * (H - m.t - m.b);
+    const fmtE = (v) => (v === 0 ? "0" : met === "gwp" ? reaisCurto(v) : nf0.format(v) + "%");
+    const fmtV = (v) => (met === "gwp" ? reais(v) : pct(v));
+    let g = "";
+    for (let k = 0; k <= nT; k++) { const v = passo * k, y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${fmtE(v)}</text>`; }
+    const bw = (W - m.l - m.r) / itens.length;
+    itens.forEach((x, i) => {
+      const w = bw * (vis === "ano" ? 0.6 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
+      if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
+      g += `<text x="${bx + w / 2}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${esc(x.l1)}</text>`;
+      if (x.l2 && (!peq || i === 0 || x.l1 === "jan")) g += `<text x="${bx + w / 2}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
+      if (vis === "ano") {
+        const d = met === "gwp" ? x.cr : x.dsh;
+        if (!peq) g += `<text x="${bx + w / 2}" y="${y - (d != null ? 28 : 6)}" text-anchor="middle" class="pr-val">${x.v == null ? "–" : met === "gwp" ? reaisCurto(x.v) : pct(x.v)}</text>`;
+        if (d != null && isFinite(d)) {
+          const txt = met === "gwp" ? (d > 999 ? "> +999%" : (d >= 0 ? "+" : "−") + nf0.format(Math.abs(d)) + "%") : (d >= 0 ? "+" : "−") + nf1.format(Math.abs(d)) + (peq ? "" : " p.p.");
+          const pw = txt.length * 6.4 + 12;
+          g += `<rect x="${bx + w / 2 - pw / 2}" y="${y - 22}" width="${pw}" height="16" rx="8" class="${d >= 0 ? "pr-up" : "pr-dn"}"/><text x="${bx + w / 2}" y="${y - 10.5}" text-anchor="middle" class="pr-pill ${d >= 0 ? "pr-up" : "pr-dn"}">${txt}</text>`;
+        }
+      }
+      g += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hitb"/>`;
+    });
+    g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : "por ano"}">${g}</svg>`;
+    const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
+    el.querySelectorAll(".hitb").forEach((r) => {
+      const x = itens[+r.dataset.i];
+      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div><div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
+      r.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
+      r.addEventListener("mouseleave", esconderTip);
+    });
+    return itens;
+  }
+
   /* ---------- Visão geral ---------- */
   // Textos de ajuda contextual (abrem no "?" ao lado de cada indicador)
   const AJUDA = {
@@ -1132,16 +1204,18 @@
       </div>
       <div class="grade">
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Participação no mercado, 12 meses móveis</h2><p class="nota">Akad e os 4 maiores concorrentes do período. Área sombreada = período selecionado.</p></div>
-          <div class="graf" id="g-share"></div>
+          <div class="bloco-cab pr-cab"><div><h2>Produção da Akad em ${esc(nomeSel(S.linha))}</h2><p class="nota" id="g-prod-nota"></p></div>
+            <div class="pr-btns">
+              <div class="seg-ctrl" role="group" aria-label="Medida">${[["gwp", "GWP"], ["share", "Market share"]].map(([k, r]) => `<button type="button" data-pmet="${k}" aria-pressed="${(S.prodMet || "gwp") === k}">${r}</button>`).join("")}</div>
+              <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
+            </div>
+          </div>
+          <div class="pr-leg" id="g-prod-leg"></div>
+          <div class="graf" id="g-prod"></div>
         </div>
-        <div class="bloco c6">
-          <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">GWP. * ano parcial</p></div>
+        <div class="bloco c12">
+          <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">GWP de todas as seguradoras no ramo. * ano parcial</p></div>
           <div class="graf" id="g-merc"></div>
-        </div>
-        <div class="bloco c6">
-          <div class="bloco-cab"><h2>GWP Akad por ano</h2><p class="nota">* ano parcial</p></div>
-          <div class="graf" id="g-akad"></div>
         </div>
         <div class="bloco c12">
           <div class="bloco-cab"><h2>Ranking do período</h2><p class="nota">Clique num concorrente para ver o detalhe. Clique no título da coluna para ordenar.</p></div>
@@ -1184,29 +1258,28 @@
     // gráficos
     const chaves = [AKAD, ...top];
     const sm = serieMensal(ramos, chaves);
-    const merc12 = movel12(Array.from(sm.mercado));
-    const series = chaves.map((k, i) => {
-      const e12 = movel12(Array.from(sm.ent.get(k)));
-      return {
-        nome: nomeEnt(k), cor: i === 0 ? css("--akad") : css(CORES_CONC[i - 1]), grossa: i === 0,
-        valores: e12.map((v, j) => (v == null || !merc12[j] || merc12[j] <= 0 ? null : (v / merc12[j]) * 100)),
-      };
-    });
-    linhas($("#g-share"), {
-      series, banda: [P.a, P.b], inicio: 11, rotulo: "Participação de mercado em 12 meses móveis",
-      fmt: (v) => pct(v), fmtEixo: (v) => nf0.format(v) + "%",
-      tituloTip: (i) => `12 meses até ${mesLabel(i, true)}`,
-    });
+    const desenharProd = () => {
+      const itens = graficoProducao($("#g-prod"), sm, P);
+      const vis = S.prodVis || "mes", met = S.prodMet || "gwp";
+      const fimLab = mesLabel(P.b, true);
+      $("#g-prod-nota").textContent = vis === "mes"
+        ? `${met === "gwp" ? "GWP" : "Market share"} por mês, ${itens.length} meses até ${fimLab}.`
+        : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
+      const anos = vis === "mes" ? [...new Set(itens.map((x) => x.ano))] : [];
+      $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
+    };
+    desenharProd();
+    el.querySelectorAll("[data-pmet],[data-pvis]").forEach((b) => b.addEventListener("click", () => {
+      if (b.dataset.pmet) S.prodMet = b.dataset.pmet; else S.prodVis = b.dataset.pvis;
+      el.querySelectorAll("[data-pmet]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.pmet === (S.prodMet || "gwp"))));
+      el.querySelectorAll("[data-pvis]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.pvis === (S.prodVis || "mes"))));
+      desenharProd();
+    }));
     const anosM = porAno(Array.from(sm.mercado));
-    const anosA = porAno(Array.from(sm.ent.get(AKAD)));
     const rot = [...anosM.keys()];
     const ultMes = D.meses[D.meses.length - 1];
     const parcial = rot.map((y) => (y === ultMes.slice(0, 4) && !ultMes.endsWith("12") ? `até ${MESES_PT[+ultMes.slice(4) - 1]}` : null));
     barras($("#g-merc"), { rotulos: rot, valores: rot.map((y) => anosM.get(y)), cor: css("--mercado"), fmt: reais, fmtCurto: reaisCurto, parcial, rotulo: "Mercado por ano" });
-    barras($("#g-akad"), {
-      rotulos: rot, valores: rot.map((y) => anosA.get(y) || 0), cor: css("--akad"), fmt: reais, fmtCurto: reaisCurto, parcial, rotulo: "Akad por ano",
-      extra: (i) => { const y = rot[i]; const s = anosM.get(y) > 0 ? ((anosA.get(y) || 0) / anosM.get(y)) * 100 : null; return `<div>Participação: ${pct(s)}</div>`; },
-    });
   }
 
   /* ---------- Concorrentes ---------- */
