@@ -365,7 +365,7 @@
     const met = S.prodMet || "gwp", vis = S.prodVis || "mes";
     const A = Array.from(sm.ent.get(AKAD)), T = Array.from(sm.mercado);
     const W = Math.max(280, el.clientWidth || 600), peq = W < 560, H = peq ? 230 : 280;
-    const m = { t: vis === "ano" ? (peq ? 26 : 46) : 14, r: 6, b: vis === "mes" ? 36 : 22, l: 40 };
+    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
     const fim = P.b;
     let itens = [];
     if (vis === "mes") {
@@ -387,6 +387,24 @@
         return "#" + c0.map((v, j) => Math.round(v + (c1[j] - v) * t).toString(16).padStart(2, "0")).join("");
       };
       itens.forEach((x) => { x.cor = tom(anos.indexOf(x.ano)); });
+    } else if (vis === "tri") {
+      // trimestres desde o 1º trimestre de dois anos antes; o último pode ser parcial (comparado com os mesmos meses)
+      const yFim = +D.meses[fim].slice(0, 4);
+      const somaM = (y, m0, m1) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= m0 && mm <= m1 && i <= fim) { a += A[i]; t += T[i]; } }); return [a, t]; };
+      for (let y = Math.max(+D.meses[0].slice(0, 4), yFim - 2); y <= yFim; y++) for (let q = 1; q <= 4; q++) {
+        const m0 = (q - 1) * 3 + 1;
+        const iIni = D.meses.indexOf(`${y}${String(m0).padStart(2, "0")}`);
+        if (iIni < 0 || iIni > fim) continue;
+        const m1 = Math.min(m0 + 2, y === yFim ? +D.meses[fim].slice(4) : 12);
+        const parc = m1 < m0 + 2;
+        const [a, t] = somaM(y, m0, m1), [ap, tp] = somaM(y - 1, m0, m1);
+        const sh = t > 0 ? (a / t) * 100 : null;
+        const meses = `${MESES_PT[m0 - 1]} a ${MESES_PT[m1 - 1]}`;
+        itens.push({ l1: `${q}º tri${parc ? "*" : ""}`, l2: q === 1 || itens.length === 0 ? String(y) : "", ano: String(y), v: met === "gwp" ? a : sh, a, sh, parc,
+          cr: ap > 0 ? cresc(a, ap) : null, dsh: tp > 0 && sh != null ? sh - (ap / tp) * 100 : null, tit: `${q}º trimestre de ${y} (${meses}${parc ? ", parcial" : ""})`, refP: `${meses}/${y - 1}` });
+      }
+      const anosT = [...new Set(itens.map((x) => x.ano))].reverse();
+      itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anosT.indexOf(x.ano), TONS_ANO.length - 1)]; });
     } else {
       const yFim = D.meses[fim].slice(0, 4), mFim = +D.meses[fim].slice(4);
       const anos = [...new Set(D.meses.map((x) => x.slice(0, 4)))].filter((y) => y <= yFim);
@@ -413,11 +431,11 @@
     const bw = (W - m.l - m.r) / itens.length;
     const cada = vis === "mes" ? [1, 2, 3, 4, 6, 12].find((c) => c * bw >= 30) || 12 : 1; // muitos meses: rótulo a cada N meses, sempre incluindo janeiro
     itens.forEach((x, i) => {
-      const w = bw * (vis === "ano" ? 0.6 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
+      const w = bw * (vis !== "mes" ? 0.6 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
       if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
       if (cada === 1 || (MESES_PT.indexOf(x.l1) % cada === 0)) g += `<text x="${bx + w / 2}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${esc(x.l1)}</text>`;
       if (x.l2 && ((!peq && cada === 1) || i === 0 || x.l1 === "jan")) g += `<text x="${bx + w / 2}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
-      if (vis === "ano") {
+      if (vis !== "mes") {
         const d = met === "gwp" ? x.cr : x.dsh;
         if (!peq) g += `<text x="${bx + w / 2}" y="${y - (d != null ? 28 : 6)}" text-anchor="middle" class="pr-val">${x.v == null ? "–" : met === "gwp" ? reaisCurto(x.v) : pct(x.v)}</text>`;
         if (d != null && isFinite(d)) {
@@ -429,7 +447,7 @@
       g += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hitb"/>`;
     });
     g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
-    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : "por ano"}">${g}</svg>`;
+    el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : vis === "tri" ? "por trimestre" : "por ano"}">${g}</svg>`;
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
     el.querySelectorAll(".hitb").forEach((r) => {
       const x = itens[+r.dataset.i];
@@ -1256,7 +1274,7 @@
           <div class="bloco-cab pr-cab"><div><h2>Produção da Akad em ${esc(nomeSel(S.linha))}</h2><p class="nota" id="g-prod-nota"></p></div>
             <div class="pr-btns">
               <div class="seg-ctrl" role="group" aria-label="Medida">${[["gwp", "GWP"], ["share", "Market share"]].map(([k, r]) => `<button type="button" data-pmet="${k}" aria-pressed="${(S.prodMet || "gwp") === k}">${r}</button>`).join("")}</div>
-              <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
+              <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
               <label class="pr-ord pr-desde"${(S.prodVis || "mes") === "mes" ? "" : " hidden"}><span class="ctrl-rot">Desde</span><select id="g-prod-ini" class="pr-sel" aria-label="Mostrar meses desde"></select></label>
             </div>
           </div>
@@ -1318,8 +1336,9 @@
       const fimLab = mesLabel(P.b, true);
       $("#g-prod-nota").textContent = vis === "mes"
         ? `${met === "gwp" ? "GWP" : "Market share"} por mês, de ${itens[0].tit} a ${fimLab}.`
+        : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
-      const anos = vis === "mes" ? [...new Set(itens.map((x) => x.ano))] : [];
+      const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
       const selIni = $("#g-prod-ini");
       selIni.closest(".pr-desde").hidden = vis !== "mes";
       if (vis === "mes") {
