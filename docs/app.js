@@ -365,8 +365,10 @@
     const fim = P.b;
     let itens = [];
     if (vis === "mes") {
-      const n = peq ? 12 : 24;
-      for (let i = Math.max(0, fim - n + 1); i <= fim; i++) {
+      // desde janeiro do ano anterior ao fim do período (no celular, só os últimos 12 meses)
+      const janAnt = D.meses.indexOf(`${+D.meses[fim].slice(0, 4) - 1}01`);
+      const ini = peq ? Math.max(0, fim - 11) : Math.max(0, janAnt >= 0 ? janAnt : fim - 23);
+      for (let i = ini; i <= fim; i++) {
         const ym = D.meses[i];
         const sh = T[i] > 0 ? (A[i] / T[i]) * 100 : null;
         const iP = i - 12;
@@ -1263,7 +1265,7 @@
       const vis = S.prodVis || "mes", met = S.prodMet || "gwp";
       const fimLab = mesLabel(P.b, true);
       $("#g-prod-nota").textContent = vis === "mes"
-        ? `${met === "gwp" ? "GWP" : "Market share"} por mês, ${itens.length} meses até ${fimLab}.`
+        ? `${met === "gwp" ? "GWP" : "Market share"} por mês, de ${itens[0].tit} a ${fimLab}.`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis === "mes" ? [...new Set(itens.map((x) => x.ano))] : [];
       $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
