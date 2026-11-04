@@ -1822,9 +1822,7 @@
 
   // Grupos de ramos (atalhos no filtro)
   const GRUPOS_RAMOS = [
-    { id: "transp", nome: "Transportes", ids: ["rctrc", "rcdc", "transpnac", "transpint", "rctrvi", "rctfc"] },
-    { id: "gar", nome: "Garantia", ids: ["garpub", "garpriv"] },
-    { id: "prest", nome: "Prestamista", ids: ["prestind", "prestcol"] },
+    { id: "transportador", nome: "Transportador", ids: ["rctrc", "rcdc"] },
   ];
   // Seleção de ramos: "todas", um id de ramo, ou "m:id1,id2,..." para vários
   function idsDaSel(sel) {
@@ -1838,79 +1836,11 @@
     return ord.length === 1 ? ord[0] : "m:" + ord.join(",");
   }
   const grupoDaSel = (sel) => { const ids = idsDaSel(sel); return GRUPOS_RAMOS.find((g) => g.ids.length === ids.length && g.ids.every((x) => ids.includes(x))); };
-  function rotuloSel(sel) {
-    if (sel === "todas") return `Todos os ${IDX.linhas.length} ramos`;
-    if (!sel.startsWith("m:")) return nomeSel(sel);
-    const g = grupoDaSel(sel);
-    return g ? `${g.nome} (${g.ids.length} ramos)` : `${idsDaSel(sel).length} ramos selecionados`;
-  }
-
-  /** Filtro de ramo: "Todos", atalhos de grupo e seleção múltipla com caixas de marcar. Aplica ao fechar. */
-  function comboRamos(host) {
-    const id = "cb-linha-in";
-    host.innerHTML = `
-      <div class="cb">
-        <input id="${id}" class="cb-in" type="text" role="combobox" autocomplete="off" spellcheck="false"
-          aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-lista" placeholder="Buscar ramo ou código SUSEP">
-        <span class="cb-seta" aria-hidden="true"></span>
-        <ul id="${id}-lista" class="cb-lista" role="listbox" aria-multiselectable="true" hidden></ul>
-      </div>`;
-    const inp = host.querySelector("input"), lista = host.querySelector("ul");
-    let marc = new Set(idsDaSel(S.linha));
-    let itens = [], ativo = -1, aberto = false;
-    const todosOp = { tipo: "todos", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" };
-    const montar = (q) => {
-      const n = norm(q.trim());
-      const ok = (t) => !n || norm(t).includes(n);
-      itens = [];
-      if (ok(todosOp.t)) itens.push(todosOp);
-      const gs = GRUPOS_RAMOS.filter((g) => ok(g.nome + " " + g.ids.map((x) => IDX.linhaPorId[x]?.nome || "").join(" ")));
-      if (gs.length) { itens.push({ tipo: "sec", t: "Grupos" }); gs.forEach((g) => itens.push({ tipo: "grupo", g, t: g.nome, sub: `${g.ids.length} ramos` })); }
-      const ls = IDX.linhas.filter((l) => ok(l.nome + " " + l.ramos.join(" ")));
-      if (ls.length) { itens.push({ tipo: "sec", t: "Ramos" }); ls.forEach((l) => itens.push({ tipo: "ramo", v: l.id, t: l.nome, sub: "código " + l.ramos.join(", ") })); }
-      ativo = itens.findIndex((x) => x.tipo !== "sec");
-      desenhar();
-    };
-    const desenhar = () => {
-      const g = grupoDaSel(selDeIds([...marc]));
-      lista.innerHTML = itens.length ? itens.map((o, i) => {
-        if (o.tipo === "sec") return `<li class="cb-sec" role="presentation">${esc(o.t)}</li>`;
-        const sel = o.tipo === "todos" ? marc.size === 0 : o.tipo === "grupo" ? g === o.g : marc.has(o.v);
-        const cls = o.tipo === "ramo" ? " cbm-op" : "";
-        return `<li id="${id}-op-${i}" role="option" class="cb-op${cls}${sel ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${sel}" data-i="${i}"><span>${o.tipo === "ramo" ? '<i class="cx" aria-hidden="true"></i>' : ""}${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`;
-      }).join("") : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
-      inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
-      lista.querySelector(".ativo")?.scrollIntoView({ block: "nearest" });
-    };
-    const mostrarValor = () => { inp.value = rotuloSel(S.linha); };
-    const aplicar = () => { const nova = selDeIds([...marc]); if (nova !== S.linha) { S.linha = nova; render(); } mostrarValor(); };
-    const abrir = () => { if (aberto) return; aberto = true; marc = new Set(idsDaSel(S.linha)); lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); inp.value = ""; montar(""); };
-    const fechar = (aplicarSel) => { if (!aberto) return; aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); if (aplicarSel) aplicar(); else mostrarValor(); };
-    const ativar = (o) => {
-      if (!o || o.tipo === "sec") return;
-      if (o.tipo === "todos") { marc = new Set(); fechar(true); inp.blur(); return; }
-      if (o.tipo === "grupo") { marc = new Set(o.g.ids); fechar(true); inp.blur(); return; }
-      if (marc.has(o.v)) marc.delete(o.v); else marc.add(o.v);
-      desenhar();
-    };
-    const mover = (d) => { let i = ativo; do { i += d; } while (i >= 0 && i < itens.length && itens[i].tipo === "sec"); if (i >= 0 && i < itens.length) { ativo = i; desenhar(); } };
-    inp.addEventListener("focus", abrir);
-    inp.addEventListener("click", abrir);
-    inp.addEventListener("input", () => { if (!aberto) abrir(); montar(inp.value); });
-    inp.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowDown") { e.preventDefault(); if (!aberto) abrir(); else mover(1); }
-      else if (e.key === "ArrowUp") { e.preventDefault(); mover(-1); }
-      else if (e.key === "Enter") { e.preventDefault(); if (aberto) ativar(itens[ativo]); else abrir(); }
-      else if (e.key === "Escape") { e.preventDefault(); fechar(true); inp.blur(); }
-      else if (e.key === "Tab") { fechar(true); }
-    });
-    inp.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== inp) fechar(true); }, 120));
-    lista.addEventListener("mousedown", (e) => { e.preventDefault(); const li = e.target.closest("[data-i]"); if (li) { ativo = +li.dataset.i; ativar(itens[ativo]); } });
-    mostrarValor();
-  }
 
   function opcoesLinhaFiltro() {
     const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" }];
+    // grupos: aparecem logo abaixo de "Todos"; os ramos do grupo continuam disponíveis sozinhos na lista
+    for (const g of GRUPOS_RAMOS) op.push({ v: selDeIds(g.ids), t: g.nome, sub: g.ids.map((x) => IDX.linhaPorId[x].nome).join(" + ") });
     for (const l of IDX.linhas) {
       op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") });
       if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true });
@@ -1938,7 +1868,7 @@
     });
     // Linha ou ramo
     if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
-      comboRamos($("#cb-linha"));
+      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; render(); } });
     }
     // Concorrentes (lista ordenada pelo prêmio nos ramos acompanhados, no período)
     if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
