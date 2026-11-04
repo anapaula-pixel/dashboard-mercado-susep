@@ -1169,3 +1169,23 @@ body { color: var(--ink); }
 #g-prod .hitb:hover { fill: rgba(0, 0, 0, .04); }
 #aba-linhas .pr-desde[hidden] { display: none; }
 #aba-linhas .pr-desde .pr-sel { min-width: 130px; }
+.cb-sec { padding: 10px 10px 4px; font-size: .7rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.cb-sec:first-child { padding-top: 4px; }
+/* Ranking do período (detalhe do ramo): medalha + variação de posição ao lado do nome */
+.rk-tab td.nome { min-width: 220px; }
+.rk-tab .nome-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rk-tab .th-ramo { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.rk-tab .th-pos { flex: none; width: 66px; text-align: left; }
+.rk-tab .th-pos-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; white-space: nowrap; }
+.rk-tab .th-pos-btn:hover, .rk-tab .th-pos-btn[aria-sort] { color: var(--ink); }
+.rk-tab .pos-grp { flex: none; width: 66px; display: inline-flex; align-items: center; gap: 6px; cursor: default; }
+.rk-tab .selo-pos { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
+.rk-tab .selo-pos.num { width: 24px; height: 24px; border-radius: 50%; background: #F5F5F5; color: #616161; font: 600 .7rem var(--font-display); box-shadow: inset 0 0 0 1px #E0E0E0; }
+.rk-tab .mov { font-size: .74rem; font-weight: 600; white-space: nowrap; }
+.rk-tab .mov.up { color: var(--bom); } .rk-tab .mov.down { color: var(--ruim); } .rk-tab .mov.zero { color: var(--muted); font-weight: 400; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rk-tab .selo-pos.num { background: #424242; color: #E0E0E0; box-shadow: none; }
+  :root:not([data-theme="light"]) .rk-tab .selo-pos .fita { stroke: #7C97B8; }
+}
+:root[data-theme="dark"] .rk-tab .selo-pos.num { background: #424242; color: #E0E0E0; box-shadow: none; }
+:root[data-theme="dark"] .rk-tab .selo-pos .fita { stroke: #7C97B8; }
