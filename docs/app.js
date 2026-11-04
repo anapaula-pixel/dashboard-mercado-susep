@@ -1213,12 +1213,12 @@
         return { k, d: sc - sp };
       }).filter((y) => Math.abs(y.d) >= 0.05);
       const dAk = ds.find((y) => y.k === AKAD);
-      const outros = ds.filter((y) => y.k !== AKAD);
-      const gan = outros.filter((y) => y.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
-      const per = outros.filter((y) => y.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
+      // a Akad entra nas listas como qualquer seguradora (destacada) quando estiver entre as 5
+      const gan = ds.filter((y) => y.d > 0).sort((a, b) => b.d - a.d).slice(0, 5);
+      const per = ds.filter((y) => y.d < 0).sort((a, b) => a.d - b.d).slice(0, 5);
       const mx = Math.max(0.5, ...gan.map((y) => y.d), ...per.map((y) => -y.d), dAk ? Math.abs(dAk.d) : 0);
       const pp = (v) => `${v > 0 ? "+" : "−"}${nf1.format(Math.abs(v))} p.p.`;
-      const lin = (y) => `<button type="button" class="gp-li" data-ent="${esc(y.k)}"><span class="gp-nm">${esc(nomeCurtoCia(nomeEnt(y.k)))}</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></button>`;
+      const lin = (y) => y.k === AKAD ? `<div class="gp-li ak"><span class="gp-nm">Akad</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></div>` : `<button type="button" class="gp-li" data-ent="${esc(y.k)}"><span class="gp-nm">${esc(nomeCurtoCia(nomeEnt(y.k)))}</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></button>`;
       gpHtml = `
         <div class="bloco c12">
           <div class="bloco-cab"><h2>Quem ganhou e quem perdeu espaço</h2><p class="nota">Variação do market share em ${periodoLabel(P.a, P.b)} contra ${perR}. Clique numa seguradora para abrir a ficha dela.</p></div>
