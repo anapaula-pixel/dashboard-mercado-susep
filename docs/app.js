@@ -1749,13 +1749,13 @@
         <section class="card uf-c">
           <div class="uf-cab"><h2 class="uf-tit">Todos os estados</h2><span class="uf-nota">ordenado por vendas da Akad · quem lidera com base em ${anoTxt}</span></div>
           <div class="tab-wrap"><table class="uf-tab">
-            <thead><tr><th>Estado</th><th class="n">Vendas Akad</th><th class="n">Variação</th><th class="n">% das vendas Akad</th><th class="n">Market share</th><th class="n">vs. média ${ajuda("ufVs", "vs. média")}</th>${linhasSel.length > 1 ? "<th>Principal ramo da Akad</th>" : ""}<th>Quem lidera no estado</th></tr></thead>
+            <thead><tr><th>Estado</th><th class="n">Vendas Akad</th><th class="n">Variação</th><th class="n">% das vendas Akad</th><th class="n">Market share</th><th class="n">vs. média ${ajuda("ufVs", "vs. média")}</th>${S.linha === "todas" ? "<th>Principal ramo da Akad</th>" : ""}<th>Quem lidera no estado</th></tr></thead>
             <tbody>${tabela.slice(0, verTodos ? 99 : 10).map((x) => `
               <tr class="clic" data-uf="${x.i}"><td><b>${x.u}</b> <span class="sub-i">${esc(x.nome)}</span></td>
               <td class="n">${x.akad > 0 ? reais(x.akad) : '<span class="sub-i">sem vendas</span>'}</td><td class="n">${varCor(x.cres)}</td>
               <td class="n">${x.akad > 0 ? pct(x.pct) : "–"}</td><td class="n"><b>${x.akad > 0 ? pct(x.share, 2) : "–"}</b></td>
               <td class="n"><span class="uf-x ${xCls(x.vsMed)}">${x.akad > 0 ? xMed(x.vsMed) : "–"}</span></td>
-              ${linhasSel.length > 1 ? `<td>${x.topRamo ? esc(x.topRamo) : "–"}</td>` : ""}<td>${nomeLider(x.lider)}</td></tr>`).join("")}</tbody>
+              ${S.linha === "todas" ? `<td>${x.topRamo ? esc(x.topRamo) : "–"}</td>` : ""}<td>${nomeLider(x.lider)}</td></tr>`).join("")}</tbody>
           </table></div>
           ${tabela.length > 10 ? `<button type="button" class="uf-mais" id="uf-mais">${verTodos ? "Mostrar só os 10 maiores" : `Ver todos os ${tabela.length} estados`}</button>` : ""}
         </section>`;
