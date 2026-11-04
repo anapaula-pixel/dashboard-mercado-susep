@@ -162,6 +162,38 @@ def processar(zip_path):
         a[5] += num(c[15])  # receita com resseguro
     print(f"Ses_seguros: {len(seg)} combinações ({time.time()-t0:.0f}s)", flush=True)
 
+    # 1b) Abertura do custo de comercialização (mapas de custos de aquisição, quadro 8 do FIP)
+    #     12479 = custos ligados à vigência do risco (na prática, comissão de corretagem e agenciamento)
+    #     12486 = outros custos de aquisição (pró-labore, bônus, campanhas etc.)
+    #     A soma dos dois bate com a despesa comercial de Ses_seguros. Só complementa linhas que já existem.
+    t0 = time.time()
+    CAMPOS_AQ = {"12479": 0, "12486": 1}
+    aq = {}
+    try:
+        alvo = next(n for n in zf.namelist() if n.lower().replace(" ", "") == "ses_valoresmovramos.csv")
+        with zf.open(alvo) as raw:
+            leitor = csv.reader(io.TextIOWrapper(raw, encoding="latin-1", newline=""), delimiter=";")
+            cab = [x.strip().lower() for x in next(leitor)]
+            i_e, i_m, i_c, i_g, i_r, i_v = (cab.index(n) for n in ("coenti", "damesano", "cmpid", "gracodigo", "ramcodigo", "valor"))
+            n_max = max(i_e, i_m, i_c, i_g, i_r, i_v)
+            for c in leitor:
+                if len(c) <= n_max:
+                    continue
+                j = CAMPOS_AQ.get(c[i_c].strip())
+                if j is None:
+                    continue
+                mes = c[i_m].strip()
+                if mes < DESDE:
+                    continue
+                ramo = c[i_g].strip().zfill(2) + c[i_r].strip().zfill(2)
+                k = (mes, c[i_e].strip(), ramo)
+                if k not in seg:
+                    continue
+                aq.setdefault(k, [0.0, 0.0])[j] += num(c[i_v])
+    except (StopIteration, ValueError) as e:
+        print(f"  Abertura de comissão indisponível nesta base ({e}); segue sem ela.", flush=True)
+    print(f"Custos de aquisição: {len(aq)} combinações ({time.time()-t0:.0f}s)", flush=True)
+
     # 2) Prêmios e sinistros por UF
     t0 = time.time()
     ufm = {}   # (mes, ramo, uf) -> [prem mercado, prem akad, sin mercado, sin akad]
@@ -222,7 +254,9 @@ def processar(zip_path):
     for (m, c, r), a in seg.items():
         v = [mil(x) for x in a]
         if any(v):
-            seg_rows.append([mi[m], ci[c], ri[r]] + v)
+            q = aq.get((m, c, r))
+            # comissão e outros custos de aquisição no fim da linha (null quando a SUSEP não abriu)
+            seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None]))
 
     ufm_rows = []
     for (m, r, u), a in ufm.items():
@@ -258,7 +292,8 @@ def processar(zip_path):
         "cias": [[c, nomes.get(c, c), grupo(c)] for c in cias],
         "cols": {
             "seg": ["mes", "cia", "ramo", "premio_emitido", "premio_ganho", "sinistro_ocorrido",
-                    "despesa_comercial", "despesa_resseguro", "receita_resseguro"],
+                    "despesa_comercial", "despesa_resseguro", "receita_resseguro",
+                    "comissao", "outros_custos_aquisicao"],
             "ufm": ["mes", "ramo", "uf", "premio_mercado", "premio_akad", "sinistro_mercado", "sinistro_akad"],
             "ufa": ["ano", "ramo", "uf", "cia", "premio"],
         },
@@ -280,6 +315,11 @@ def checar(d):
     print(f"Checagem RC Profissional Akad 2024-01..2026-08: R$ {tot/1000:.1f} mi (esperado ~482,8)")
     if abs(tot - 482754.6) > 5000:
         print("  ATENÇÃO: valor diferente do esperado (a SUSEP pode ter recarregado dados)")
+    # abertura da comissão: comissão + outros custos deve bater com a despesa comercial
+    lin = [r for r in d["seg"] if r[1] == ci[AKAD] and r[2] == ri["0378"] and len(r) > 10 and r[9] is not None]
+    if lin:
+        dc, cm, ou = sum(r[6] for r in lin), sum(r[9] for r in lin), sum(r[10] for r in lin)
+        print(f"Checagem comissão RC Profissional Akad: comissão {cm/1000:.1f} mi + outros {ou/1000:.1f} mi = {(cm+ou)/1000:.1f} mi; despesa comercial {dc/1000:.1f} mi")
 
 
 def main():
