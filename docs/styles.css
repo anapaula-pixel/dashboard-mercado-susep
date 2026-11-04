@@ -1345,3 +1345,4 @@ body.c2-trava { overflow: hidden; }
 #aba-linhas .gp-bar i.pos { background: var(--bom); } #aba-linhas .gp-bar i.neg { background: var(--ruim); }
 #aba-linhas .gp-li b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (max-width: 760px) { #aba-linhas .gp-g2 { grid-template-columns: minmax(0, 1fr); } #aba-linhas .gp-li { grid-template-columns: minmax(0, 1fr) 60px 70px; } }
+#aba-linhas .gp-li.ak { background: var(--linha-akad); font-weight: 700; cursor: default; }
