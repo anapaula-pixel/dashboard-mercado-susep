@@ -1330,3 +1330,17 @@ body.c2-trava { overflow: hidden; }
 #aba-geral .peso-bar i { display: block; height: 100%; background: #7C97B8; border-radius: 3px; }
 
 #aba-uf .uf-conta { margin: -6px 0 12px; }
+/* Ramo: quem ganhou e quem perdeu espaço */
+#aba-linhas .gp-ak { margin: -4px 0 12px; font-size: .9rem; color: var(--ink); }
+#aba-linhas .gp-ak b.bom, #aba-linhas .gp-li b.bom { color: var(--bom); }
+#aba-linhas .gp-ak b.ruim, #aba-linhas .gp-li b.ruim { color: var(--ruim); }
+#aba-linhas .gp-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 32px; }
+#aba-linhas .gp-lt { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); font-weight: 600; margin: 0 0 4px; }
+#aba-linhas .gp-li { display: grid; grid-template-columns: minmax(0, 1fr) 90px 76px; gap: 12px; align-items: center; width: 100%; background: none; border: 0; border-top: 1px solid var(--line); padding: 8px 4px; font: inherit; font-size: .86rem; color: var(--ink); cursor: pointer; text-align: left; }
+#aba-linhas .gp-li:hover { background: var(--surface-2); }
+#aba-linhas .gp-nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#aba-linhas .gp-bar { height: 8px; background: var(--grid); border-radius: 4px; overflow: hidden; }
+#aba-linhas .gp-bar i { display: block; height: 100%; border-radius: 4px; }
+#aba-linhas .gp-bar i.pos { background: var(--bom); } #aba-linhas .gp-bar i.neg { background: var(--ruim); }
+#aba-linhas .gp-li b { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 760px) { #aba-linhas .gp-g2 { grid-template-columns: minmax(0, 1fr); } #aba-linhas .gp-li { grid-template-columns: minmax(0, 1fr) 60px 70px; } }
