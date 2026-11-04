@@ -104,13 +104,14 @@ def main():
     if cab:
         out(f"## Valores (SES_ValoresMovRamos.csv), colunas: {', '.join(cab)}")
         i_e, i_m, i_c, i_r, i_v = col(cab, "coenti"), col(cab, "damesano"), col(cab, "cmpid"), col(cab, "ramcodigo"), col(cab, "valor")
+        i_g = col(cab, "gracodigo")  # código SUSEP do ramo = grupo (2 dígitos) + ramo (2 dígitos)
         n = 0
         for r in rows:
-            if len(r) <= max(i_e, i_m, i_c, i_r, i_v):
+            if len(r) <= max(i_e, i_m, i_c, i_r, i_v, i_g):
                 continue
             if not r[i_m].strip().startswith(ANO):
                 continue
-            ramo = r[i_r].strip().zfill(4)
+            ramo = r[i_g].strip().zfill(2) + r[i_r].strip().zfill(2)
             if ramo not in RAMOS:
                 continue
             cmp = r[i_c].strip()
