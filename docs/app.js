@@ -161,15 +161,17 @@
         if (r[0] < a || r[0] > b) continue;
         const k = IDX.chave[r[1]];
         let x = m.get(k);
-        if (!x) { x = [0, 0, 0, 0]; m.set(k, x); }
+        if (!x) { x = [0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
         x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6];
+        // comissão e outros custos de aquisição (colunas 9 e 10; nulas quando a SUSEP não abriu o custo)
+        if (r[9] != null) { x[4] += r[9]; x[5] += r[10] || 0; x[6] += r[4]; }
       }
     }
     return m;
   }
   function total(m) {
-    const t = [0, 0, 0, 0];
-    for (const x of m.values()) for (let i = 0; i < 4; i++) t[i] += x[i];
+    const t = [0, 0, 0, 0, 0, 0, 0];
+    for (const x of m.values()) for (let i = 0; i < 7; i++) t[i] += x[i] || 0;
     return t;
   }
   function ranking(m) {
@@ -197,6 +199,8 @@
       pos: pos >= 0 ? pos + 1 : null, posP: posP >= 0 ? posP + 1 : null,
       sin: c[1] > 0 ? (c[2] / c[1]) * 100 : null,
       com: c[1] > 0 ? (c[3] / c[1]) * 100 : null,
+      comis: c[6] > 0 ? (c[4] / c[6]) * 100 : null,
+      outros: c[6] > 0 ? (c[5] / c[6]) * 100 : null,
     };
   }
   // Série mensal por entidade (pe)
@@ -526,9 +530,9 @@
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
-    ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (com a do mercado no ramo ao lado), custo de comercialização e a posição da Akad no mesmo ramo.",
+    ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccComp: "Últimos 12 meses até o fim do período escolhido. Sinistralidade e custo de comercialização são calculados sobre o prêmio ganho; resseguro cedido, sobre o GWP. Em ramos pequenos esses índices oscilam bastante.",
-    ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização. É principalmente a comissão paga ao corretor, mais agenciamento, pró-labore e outros custos de venda. Calculado sobre o prêmio ganho, por isso fica próximo, mas não igual, ao percentual de comissão negociado.",
+    ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização, sobre o prêmio ganho. A SUSEP abre esse custo em duas partes: os custos ligados à vigência da apólice (na prática, a comissão de corretagem e o agenciamento) e os outros custos de aquisição (pró-labore, bônus, campanhas e similares). As duas somadas dão o custo de comercialização.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
     sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os três meses de cada trimestre. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. Por trimestre porque mês a mês o índice oscila demais. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
@@ -1064,6 +1068,8 @@
       x.crP = cresc(tc[0], x.R.tp[0]);
       x.sinM = tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null;
       x.comM = tc[1] > 0 ? (tc[3] / tc[1]) * 100 : null;
+      x.comisM = tc[6] > 0 ? (tc[4] / tc[6]) * 100 : null;
+      x.outrosM = tc[6] > 0 ? (tc[5] / tc[6]) * 100 : null;
       x.dSin = x.tem && x.a.sin != null && x.sinM != null ? x.a.sin - x.sinM : null;
       x.dCom = x.tem && x.a.com != null && x.comM != null ? x.a.com - x.comM : null;
       x.idx = x.tem && x.a.sin != null && x.a.com != null ? x.a.sin + x.a.com : null;
@@ -1080,7 +1086,7 @@
     const pcM = (v) => `${v < 0 ? "−" : ""}${nf0.format(Math.abs(v))}%`;
     const idxTip = (x) => {
       const l = (r, a, m) => `<div>${r}: Akad ${a == null ? "–" : nf0.format(a) + "%"} · mercado ${m == null ? "–" : nf0.format(m) + "%"}</div>`;
-      return `<b>${esc(x.l.nome)}</b>${l("Sinistralidade", x.tem ? x.a.sin : null, x.sinM)}${l("Comercialização", x.tem ? x.a.com : null, x.comM)}${l("Índice combinado", x.idx, x.idxM)}${x.idx != null ? `<div>Margem técnica: Akad ${nf0.format(100 - x.idx)}% · mercado ${nf0.format(100 - x.idxM)}%</div>` : ""}${x.basePeq ? "<div>Base pequena: prêmio ganho abaixo de R$ 3 mi, o índice oscila muito.</div>" : ""}`;
+      return `<b>${esc(x.l.nome)}</b>${l("Sinistralidade", x.tem ? x.a.sin : null, x.sinM)}${l("Comercialização", x.tem ? x.a.com : null, x.comM)}${x.tem && x.a.comis != null ? l("· Comissão", x.a.comis, x.comisM) + l("· Outros custos", x.a.outros, x.outrosM) : ""}${l("Índice combinado", x.idx, x.idxM)}${x.idx != null ? `<div>Margem técnica: Akad ${nf0.format(100 - x.idx)}% · mercado ${nf0.format(100 - x.idxM)}%</div>` : ""}${x.basePeq ? "<div>Base pequena: prêmio ganho abaixo de R$ 3 mi, o índice oscila muito.</div>" : ""}`;
     };
     const posTr = (x) => x.a.pos ? `<span class="pos-grp">${seloPosicao(x.a.pos)}${movHtml(x.a.pos, x.a.posP).replace(/ title="[^"]*"/, "")}</span>` : "";
     const linhaTr = (x) => `
@@ -1336,7 +1342,7 @@
               <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
               <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Market share</th>
               <th class="n ord" data-col="dShare">Variação do share</th><th class="n ord" data-col="cresc">Crescimento</th>
-              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com" title="Comissão do corretor, agenciamento, pró-labore e outros custos de venda, sobre o prêmio ganho">Custo de comercialização</th>
+              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th><th class="n ord" data-col="outros" title="Outros custos de aquisição (pró-labore, bônus, campanhas e similares), sobre o prêmio ganho">Outros custos</th>
             </tr></thead>
             <tbody>${linhasTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}" data-ent="${esc(x.k)}">
@@ -1346,7 +1352,8 @@
                 <td class="n">${ppHtml(x.dShare)}</td>
                 <td class="n">${varHtml(x.cresc)}</td>
                 <td class="n">${pct(x.sin)}</td>
-                <td class="n">${pct(x.com)}</td>
+                <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
+                <td class="n">${x.outros == null ? '<span class="sub-i">–</span>' : pct(x.outros)}</td>
               </tr>`).join("")}
             </tbody>
           </table></div>
@@ -1529,12 +1536,13 @@
     for (const ri of ramos) for (const r of IDX.porRamo[ri]) {
       if (r[0] < a || r[0] > b) continue;
       const k = IDX.chave[r[1]];
-      let x = m.get(k); if (!x) { x = [0, 0, 0, 0, 0]; m.set(k, x); }
+      let x = m.get(k); if (!x) { x = [0, 0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
       x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6]; x[4] += r[7] || 0;
+      if (r[9] != null) { x[5] += r[9]; x[6] += r[10] || 0; x[7] += r[4]; }
     }
     return m;
   }
-  const soma5 = (m) => { const t = [0, 0, 0, 0, 0]; for (const x of m.values()) for (let i = 0; i < 5; i++) t[i] += x[i]; return t; };
+  const soma5 = (m) => { const t = [0, 0, 0, 0, 0, 0, 0, 0]; for (const x of m.values()) for (let i = 0; i < 8; i++) t[i] += x[i] || 0; return t; };
   const rkDe = (m) => [...m.entries()].filter(([, x]) => x[0] > 0).sort((p, q) => q[1][0] - p[1][0]).map(([k]) => k);
   const nomeC = (k) => (k === AKAD ? "Akad" : nomeCurtoCia(nomeEnt(k)));
 
@@ -1747,7 +1755,7 @@
         const tc = soma5(c), tp = soma5(p)[0];
         const rk = rkDe(c), rkp = rkDe(p);
         rows.push({ l, g: x[0], pos: rk.indexOf(k) + 1, posP: rkp.indexOf(k) + 1, sh: shareDe(c, tc[0], k), dsh: tp > 0 ? shareDe(c, tc[0], k) - shareDe(p, tp, k) : null, cr: cresc(x[0], xp),
-          sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, msin: tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
+          sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
       });
       rows.sort((p, q) => q.g - p.g);
       const crG = cresc(G[0], Gp);
@@ -1766,10 +1774,10 @@
             <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
           </div>
           <p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>
-          <div class="tab-wrap"><table class="c2-at"><thead><tr><th>Ramo</th><th class="n">GWP</th><th class="n">Posição</th><th class="n">Share</th><th class="n">Var. share</th><th class="n">Cresc.</th><th class="n">Sinistralidade <small>(mercado)</small></th><th class="n">Comerc.</th><th class="n">Akad</th></tr></thead>
+          <div class="tab-wrap"><table class="c2-at"><thead><tr><th>Ramo</th><th class="n">GWP</th><th class="n">Posição</th><th class="n">Share</th><th class="n">Var. share</th><th class="n">Cresc.</th><th class="n">Sinistralidade <small>(mercado)</small></th><th class="n">Comissão</th><th class="n">Outros custos</th><th class="n">Akad</th></tr></thead>
           <tbody>${rows.map((r) => `<tr class="clic" data-abrir="${r.l.id}" tabindex="0"><td class="c2-atn">${esc(r.l.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${pctPart(r.sh)}</td>
             <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppTxt(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? "novo" : r.cr > 999 ? "> +999%" : sgn(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
-            <td class="n">${sinCel(r)}</td><td class="n">${r.com == null ? "–" : nf0.format(r.com) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`).join("")}</tbody></table></div>
+            <td class="n">${sinCel(r)}</td><td class="n">${r.comis == null ? "–" : nf0.format(r.comis) + "%"}</td><td class="n">${r.outros == null ? "–" : nf0.format(r.outros) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`).join("")}</tbody></table></div>
           <p class="c2-fnota">${perC} contra ${perA}, em todos os ramos em que a seguradora vende. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Clique num ramo para abrir a visão do ramo.</p>
         </aside>`;
       document.body.classList.add("c2-trava");
