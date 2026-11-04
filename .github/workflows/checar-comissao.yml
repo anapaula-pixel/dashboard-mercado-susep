@@ -1,0 +1,23 @@
+name: Checar comissão (diagnóstico)
+
+# Roda só quando alguém clica em "Run workflow". Não altera nada no painel:
+# baixa a base do SES e escreve no resumo da execução quais campos de comissão existem.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  checar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Checar campos de comissão na base do SES
+        run: python scripts/checar_comissao.py
