@@ -529,7 +529,6 @@
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
     sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os três meses de cada trimestre. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. Por trimestre porque mês a mês o índice oscila demais. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
-    proj: "Estimativa simples, não é meta nem previsão oficial. Soma o GWP já realizado no ano com o que costuma entrar nos meses que faltam, usando a proporção dos dois anos anteriores (por exemplo, se de set a dez costuma entrar metade do que entrou de jan a ago, a estimativa é o realizado mais metade). Muda conforme a SUSEP publica novos meses.",
     trIdx: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\nEmbaixo, a margem do mercado no mesmo ramo. Passe o mouse no número para ver a quebra.",
     trDif: "Diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior que a do mercado. Vermelho: é menor.",
     trSin: "Sinistralidade da Akad no ramo (sinistro ocorrido ÷ prêmio ganho) ao lado da do mercado no mesmo ramo e período. A diferença em p.p. fica verde quando a Akad está abaixo do mercado e vermelha quando está acima. Clique no título para ordenar pelos ramos em que a Akad está pior.",
@@ -1329,7 +1328,6 @@
           <div class="pr-leg" id="g-prod-leg"></div>
           <div class="graf" id="g-prod"></div>
         </div>
-        <div class="bloco c12" id="b-proj" hidden></div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
           <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">GWP de todas as seguradoras no ramo. * ano parcial</p></div>
@@ -1430,50 +1428,6 @@
         rc.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
         rc.addEventListener("mouseleave", esconderTip);
       });
-    })();
-    // ----- projeção do ano: realizado até o último mês + sazonalidade dos anos anteriores
-    (() => {
-      const host = $("#b-proj");
-      const ult = D.meses.length - 1, yF = +D.meses[ult].slice(0, 4), mF = +D.meses[ult].slice(4);
-      if (mF === 12) return;
-      const Aa = sm.ent.get(AKAD), Tt = sm.mercado;
-      const soma = (arr, y, ate) => { let v = 0; D.meses.forEach((ym, i) => { if (+ym.slice(0, 4) === y && +ym.slice(4) <= ate) v += arr[i]; }); return v; };
-      const anosRef = [yF - 1, yF - 2].filter((y) => D.meses.includes(`${y}01`) && D.meses.includes(`${y}12`));
-      if (!anosRef.length) return;
-      const proj = (arr) => {
-        const real = soma(arr, yF, mF);
-        const fs = anosRef.map((y) => { const p = soma(arr, y, mF), t = soma(arr, y, 12); return p > 0 ? t / p : null; }).filter((f) => f != null && isFinite(f));
-        if (!fs.length || real <= 0) return null;
-        const pAnt = anosRef.reduce((t, y) => t + soma(arr, y, mF), 0), tAnt = anosRef.reduce((t, y) => t + soma(arr, y, 12), 0);
-        const f = tAnt / pAnt;
-        return { real, est: real * f, lo: real * Math.min(...fs), hi: real * Math.max(...fs), ant: soma(arr, yF - 1, 12), resto: (1 - pAnt / tAnt) * 100 };
-      };
-      const pa = proj(Aa), pm = proj(Tt);
-      if (!pa || !pm) return;
-      const crA = cresc(pa.est, pa.ant), crM = cresc(pm.est, pm.ant);
-      const shAnt = pm.ant > 0 ? (pa.ant / pm.ant) * 100 : null, shEst = (pa.est / pm.est) * 100;
-      const mx = Math.max(pa.ant, pa.hi);
-      const bar = (rot, v, cls, extra = "") => `<div class="pj-row"><span class="pj-rot">${rot}</span><span class="pj-tr">${extra}<i class="${cls}" style="width:${(v / mx) * 100}%"></i></span><b>${reaisCurto(v)}</b></div>`;
-      const sg = (v) => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : ""}${nf1.format(Math.abs(v))}%`);
-      host.hidden = false;
-      host.innerHTML = `
-        <div class="bloco-cab"><h2>Projeção de ${yF} ${ajuda("proj", "projeção do ano")}</h2><p class="nota">Estimativa pelo ritmo dos anos anteriores. Não é meta.</p></div>
-        <div class="pj-g">
-          <div class="pj-txt">
-            <p class="pj-frase">A Akad deve fechar ${yF} com cerca de <b>${reais(pa.est)}</b>, contra ${reais(pa.ant)} em ${yF - 1} <b class="${crA < 0 ? "ruim" : "bom"}">(${sg(crA)})</b>.</p>
-            <ol class="pj-passos">
-              <li><b>Realizado:</b> de jan a ${MESES_PT[mF - 1]}/${yF} a Akad vendeu ${reais(pa.real)} no ramo.</li>
-              <li><b>Ritmo dos anos anteriores:</b> ${anosRef.slice().reverse().map((y) => { const p0 = soma(Aa, y, mF), t0 = soma(Aa, y, 12); return `em ${y}, de ${MESES_PT[mF]} a dez entraram ${reaisCurto(t0 - p0)}, ${nf0.format(p0 > 0 ? ((t0 - p0) / p0) * 100 : 0)}% do que tinha entrado até ${MESES_PT[mF - 1]}`; }).join("; ")}.</li>
-              <li><b>Estimativa:</b> ${reaisCurto(pa.real)} + ${reaisCurto(pa.est - pa.real)} (o mesmo ritmo) = ${reaisCurto(pa.est)}. Usando o ano mais fraco e o mais forte, fica entre ${reaisCurto(pa.lo)} e ${reaisCurto(pa.hi)}.</li>
-            </ol>
-            <p class="pj-sub">No mesmo cálculo, o mercado do ramo fecharia com ${reaisCurto(pm.est)} (${sg(crM)}) e o market share da Akad ficaria em ${pctPart(shEst)} (em ${yF - 1} foi ${pctPart(shAnt)}).</p>
-          </div>
-          <div class="pj-bars">
-            ${bar(String(yF - 1), pa.ant, "ant")}
-            <div class="pj-row"><span class="pj-rot">${yF}</span><span class="pj-tr"><i class="proj" style="width:${(pa.est / mx) * 100}%"></i><i class="real" style="width:${(pa.real / mx) * 100}%"></i><i class="faixa" style="left:${(pa.lo / mx) * 100}%;width:${((pa.hi - pa.lo) / mx) * 100}%"></i></span><b>${reaisCurto(pa.est)}</b></div>
-            <p class="pj-lg"><span><i class="real"></i>Realizado até ${MESES_PT[mF - 1]}</span><span><i class="proj"></i>Projetado</span><span><i class="faixa"></i>Faixa provável</span></p>
-          </div>
-        </div>`;
     })();
     const desenharProd = () => {
       const itens = graficoProducao($("#g-prod"), sm, P);
