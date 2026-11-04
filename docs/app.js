@@ -482,12 +482,13 @@
     ufBase: "Os valores por estado são de prêmio direto, a informação que a SUSEP publica por UF. Por isso o total pode ficar um pouco diferente do GWP da Visão geral. A comparação é com os mesmos meses do ano anterior.",
     ufConc: "Quanto das vendas da Akad (prêmio direto) está concentrado em cada estado. Os 5 maiores:",
     ufCresc: "Estados em que as vendas da Akad foram maiores que nos mesmos meses do ano anterior:",
+    ufShareMapa: "Market share = prêmio direto da Akad no estado ÷ prêmio direto de todas as seguradoras no mesmo estado, somando os ramos e os meses escolhidos nos filtros. Ex.: se o mercado vendeu R$ 100 mi em SP e a Akad R$ 2 mi, o market share em SP é 2%. Por estado a SUSEP publica só o prêmio direto, por isso o número pode ser diferente do market share por GWP das outras telas. Quanto mais escuro o estado, maior a participação.",
     ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz BCG (Boston Consulting Group), adaptada. Cruza duas perguntas: o mercado do ramo está crescendo? E a Akad tem posição forte nele? Crescimento: quanto o mercado do ramo cresceu nos últimos 12 meses contra os 12 meses anteriores; a linha é a média dos ramos acompanhados. Posição forte: Akad entre as 5 maiores seguradoras do ramo. Na BCG original, só o líder do mercado conta como posição forte; adaptamos porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras, e estar no top 5 já significa escala relevante. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
     ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra os 12 meses anteriores. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Ganhando espaço: mais aumentaram esse share. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
-    ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP nos últimos 12 meses. Cada quadrado é um ramo, em ordem de peso na carteira; passe o mouse para ver a posição.",
+    ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP nos últimos 12 meses. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. nos últimos 12 meses contra os 12 anteriores. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
     ccGanho: "Diferença do market share da Akad em cada ramo nos últimos 12 meses contra os 12 anteriores, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Quem mais ganhou: a seguradora que mais aumentou o market share no ramo.",
@@ -1352,6 +1353,7 @@
   const rkDe = (m) => [...m.entries()].filter(([, x]) => x[0] > 0).sort((p, q) => q[1][0] - p[1][0]).map(([k]) => k);
   const nomeC = (k) => (k === AKAD ? "Akad" : nomeCurtoCia(nomeEnt(k)));
 
+  const ABREV_RAMO = { rcpro: "RC Prof.", do: "D&O", rcg: "RC Geral", emp: "Empresarial", rno: "Riscos Nom.", equip: "Equipam.", eng: "Engenharia", transpnac: "Transp. Nac.", transpint: "Transp. Int.", garpub: "Gar. Pública", garpriv: "Gar. Privada", fianca: "Fiança", prestcol: "Prest. Col.", prestind: "Prest. Ind." };
   function renderConc() {
     ligarAjuda();
     const P = periodo();
@@ -1411,9 +1413,9 @@
     } else {
       const top5 = atua.filter((x) => x.pos && x.pos <= 5);
       const lid = atua.filter((x) => x.pos === 1).map((x) => esc(x.l.nome));
-      k2 = card("Akad no top 5", `${top5.length} <small>de ${atua.length} ramos</small>`, lid.length ? `1ª em ${lid.slice(0, 3).join(", ").replace(/, ([^,]*)$/, " e $1")}${lid.length > 3 ? ` e mais ${lid.length - 3}` : ""}` : "não lidera nenhum ramo",
-        `<div class="c2-mq">${atua.map((x) => `<span class="${x.pos && x.pos <= 5 ? "on" : ""}" data-tip="${esc(`<b>${esc(x.l.nome)}</b><div>Akad ${x.pos}º de ${x.rk.length}</div><div>Peso na carteira: ${nf1.format(x.peso)}%</div>`)}"></span>`).join("")}</div>
-         <p class="c2-lg"><i style="background:var(--akad)"></i>Top 5 <i class="cz"></i>Fora do top 5<span class="c2-lgd">ordem: peso na carteira</span></p>`, "ccTop5");
+      k2 = card("Akad no top 5", `${top5.length} <small>de ${atua.length} ramos</small>`, top5.length ? `lidera ${lid.length === 0 ? "nenhum deles" : lid.length === 1 ? "1 deles" : `${lid.length} deles`}` : "não está no top 5 de nenhum ramo",
+        `<div class="c2-tl">${top5.map((x) => `<span class="${x.pos === 1 ? "lid" : ""}" data-tip="${esc(`<b>${esc(x.l.nome)}</b><div>Akad ${x.pos}º de ${x.rk.length}</div><div>Peso na carteira: ${nf1.format(x.peso)}%</div>`)}"><b>${esc(ABREV_RAMO[x.l.id] || x.l.nome).replace(/-/g, "\u2011")}</b><i>${x.pos}º</i></span>`).join("")}</div>
+         <p class="c2-lg"><i style="background:var(--akad)"></i>1º lugar <i class="c2-lg25"></i>2º a 5º<span class="c2-lgd">ordem: peso na carteira</span></p>`, "ccTop5");
       const lost = atua.filter((x) => x.d != null && x.d < -0.05), won = atua.filter((x) => x.d != null && x.d > 0.05);
       const pl = lost.reduce((s, x) => s + x.peso, 0), pw = won.reduce((s, x) => s + x.peso, 0), pe = Math.max(0, 100 - pl - pw);
       k3 = card("Perdeu market share em", `${lost.length} <small>de ${atua.length} ramos</small>`, `que somam <b>${nf0.format(pl)}%</b> do faturamento da Akad`,
@@ -1446,16 +1448,21 @@
     const ganhando = tomar(info.filter((x) => x.dws > 0.05).sort((p, q) => q.dws - p.dws), 4);
     const parecido = tomar(info.filter((x) => x.sim >= 0.45).sort((p, q) => q.sim - p.sim), 4);
     const linC = (x) => `<div class="c2-rw"><button type="button" class="c2-nm" data-ficha="${esc(x.k)}">${esc(nomeC(x.k))}</button><span class="c2-v">${pctPart(x.ws)}</span><span class="c2-v ${clsV(x.dws)}">${ppTxt(x.dws)}</span></div>`;
-    const colC = (tit, cor, crit, lst, vz) => `<div class="c2-col"><p class="c2-ch"><i style="background:${cor}"></i>${tit}</p><p class="c2-crit">${crit}</p>
+    const ICO_C = {
+      direto: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
+      parecido: '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>',
+      ganhando: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    };
+    const colC = (tit, cor, crit, lst, vz, ico) => `<div class="c2-col"><p class="c2-ch"><span class="c2-ico" style="--c:${cor}" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span>${tit}</p><p class="c2-crit">${crit}</p>
       ${lst.length ? `<div class="c2-rw c2-rh"><span></span><span class="c2-v">Share</span><span class="c2-v">Variação</span></div>${lst.map(linC).join("")}` : `<p class="c2-vz">${vz}</p>`}</div>`;
     const bQuem = `
       <section class="c2-sec" aria-labelledby="h-c2a">
         <h3 id="h-c2a" class="c2-tit">Quem são os concorrentes ${ajuda("ccTipos", "tipos de concorrente")}</h3>
         <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : "Share médio nos ramos da Akad, dando mais peso aos ramos que mais pesam na carteira dela, e variação em 12 meses."} Clique num nome para abrir a ficha do concorrente.</p>
         <div class="c2-g3">
-          ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.")}
-          ${colC("Ganhando espaço", "#C78800", umRamo ? "Mais ganharam market share no ramo" : "Mais ganharam share nos ramos da Akad", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
-          ${colC("Perfil parecido", "var(--mercado)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.")}
+          ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
+          ${colC("Perfil parecido", "var(--cc-link)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
+          ${colC("Ganhando espaço", "#C78800", umRamo ? "Mais ganharam market share no ramo" : "Mais ganharam share nos ramos da Akad", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
         </div>
       </section>`;
 
@@ -1665,7 +1672,7 @@
       const potencial = (x) => (x.merc * (MED - x.share)) / 100;
       const espaco = UF.filter((x) => x.share != null && x.share < MED && x.merc >= totM * 0.02).sort((a, b) => potencial(b) - potencial(a)).slice(0, 4);
 
-      const met = ["share", "akad", "cres"].includes(S.ufMetrica) ? S.ufMetrica : "share";
+      const met = "share";
       const valMet = (x) => (met === "share" ? x.share : met === "akad" ? x.akad : x.cres);
       const vals = UF.map(valMet).filter((v) => v != null && isFinite(v));
       const maxV = Math.max(0.0001, ...vals.map((v) => Math.abs(Math.min(v, met === "cres" ? 200 : Infinity))));
@@ -1695,10 +1702,8 @@
         </div>
         <div class="uf-meio">
           <section class="card uf-c">
-            <div class="uf-cab"><h2 class="uf-tit">${met === "share" ? "Market share da Akad" : met === "akad" ? "Vendas da Akad" : "Variação das vendas da Akad"} por estado</h2>
-              <div class="seg-ctrl uf-met" role="group" aria-label="Colorir o mapa por">
-                <button type="button" data-m="share" aria-pressed="${met === "share"}">Market share</button><button type="button" data-m="akad" aria-pressed="${met === "akad"}">Vendas</button><button type="button" data-m="cres" aria-pressed="${met === "cres"}">Variação</button>
-              </div></div>
+            <div class="uf-cab"><h2 class="uf-tit">Market share da Akad por estado ${ajuda("ufShareMapa", "market share por estado")}</h2></div>
+            <p class="uf-nota uf-conta">Prêmio direto da Akad no estado ÷ prêmio direto de todas as seguradoras no estado, nos ramos e no período do filtro. Média da Akad no país: ${pct(MED, 2)}.</p>
             <div class="mapa" id="mapa"></div>
             <p class="uf-nota">Clique num estado para ver o que mais se vende nele.</p>
           </section>
@@ -1742,7 +1747,6 @@
         b.addEventListener("mouseleave", esconderTip);
       });
       el.querySelectorAll("[data-uf]").forEach((b) => b.addEventListener("click", () => { esconderTip(); S.uf = String(b.dataset.uf); render(); window.scrollTo({ top: 0 }); }));
-      el.querySelectorAll(".uf-met button").forEach((b) => b.addEventListener("click", () => { S.ufMetrica = b.dataset.m; renderUF(); }));
       $("#uf-mais")?.addEventListener("click", () => { S.ufTodos = !S.ufTodos; renderUF(); });
       return;
     }
