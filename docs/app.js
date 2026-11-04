@@ -32,7 +32,7 @@
     uf: "todos",
     ufOrdR: "merc",
     ufTodos: false,
-    rankOrd: { col: "pe", dir: -1 },
+    rankOrd: { col: "pos", dir: 1 },
     geralOrd: "pe",
     geralTab: null,
     geralModo: "resumo",
@@ -440,6 +440,17 @@
     return itens;
   }
 
+  // Selo da posição da Akad ao lado do nome: medalha para 1º, 2º e 3º; número simples nos demais
+  const MED_POS = { 1: ["#F5C542", "#C78800", "ouro"], 2: ["#E0E0E0", "#757575", "prata"], 3: ["#E8A87C", "#9C5A2E", "bronze"] };
+  function seloPosicao(pos) {
+    if (!pos) return "";
+    if (MED_POS[pos]) {
+      const [f, s] = MED_POS[pos];
+      return `<span class="selo-pos med" aria-label="${pos}º lugar no mercado"><svg width="26" height="28" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="${f}" stroke="${s}" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">${pos}</text></svg></span>`;
+    }
+    return `<span class="selo-pos num" aria-label="${pos}º lugar no mercado">${pos}</span>`;
+  }
+
   /* ---------- Visão geral ---------- */
   // Textos de ajuda contextual (abrem no "?" ao lado de cada indicador)
   const AJUDA = {
@@ -800,16 +811,7 @@
           ${est ? `<span class="pb-quebra">${x.n === 1 ? "única no ramo" : "fora da escala"}</span>` : ""}
         </span>`;
     };
-    // Selo da posição da Akad ao lado do nome: medalha para 1º, 2º e 3º; número simples nos demais
-    const MED = { 1: ["#F5C542", "#C78800", "ouro"], 2: ["#E0E0E0", "#757575", "prata"], 3: ["#E8A87C", "#9C5A2E", "bronze"] };
-    const seloPos = (pos) => {
-      if (!pos) return "";
-      if (MED[pos]) {
-        const [f, s] = MED[pos];
-        return `<span class="selo-pos med" aria-label="${pos}º lugar no mercado"><svg width="26" height="28" viewBox="0 0 24 26" aria-hidden="true"><path class="fita" d="M7 1l3 8M17 1l-3 8" stroke="#1C4173" stroke-width="2.4" stroke-linecap="round"/><circle cx="12" cy="16" r="7.5" fill="${f}" stroke="${s}" stroke-width="1.4"/><text x="12" y="19.2" text-anchor="middle" font-family="Poppins, sans-serif" font-weight="700" font-size="9" fill="#212121">${pos}</text></svg></span>`;
-      }
-      return `<span class="selo-pos num" aria-label="${pos}º lugar no mercado">${pos}</span>`;
-    };
+    const seloPos = seloPosicao;
     // Posição + variação no ranking ao lado do nome; o detalhe ("2º de 20") aparece ao passar o mouse
     const posGrp = (x) => {
       if (!x.a.pos) return "";
@@ -912,11 +914,18 @@
   /* ---------- Linhas de produto ---------- */
   function ramosDaSel(sel) {
     if (sel === "todas") return IDX.todos;
+    if (sel.startsWith("m:")) return idsDaSel(sel).flatMap((x) => IDX.linhaPorId[x].idx);
     if (sel.startsWith("r:")) return [IDX.ramoIdx[sel.slice(2)]];
     return IDX.linhaPorId[sel].idx;
   }
   function nomeSel(sel) {
     if (sel === "todas") return `Todos os ${IDX.linhas.length} ramos acompanhados`;
+    if (sel.startsWith("m:")) {
+      const g = grupoDaSel(sel);
+      if (g) return g.nome;
+      const ns = idsDaSel(sel).map((x) => IDX.linhaPorId[x].nome);
+      return ns.length <= 3 ? ns.slice(0, -1).join(", ") + " e " + ns[ns.length - 1] : `${ns.length} ramos: ${ns.slice(0, 3).join(", ")} e mais ${ns.length - 3}`;
+    }
     if (sel.startsWith("r:")) { const c = sel.slice(2); return `${D.ramos[IDX.ramoIdx[c]][1]} (código ${c})`; }
     return IDX.linhaPorId[sel].nome;
   }
@@ -1193,6 +1202,7 @@
     if (!lista.includes(AKAD) && R.cur.has(AKAD)) lista.push(AKAD);
     const linhasTab = lista.map((k) => ({ k, ...infoEnt(R, k) }));
     const o = S.rankOrd;
+    const perR = P.pa != null ? periodoLabel(P.pa, P.pb) : "período anterior";
     linhasTab.sort((p, q) => {
       const va = p[o.col], vb = q[o.col];
       if (va == null) return 1;
@@ -1204,7 +1214,7 @@
       <div class="cab-aba">
         <div>
           <h2>${esc(nomeSel(S.linha))}</h2>
-          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP: " : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
+          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? `Valores somados de ${ramos.length} ramos. Códigos SUSEP: ` : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
         </div>
       </div>
       <div class="kpis">
@@ -1233,17 +1243,16 @@
         </div>
         <div class="bloco c12">
           <div class="bloco-cab"><h2>Ranking do período</h2><p class="nota">Clique num concorrente para ver o detalhe. Clique no título da coluna para ordenar.</p></div>
-          <div class="tab-wrap"><table>
+          <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
-              <th class="n ord" data-col="pos">#</th><th>Seguradora</th>
-              <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Participação</th>
-              <th class="n ord" data-col="dShare">Variação</th><th class="n ord" data-col="cresc">Crescimento</th>
+              <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
+              <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Market share</th>
+              <th class="n ord" data-col="dShare">Variação do share</th><th class="n ord" data-col="cresc">Crescimento</th>
               <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="com">Desp. comercial</th>
             </tr></thead>
             <tbody>${linhasTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}" data-ent="${esc(x.k)}">
-                <td class="n">${x.pos || "–"}${deltaPos(x.pos, x.posP)}</td>
-                <td class="nome">${esc(nomeEnt(x.k))}</td>
+                <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
                 <td class="n">${reais(x.pe)}</td>
                 <td class="n">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
                 <td class="n">${ppHtml(x.dShare)}</td>
@@ -1256,8 +1265,12 @@
         </div>
       </div>`;
 
-    el.querySelectorAll("th.ord").forEach((th) => {
-      if (th.dataset.col === o.col) th.setAttribute("aria-sort", o.dir < 0 ? "descending" : "ascending");
+    el.querySelectorAll(".rk-tab .pos-grp").forEach((g) => {
+      g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev));
+      g.addEventListener("mouseleave", esconderTip);
+    });
+    el.querySelectorAll(".rk-tab th.ord, .rk-tab .th-pos-btn").forEach((th) => {
+      if (th.tagName === "TH" && th.dataset.col === o.col) th.setAttribute("aria-sort", o.dir < 0 ? "descending" : "ascending");
       th.addEventListener("click", () => {
         const c = th.dataset.col;
         S.rankOrd = { col: c, dir: S.rankOrd.col === c ? -S.rankOrd.dir : (c === "pos" ? 1 : -1) };
@@ -1807,6 +1820,95 @@
     desenharChips();
   }
 
+  // Grupos de ramos (atalhos no filtro)
+  const GRUPOS_RAMOS = [
+    { id: "transp", nome: "Transportes", ids: ["rctrc", "rcdc", "transpnac", "transpint", "rctrvi", "rctfc"] },
+    { id: "gar", nome: "Garantia", ids: ["garpub", "garpriv"] },
+    { id: "prest", nome: "Prestamista", ids: ["prestind", "prestcol"] },
+  ];
+  // Seleção de ramos: "todas", um id de ramo, ou "m:id1,id2,..." para vários
+  function idsDaSel(sel) {
+    if (!sel || sel === "todas") return [];
+    if (sel.startsWith("m:")) return sel.slice(2).split(",").filter((x) => IDX.linhaPorId[x]);
+    return [sel];
+  }
+  function selDeIds(ids) {
+    const ord = IDX.linhas.map((l) => l.id).filter((x) => ids.includes(x));
+    if (!ord.length || ord.length === IDX.linhas.length) return "todas";
+    return ord.length === 1 ? ord[0] : "m:" + ord.join(",");
+  }
+  const grupoDaSel = (sel) => { const ids = idsDaSel(sel); return GRUPOS_RAMOS.find((g) => g.ids.length === ids.length && g.ids.every((x) => ids.includes(x))); };
+  function rotuloSel(sel) {
+    if (sel === "todas") return `Todos os ${IDX.linhas.length} ramos`;
+    if (!sel.startsWith("m:")) return nomeSel(sel);
+    const g = grupoDaSel(sel);
+    return g ? `${g.nome} (${g.ids.length} ramos)` : `${idsDaSel(sel).length} ramos selecionados`;
+  }
+
+  /** Filtro de ramo: "Todos", atalhos de grupo e seleção múltipla com caixas de marcar. Aplica ao fechar. */
+  function comboRamos(host) {
+    const id = "cb-linha-in";
+    host.innerHTML = `
+      <div class="cb">
+        <input id="${id}" class="cb-in" type="text" role="combobox" autocomplete="off" spellcheck="false"
+          aria-autocomplete="list" aria-expanded="false" aria-controls="${id}-lista" placeholder="Buscar ramo ou código SUSEP">
+        <span class="cb-seta" aria-hidden="true"></span>
+        <ul id="${id}-lista" class="cb-lista" role="listbox" aria-multiselectable="true" hidden></ul>
+      </div>`;
+    const inp = host.querySelector("input"), lista = host.querySelector("ul");
+    let marc = new Set(idsDaSel(S.linha));
+    let itens = [], ativo = -1, aberto = false;
+    const todosOp = { tipo: "todos", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" };
+    const montar = (q) => {
+      const n = norm(q.trim());
+      const ok = (t) => !n || norm(t).includes(n);
+      itens = [];
+      if (ok(todosOp.t)) itens.push(todosOp);
+      const gs = GRUPOS_RAMOS.filter((g) => ok(g.nome + " " + g.ids.map((x) => IDX.linhaPorId[x]?.nome || "").join(" ")));
+      if (gs.length) { itens.push({ tipo: "sec", t: "Grupos" }); gs.forEach((g) => itens.push({ tipo: "grupo", g, t: g.nome, sub: `${g.ids.length} ramos` })); }
+      const ls = IDX.linhas.filter((l) => ok(l.nome + " " + l.ramos.join(" ")));
+      if (ls.length) { itens.push({ tipo: "sec", t: "Ramos" }); ls.forEach((l) => itens.push({ tipo: "ramo", v: l.id, t: l.nome, sub: "código " + l.ramos.join(", ") })); }
+      ativo = itens.findIndex((x) => x.tipo !== "sec");
+      desenhar();
+    };
+    const desenhar = () => {
+      const g = grupoDaSel(selDeIds([...marc]));
+      lista.innerHTML = itens.length ? itens.map((o, i) => {
+        if (o.tipo === "sec") return `<li class="cb-sec" role="presentation">${esc(o.t)}</li>`;
+        const sel = o.tipo === "todos" ? marc.size === 0 : o.tipo === "grupo" ? g === o.g : marc.has(o.v);
+        const cls = o.tipo === "ramo" ? " cbm-op" : "";
+        return `<li id="${id}-op-${i}" role="option" class="cb-op${cls}${sel ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${sel}" data-i="${i}"><span>${o.tipo === "ramo" ? '<i class="cx" aria-hidden="true"></i>' : ""}${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`;
+      }).join("") : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
+      inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
+      lista.querySelector(".ativo")?.scrollIntoView({ block: "nearest" });
+    };
+    const mostrarValor = () => { inp.value = rotuloSel(S.linha); };
+    const aplicar = () => { const nova = selDeIds([...marc]); if (nova !== S.linha) { S.linha = nova; render(); } mostrarValor(); };
+    const abrir = () => { if (aberto) return; aberto = true; marc = new Set(idsDaSel(S.linha)); lista.hidden = false; inp.setAttribute("aria-expanded", "true"); host.querySelector(".cb").classList.add("aberto"); inp.value = ""; montar(""); };
+    const fechar = (aplicarSel) => { if (!aberto) return; aberto = false; lista.hidden = true; inp.setAttribute("aria-expanded", "false"); host.querySelector(".cb").classList.remove("aberto"); if (aplicarSel) aplicar(); else mostrarValor(); };
+    const ativar = (o) => {
+      if (!o || o.tipo === "sec") return;
+      if (o.tipo === "todos") { marc = new Set(); fechar(true); inp.blur(); return; }
+      if (o.tipo === "grupo") { marc = new Set(o.g.ids); fechar(true); inp.blur(); return; }
+      if (marc.has(o.v)) marc.delete(o.v); else marc.add(o.v);
+      desenhar();
+    };
+    const mover = (d) => { let i = ativo; do { i += d; } while (i >= 0 && i < itens.length && itens[i].tipo === "sec"); if (i >= 0 && i < itens.length) { ativo = i; desenhar(); } };
+    inp.addEventListener("focus", abrir);
+    inp.addEventListener("click", abrir);
+    inp.addEventListener("input", () => { if (!aberto) abrir(); montar(inp.value); });
+    inp.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") { e.preventDefault(); if (!aberto) abrir(); else mover(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); mover(-1); }
+      else if (e.key === "Enter") { e.preventDefault(); if (aberto) ativar(itens[ativo]); else abrir(); }
+      else if (e.key === "Escape") { e.preventDefault(); fechar(true); inp.blur(); }
+      else if (e.key === "Tab") { fechar(true); }
+    });
+    inp.addEventListener("blur", () => setTimeout(() => { if (document.activeElement !== inp) fechar(true); }, 120));
+    lista.addEventListener("mousedown", (e) => { e.preventDefault(); const li = e.target.closest("[data-i]"); if (li) { ativo = +li.dataset.i; ativar(itens[ativo]); } });
+    mostrarValor();
+  }
+
   function opcoesLinhaFiltro() {
     const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" }];
     for (const l of IDX.linhas) {
@@ -1836,7 +1938,7 @@
     });
     // Linha ou ramo
     if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
-      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; render(); } });
+      comboRamos($("#cb-linha"));
     }
     // Concorrentes (lista ordenada pelo prêmio nos ramos acompanhados, no período)
     if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
