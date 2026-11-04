@@ -1414,3 +1414,11 @@ body.c2-trava { overflow: hidden; }
 #b-proj .pj-passos { margin: 8px 0 8px; padding-left: 18px; font-size: .82rem; color: var(--ink-2); line-height: 1.5; }
 #b-proj .pj-passos li { margin-bottom: 3px; } #b-proj .pj-passos b { color: var(--ink); font-weight: 600; }
 .tr-tab .ix.neg { color: var(--ruim); }
+/* Ramo: sinistralidade por trimestre */
+#b-sin .sn-resumo { margin: -6px 0 8px; font-size: .9rem; color: var(--ink); }
+#b-sin .sn-resumo b.ruim { color: var(--ruim); } #b-sin .sn-resumo b.bom { color: var(--bom); }
+#b-sin .pr-leg { display: flex; gap: 16px; font-size: .78rem; color: var(--ink-2); margin: 0 0 6px; }
+#b-sin .pr-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+#b-sin .pr-leg i.sn-100 { width: 14px; height: 0; border-radius: 0; border-top: 2px dashed var(--ruim); opacity: .6; vertical-align: 3px; }
+#b-sin svg { width: 100%; height: auto; display: block; }
+#b-sin .sn-val { font-size: 11px; font-weight: 700; fill: var(--akad); }
