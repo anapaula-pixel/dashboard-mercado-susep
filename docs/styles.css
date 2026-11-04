@@ -1167,3 +1167,5 @@ body { color: var(--ink); }
 #g-prod text.pr-up { fill: #319C00; } #g-prod text.pr-dn { fill: #E01B1B; }
 #g-prod .hitb { cursor: default; }
 #g-prod .hitb:hover { fill: rgba(0, 0, 0, .04); }
+#aba-linhas .pr-desde[hidden] { display: none; }
+#aba-linhas .pr-desde .pr-sel { min-width: 130px; }
