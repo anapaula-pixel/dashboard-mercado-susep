@@ -1210,3 +1210,48 @@ body { color: var(--ink); }
 @media (max-width: 520px) { .tr-q4 { grid-template-columns: minmax(0, 1fr); } }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .tr-qh b[style*="#1C4173"] { color: #9DB4D1 !important; } }
 :root[data-theme="dark"] .tr-qh b[style*="#1C4173"] { color: #9DB4D1 !important; }
+/* Concorrentes (nova versão) */
+#aba-conc { --cc-rule: #E0E0E0; --cc-label: #616161; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-conc { --cc-rule: #424242; --cc-label: #BDBDBD; } }
+:root[data-theme="dark"] #aba-conc { --cc-rule: #424242; --cc-label: #BDBDBD; }
+.cc-card { background: var(--surface); border: 1px solid var(--cc-rule); border-radius: var(--r-md); padding: 24px 28px; margin-top: 20px; min-width: 0; }
+.cc-tit { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--ink); margin: 0 0 4px; }
+.cc-sub { margin: 0 0 16px; font-size: .85rem; color: var(--cc-label); }
+.cc-cab { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 12px 24px; }
+.cc-g3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+.cc-tpn { font-family: var(--font-display); font-size: .98rem; font-weight: 600; margin: 0; padding-bottom: 8px; border-bottom: 3px solid var(--c); color: var(--ink); }
+.cc-tpd { font-size: .8rem; color: var(--cc-label); margin: 8px 0 6px; line-height: 1.45; }
+.cc-tp ul { list-style: none; margin: 0; padding: 0; }
+.cc-tp li { border-top: 1px solid var(--cc-rule); }
+.cc-add { display: flex; flex-direction: column; align-items: flex-start; width: 100%; background: none; border: 0; padding: 9px 6px; margin: 0 -6px; border-radius: 6px; cursor: pointer; text-align: left; font: inherit; color: inherit; }
+.cc-add:hover { background: var(--surface-2); }
+.cc-nm { font-weight: 600; font-size: .9rem; color: var(--ink); }
+.cc-st { font-size: .76rem; color: var(--cc-label); }
+.cc-vz { font-size: .82rem; color: var(--cc-label); padding: 8px 0; margin: 0; }
+.cc-tab { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.cc-tab th { font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; color: var(--cc-label); font-weight: 600; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--cc-rule); white-space: nowrap; }
+.cc-tab td { padding: 10px; border-bottom: 1px solid var(--cc-rule); vertical-align: middle; }
+.cc-tab .n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cc-b { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.cc-b small { display: block; font-weight: 400; font-size: .74rem; color: var(--cc-label); }
+.cc-b .bol { margin-right: 6px; }
+#aba-conc .up { color: var(--bom); } #aba-conc .dn { color: var(--ruim); }
+.cc-pp { display: flex; justify-content: space-between; gap: 12px; font-size: .82rem; padding: 1px 0; min-width: 190px; }
+.cc-pp b { font-weight: 600; white-space: nowrap; }
+.cc-akd { margin: 0 0 12px; font-size: .9rem; }
+.cc-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+.cc-lt { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--cc-label); font-weight: 600; margin: 0 0 6px; }
+.cc-g2 .cc-pp { padding: 6px 0; border-top: 1px solid var(--cc-rule); }
+.cc-br { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cc-br i { display: inline-block; height: 8px; border-radius: 4px; background: #B8C8DB; }
+.cc-t3 tr.akad td { background: var(--linha-akad); }
+.cc-mk td { background: var(--surface-2); font-weight: 600; }
+.cc-lg { display: flex; gap: 16px; font-size: .78rem; color: var(--cc-label); margin: -6px 0 6px; }
+.cc-lg span { display: inline-flex; align-items: center; gap: 6px; }
+.cc-lg i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.cc-dbh { width: 40%; min-width: 180px; }
+.cc-db { position: relative; display: block; height: 14px; background: linear-gradient(var(--grid), var(--grid)) 0 50% / 100% 2px no-repeat; }
+.cc-db .ln { position: absolute; top: 6px; height: 2px; background: var(--axis); }
+.cc-db .dt { position: absolute; top: 2px; width: 10px; height: 10px; border-radius: 50%; margin-left: -5px; }
+@media (max-width: 1000px) { .cc-g3 { grid-template-columns: minmax(0, 1fr); gap: 18px; } }
+@media (max-width: 760px) { .cc-card { padding: 20px 16px; } .cc-g2 { grid-template-columns: minmax(0, 1fr); } }
