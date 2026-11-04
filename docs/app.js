@@ -516,9 +516,9 @@
     ufMelhor: "O estado em que a Akad tem a maior fatia do mercado, considerando só estados com pelo menos 0,5% do mercado dos ramos.",
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
-    trBcg: "Matriz BCG (Boston Consulting Group), adaptada. Cruza duas perguntas: o mercado do ramo está crescendo? E a Akad tem posição forte nele? Crescimento: quanto o mercado do ramo cresceu nos últimos 12 meses contra os 12 meses anteriores; a linha é a média dos ramos acompanhados. Posição forte: Akad entre as 5 maiores seguradoras do ramo. Na BCG original, só o líder do mercado conta como posição forte; adaptamos porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras, e estar no top 5 já significa escala relevante. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
+    trBcg: "Matriz de posicionamento, inspirada na matriz BCG e adaptada ao ranking da Akad. Cada ramo é classificado por dois critérios objetivos. Linha vertical, limite do Top 5: à esquerda dela, a Akad está entre as 5 maiores seguradoras do ramo. Linha horizontal, crescimento médio do mercado: quanto o prêmio do conjunto dos ramos acompanhados cresceu nos últimos 12 meses contra os 12 meses anteriores; acima dela, o mercado do ramo cresce mais que a média. Usamos o Top 5, e não só a liderança, porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
     ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Em expansão: maiores ganhos de participação. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
-    ccQual: "Margem técnica = prêmio ganho menos sinistros e custo de comercialização, dividido pelo prêmio ganho. É 100% menos o índice combinado parcial. Parcial porque a SUSEP não abre despesa administrativa por ramo, então a margem real é menor. vs. mercado: diferença entre a margem da Akad e a do mercado no ramo, em pontos percentuais (verde quando a Akad está melhor). Deficitário: índice combinado acima de 100%, o prêmio não cobre nem sinistro e comissão.",
+    ccQual: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\n**vs. mercado:** diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior. Vermelho: é menor.",
     ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
@@ -530,8 +530,8 @@
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
     sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os três meses de cada trimestre. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. Por trimestre porque mês a mês o índice oscila demais. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
     proj: "Estimativa simples, não é meta nem previsão oficial. Soma o GWP já realizado no ano com o que costuma entrar nos meses que faltam, usando a proporção dos dois anos anteriores (por exemplo, se de set a dez costuma entrar metade do que entrou de jan a ago, a estimativa é o realizado mais metade). Muda conforme a SUSEP publica novos meses.",
-    trIdx: "Margem técnica da Akad no ramo: prêmio ganho menos sinistros e custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), dividido pelo prêmio ganho. É 100% menos o índice combinado parcial. Parcial porque a SUSEP não abre despesa administrativa por ramo, então a margem final é menor. Embaixo, a margem do mercado no mesmo ramo. Passe o mouse para ver a quebra.",
-    trDif: "Margem técnica da Akad menos a do mercado no ramo, em pontos percentuais. Verde: a Akad tem margem maior que o mercado; vermelho: menor.",
+    trIdx: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\nEmbaixo, a margem do mercado no mesmo ramo. Passe o mouse no número para ver a quebra.",
+    trDif: "Diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior que a do mercado. Vermelho: é menor.",
     trSin: "Sinistralidade da Akad no ramo (sinistro ocorrido ÷ prêmio ganho) ao lado da do mercado no mesmo ramo e período. A diferença em p.p. fica verde quando a Akad está abaixo do mercado e vermelha quando está acima. Clique no título para ordenar pelos ramos em que a Akad está pior.",
     trCom: "Custo de comercialização da Akad no ramo (comissão do corretor, agenciamento, pró-labore e outros custos de venda ÷ prêmio ganho) ao lado do mercado no mesmo ramo e período.",
     trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
@@ -544,7 +544,7 @@
     const abrir = (b) => {
       const r = b.getBoundingClientRect();
       const extra = b.dataset.lista ? `<div class="tip-lista">${b.dataset.lista.split("|").map((x) => `<div>${esc(x)}</div>`).join("")}</div>` : "";
-      mostrarTip(`<div style="max-width:280px">${esc(AJUDA[b.dataset.ajuda] || "")}${extra}</div>`, { clientX: r.left, clientY: r.bottom });
+      mostrarTip(`<div style="max-width:300px">${esc(AJUDA[b.dataset.ajuda] || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}${extra}</div>`, { clientX: r.left, clientY: r.bottom });
     };
     document.addEventListener("mouseover", (e) => { const b = e.target.closest?.(".ajuda"); if (b) abrir(b); });
     document.addEventListener("mouseout", (e) => { if (e.target.closest?.(".ajuda")) esconderTip(); });
@@ -991,10 +991,10 @@
     return (ag / an - 1) * 100;
   }
   const QUAD = {
-    est: { nome: "Estrelas", um: "Estrela", cor: "#319C00", tit: "#319C00", crit: "Top 5 • mercado em alta", desc: "Negócio forte em mercado em expansão. Pede investimento para acompanhar o crescimento e manter a posição." },
-    vac: { nome: "Vacas leiteiras", um: "Vaca leiteira", cor: "#1C4173", tit: "#1C4173", crit: "Top 5 • mercado lento", desc: "Negócio forte em mercado maduro. Gera mais resultado do que consome; a estratégia é defender a posição." },
-    int: { nome: "Pontos de interrogação", um: "Ponto de interrogação", cor: "#E3175E", tit: "#E3175E", crit: "Fora do top 5 • mercado em alta", desc: "Mercado atrativo, mas a posição ainda é pequena. Pode virar Estrela se ganhar espaço; exige escolher onde apostar." },
-    aba: { nome: "Abacaxis", um: "Abacaxi", cor: "#9E9E9E", tit: "#616161", crit: "Fora do top 5 • mercado lento", desc: "Posição pequena em mercado lento. A estratégia é rever a presença e manter só o que dá resultado." },
+    est: { nome: "Liderança em expansão", um: "Liderança em expansão", cor: "#319C00", tit: "#319C00", crit: "Top 5 • crescimento acima da média", desc: "Boa posição em mercados que crescem rapidamente." },
+    vac: { nome: "Posição consolidada", um: "Posição consolidada", cor: "#1C4173", tit: "#1C4173", crit: "Top 5 • crescimento abaixo da média", desc: "Boa posição em mercados de crescimento mais lento." },
+    int: { nome: "Oportunidades de crescimento", um: "Oportunidade de crescimento", cor: "#E3175E", tit: "#E3175E", crit: "Fora do Top 5 • crescimento acima da média", desc: "Mercados em expansão onde há espaço para ganhar posição." },
+    aba: { nome: "Baixa presença", um: "Baixa presença", cor: "#9E9E9E", tit: "#616161", crit: "Fora do Top 5 • crescimento abaixo da média", desc: "Posição menor em mercados de crescimento mais lento." },
   };
   const QORD = ["est", "vac", "int", "aba"];
   const TOP_N = 5;
@@ -1114,11 +1114,13 @@
       <section class="tr-card tr-bcg" aria-labelledby="h-bcg">
         <h3 id="h-bcg" class="tr-tit">Matriz de posicionamento dos ramos ${ajuda("trBcg", "matriz de posicionamento")}</h3>
         <p class="tr-sub">Entenda onde a Akad está mais bem posicionada, quais mercados estão crescendo e onde existem oportunidades de expansão. Cada bolha é um ramo e o tamanho é o GWP da Akad em ${per}. O crescimento do mercado considera os últimos 12 meses${per12 ? ` (${per12})` : ""}. Clique numa bolha para abrir o ramo.</p>
+        <div class="tr-refs"><span><i class="v"></i>Linha vertical: limite do Top ${TOP_N} do ranking</span><span><i class="h"></i>Linha horizontal: crescimento médio do mercado (${cMed != null ? (cMed >= 0 ? "+" : "−") + nf1.format(Math.abs(cMed)) + "%" : "–"})</span></div>
         <div class="tr-mat" id="tr-mat"></div>
         ${fora.length ? `<p class="tr-rodape">Fora da matriz: ${fora.map((x) => esc(rotCurto(x.l.nome)) + (x.tem ? " (sem histórico)" : " (Akad sem prêmio)")).join(", ")}.</p>` : ""}
         <div class="tr-qs">
           <h4 class="tr-qtit">O que significa cada quadrante</h4>
           <div class="tr-q4">${colsQ}</div>
+          <div class="tr-interp"><b>Como interpretar</b><p>Os quadrantes indicam o posicionamento relativo da Akad e o ritmo de crescimento de cada mercado. Não representam, isoladamente, rentabilidade, atratividade ou recomendação de investimento. A análise é inspirada na matriz BCG, adaptada para considerar o ranking da Akad.</p></div>
         </div>
       </section>
       <section class="tr-card" aria-labelledby="h-comp">
@@ -1142,7 +1144,7 @@
     const W = Math.max(300, Math.round(host.clientWidth || 700));
     const peq = W < 560;
     const H = peq ? 400 : 470;
-    const L = 52, Rr = 14, T = 12, B = 46;
+    const L = 52, Rr = peq ? 44 : 46, T = 22, B = 46;
     const nMax = Math.max(10, ...naMatriz.map((x) => x.n));
     const lx0 = Math.log(0.8), lx1 = Math.log(nMax * 1.25);
     const xs = (p) => L + ((Math.log(p) - lx0) / (lx1 - lx0)) * (W - L - Rr);
@@ -1161,17 +1163,22 @@
     for (let v = Math.ceil(ymin / passo) * passo; v <= ymax; v += passo) s += `<line x1="${L}" x2="${W - Rr}" y1="${ys(v)}" y2="${ys(v)}" class="tr-grid"/><text x="${L - 6}" y="${ys(v) + 4}" text-anchor="end" class="tr-ax">${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v)}%</text>`;
     for (const p of (peq ? [1, 2, 5, 10, 20, 50] : [1, 2, 3, 5, 10, 20, 50])) if (p <= nMax * 1.2) s += `<text x="${xs(p)}" y="${H - B + 16}" text-anchor="middle" class="tr-ax">${p}º</text>`;
     s += `<line x1="${xc}" x2="${xc}" y1="${T}" y2="${H - B}" class="tr-corte"/><line x1="${L}" x2="${W - Rr}" y1="${yc}" y2="${yc}" class="tr-corte"/>`;
-    s += `<text x="${xc + 5}" y="${H - B - 6}" class="tr-ax">top ${TOP_N}</text><text x="${W - Rr - 6}" y="${yc - 6}" text-anchor="end" class="tr-ax">média dos ${IDX.linhas.length} ramos: ${cMed != null ? (cMed >= 0 ? "+" : "−") + nf1.format(Math.abs(cMed)) + "%" : "–"}</text>`;
+    const cMedTxt = cMed != null ? (cMed >= 0 ? "+" : "−") + nf1.format(Math.abs(cMed)) + "%" : "–";
+    s += `<text x="${xc}" y="${T - 7}" text-anchor="middle" class="tr-ref">Top ${TOP_N}</text><text x="${W - Rr + 5}" y="${yc + 4}" class="tr-ref">${cMedTxt}</text>`;
     s += `<text x="${(W + L) / 2}" y="${H - 6}" text-anchor="middle" class="tr-ax-t">Posição da Akad no ranking do ramo →</text>`;
     s += `<text transform="translate(12,${(H - B + T) / 2}) rotate(-90)" text-anchor="middle" class="tr-ax-t">Crescimento do mercado, últimos 12 meses →</text>`;
     const ocup = [];
     const qLab = { est: [L + 8, yc - 8, "start"], int: [W - Rr - 8, T + 16, "end"], vac: [L + 8, H - B - 8, "start"], aba: [W - Rr - 8, H - B - 8, "end"] };
     for (const k of QORD) {
       const [x, y, anc] = qLab[k];
-      const w = QUAD[k].nome.length * 7.8;
+      // no celular o nome do quadrante quebra em duas linhas para caber
+      const nm = QUAD[k].nome.toUpperCase(), cut = nm.indexOf(" ", Math.floor(nm.length / 2) - 3);
+      const lns = peq && cut > 0 ? [nm.slice(0, cut), nm.slice(cut + 1)] : [nm];
+      const lh = 13, y0 = k === "int" ? y : y - (lns.length - 1) * lh;
+      const w = Math.max(...lns.map((t) => t.length)) * (peq ? 6.6 : 7.8);
       const x0 = anc === "start" ? x : x - w;
-      ocup.push([x0, y - 12, x0 + w, y + 2]);
-      s += `<text x="${x}" y="${y}" text-anchor="${anc}" class="tr-q" fill="${k === "aba" ? "var(--ink-2)" : corQ(k)}">${QUAD[k].nome.toUpperCase()}</text>`;
+      ocup.push([x0, y0 - 12, x0 + w, y0 + (lns.length - 1) * lh + 2]);
+      s += `<text x="${x}" y="${y0}" text-anchor="${anc}" class="tr-q${peq ? " peq" : ""}" fill="${k === "aba" ? "var(--ink-2)" : corQ(k)}">${lns.map((t, i) => `<tspan x="${x}" dy="${i ? lh : 0}">${t}</tspan>`).join("")}</text>`;
     }
     const maxA = Math.max(...naMatriz.map((x) => x.a.pe));
     const rMax = peq ? 20 : 28;
@@ -1204,8 +1211,8 @@
 
     // ----- interações
     const tipB = (x) => `<b>${esc(x.l.nome)}</b><div style="color:${corQ(x.q)};font-weight:600">${QUAD[x.q].nome}</div>
-      <div>Posição da Akad: ${x.a.pos}º de ${x.n}${x.lid !== AKAD && x.lid != null ? ` (líder: ${esc(curto(nomeEnt(x.lid)))})` : ""}</div>
-      <div>Crescimento do mercado em 12 meses: ${x.novo ? "ramo novo" : (x.crM > 0 ? "+" : x.crM < 0 ? "−" : "") + nf1.format(Math.abs(x.crM)) + "%"}</div>
+      <div>Posição da Akad: ${x.a.pos}º de ${x.n}${x.lid !== AKAD && x.lid != null ? ` (líder: ${esc(curto(nomeEnt(x.lid)))})` : ""} · ${x.a.pos <= TOP_N ? "dentro" : "fora"} do Top ${TOP_N}</div>
+      <div>Crescimento do mercado em 12 meses: ${x.novo ? "ramo novo" : (x.crM > 0 ? "+" : x.crM < 0 ? "−" : "") + nf1.format(Math.abs(x.crM)) + "%"}${x.novo || cMed == null ? "" : ` · ${x.crM >= corteY ? "acima" : "abaixo"} da média (${cMedTxt})`}</div>
       <div>GWP da Akad: ${reais(x.a.pe)} · market share ${pctPart(x.a.share)}</div>
       <div>Mercado no período: ${reais(x.merc)}</div>`;
     const porId = Object.fromEntries(itens.map((x) => [x.l.id, x]));
