@@ -1936,7 +1936,7 @@
 
     document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
       e.preventDefault();
-      if (a.dataset.aba === "linhas") S.linha = "todas"; // pelo menu, Ramos abre a visão de todos os ramos
+      // o filtro de ramo é compartilhado entre as páginas: ao trocar pelo menu, mantém o ramo escolhido
       irPara(a.dataset.aba);
     }));
     // Voltar do navegador: desfaz o último "abrir detalhe"; senão, segue o endereço
