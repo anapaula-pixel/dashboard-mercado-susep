@@ -1447,7 +1447,8 @@
       const lost = atua.filter((x) => x.d != null && x.d < -0.05), won = atua.filter((x) => x.d != null && x.d > 0.05);
       const pl = lost.reduce((s, x) => s + x.peso, 0), pw = won.reduce((s, x) => s + x.peso, 0), pe = Math.max(0, 100 - pl - pw);
       k3 = card("Perdeu market share em", `${lost.length} <small>de ${atua.length} ramos</small>`, `que somam <b>${nf0.format(pl)}%</b> do faturamento da Akad`,
-        `<div class="c2-seg"><i style="width:${pl}%;background:var(--ruim)"></i><i style="width:${pw}%;background:var(--bom)"></i><i style="width:${pe}%;background:var(--axis)"></i></div>
+        `<div class="c2-seg">${[["Perdeu market share", lost, pl, "var(--ruim)"], ["Ganhou market share", won, pw, "var(--bom)"], ["Estável ou sem comparação", atua.filter((x) => !lost.includes(x) && !won.includes(x)), pe, "var(--axis)"]]
+          .map(([t, l, w, c]) => w > 0 ? `<i style="width:${w}%;background:${c}" data-tip="${esc(`<b>${t}: ${l.length} ${l.length === 1 ? "ramo" : "ramos"} (${nf0.format(w)}% do faturamento)</b><div style="opacity:.75">do maior para o menor peso na carteira</div>${l.slice(0, 12).map((x) => `<div>${esc(x.l.nome)}: ${x.d == null ? "novo" : ppTxt(x.d)} (peso ${nf1.format(x.peso)}%)</div>`).join("")}${l.length > 12 ? `<div>e mais ${l.length - 12}</div>` : ""}`)}"></i>` : "").join("")}</div>
          <p class="c2-lg"><i style="background:var(--ruim)"></i>Perdeu ${nf0.format(pl)}% <i style="background:var(--bom)"></i>Ganhou ${nf0.format(pw)}% <i style="background:var(--axis)"></i>Estável</p>`, "ccPerdeu");
     }
     const stk = (rot, s, c, forte) => `<div class="c2-hb"><span class="c2-hl">${rot}</span><span class="c2-ht"><i style="width:${Math.min(100, s || 0)}%;background:var(--mercado)"></i><i style="width:${Math.min(100 - Math.min(100, s || 0), c || 0)}%;background:#7C97B8"></i></span><span class="c2-hv${forte ? " b" : ""}">${s == null ? "–" : nf0.format(s + c) + "%"}</span></div>`;
