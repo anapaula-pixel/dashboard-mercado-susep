@@ -573,7 +573,18 @@
   function ligarAjuda() {
     if (ligarAjuda.ok) return;
     ligarAjuda.ok = true;
+    // eventos de uso: ordenação de tabelas e troca de visão nos gráficos
+    document.addEventListener("click", (e) => {
+      const th = e.target.closest?.("th[data-col], .th-pos-btn[data-col]");
+      if (th && !e.target.closest(".ajuda")) {
+        const tab = th.closest("table");
+        ga("ordenar_coluna", { tabela: tab?.classList.contains("c2-at") ? "ficha do concorrente" : (tab?.closest("section, .bloco")?.querySelector("h2, h3")?.textContent || "").replace("?", "").trim().slice(0, 60), coluna: th.dataset.col });
+      }
+      const sb = e.target.closest?.(".seg-ctrl button");
+      if (sb) ga("trocar_visao", { grafico: (sb.closest(".bloco, section")?.querySelector("h2, h3")?.textContent || "").replace("?", "").trim().slice(0, 60), visao: sb.textContent.trim() });
+    }, true);
     const abrir = (b) => {
+      gaUmaVez("ajuda_aberta", b.dataset.ajuda, { ajuda: b.dataset.ajuda, tela: NOME_ABA[S.aba] || S.aba });
       const r = b.getBoundingClientRect();
       const extra = b.dataset.lista ? `<div class="tip-lista">${b.dataset.lista.split("|").map((x) => `<div>${esc(x)}</div>`).join("")}</div>` : "";
       mostrarTip(`<div style="max-width:300px">${esc(AJUDA[b.dataset.ajuda] || "").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/\n/g, "<br>")}${extra}</div>`, { clientX: r.left, clientY: r.bottom });
@@ -1693,6 +1704,7 @@
 
     // ----- ficha do concorrente (abre ao clicar num nome)
     function abrirFicha(k, origem) {
+      ga("abrir_concorrente", { concorrente: nomeC(k) });
       const host = el.querySelector("#c2-ficha-host");
       const rows = [];
       let G = [0, 0, 0, 0, 0], Gp = 0;
@@ -2018,8 +2030,19 @@
     render();
     window.scrollTo({ top: 0 });
   }
+  // Google Analytics: eventos de uso (o gtag é carregado no index.html; se estiver bloqueado, nada acontece)
+  function ga(evento, params) { try { if (typeof window.gtag === "function") window.gtag("event", evento, params || {}); } catch (e) { /* ignora */ } }
+  const gaVisto = new Map();
+  const gaUmaVez = (evento, chave, params, ms = 30000) => { const t = Date.now(); if (t - (gaVisto.get(evento + chave) || 0) < ms) return; gaVisto.set(evento + chave, t); ga(evento, params); };
+  let gaTela = "";
   function render() {
     esconderTip();
+    {
+      const P = periodo();
+      const tela = { aba: NOME_ABA[S.aba] || S.aba, ramo: S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha), estado: S.aba === "uf" && S.uf != null && S.uf !== "todos" ? D.ufs[+S.uf] : "", periodo: periodoLabel(P.a, P.b) };
+      const chave = `${tela.aba}|${tela.ramo}|${tela.estado}`;
+      if (chave !== gaTela) { gaTela = chave; ga("ver_tela", tela); }
+    }
     atualizarFiltros();
     const vt = $("#voltar");
     const topo = S.pilha[S.pilha.length - 1];
@@ -2216,7 +2239,7 @@
     });
     // Linha ou ramo
     if (usa.includes("linha") && document.activeElement?.id !== "cb-linha-in") {
-      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; render(); } });
+      combo($("#cb-linha"), { id: "cb-linha-in", opcoes: opcoesLinhaFiltro(), valor: () => S.linha, placeholder: "Buscar ramo ou código SUSEP", aoEscolher: (v) => { S.linha = v; ga("filtro_ramo", { ramo: v === "todas" ? "Todos os ramos" : nomeSel(v) }); render(); } });
     }
     // Concorrentes (lista ordenada pelo prêmio nos ramos acompanhados, no período)
     if (usa.includes("conc") && document.activeElement?.id !== "cb-conc-in") {
@@ -2328,9 +2351,9 @@
         else { ed.de = Math.min(lo, i); ed.ate = Math.max(lo, i); ed.alvo = "de"; }
         desenharPop(`.dp-m[data-i="${i}"]`); return;
       }
-      if (t.dataset.p) { S.periodo = t.dataset.p; if (t.dataset.ano) S.ano = t.dataset.ano; fechar(true); render(); return; }
+      if (t.dataset.p) { S.periodo = t.dataset.p; if (t.dataset.ano) S.ano = t.dataset.ano; ga("filtro_periodo", { tipo: t.dataset.p === "ytd" ? "acumulado do ano" : t.dataset.p === "12m" ? "ultimos 12 meses" : "ano completo", periodo: t.textContent.trim() }); fechar(true); render(); return; }
       if (t.id === "pp-cancelar") { fechar(true); return; }
-      if (t.id === "pp-aplicar") { S.periodo = "custom"; S.de = Math.min(ed.de, ed.ate); S.ate = Math.max(ed.de, ed.ate); fechar(true); render(); }
+      if (t.id === "pp-aplicar") { S.periodo = "custom"; S.de = Math.min(ed.de, ed.ate); S.ate = Math.max(ed.de, ed.ate); ga("filtro_periodo", { tipo: "personalizado", periodo: periodoLabel(S.de, S.ate), meses: S.ate - S.de + 1 }); fechar(true); render(); }
     });
 
     document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
