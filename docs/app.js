@@ -1707,8 +1707,26 @@
         rows.push({ l, g: x[0], pos: rk.indexOf(k) + 1, posP: rkp.indexOf(k) + 1, sh: shareDe(c, tc[0], k), dsh: tp > 0 ? shareDe(c, tc[0], k) - shareDe(p, tp, k) : null, cr: cresc(x[0], xp),
           sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
       });
-      rows.sort((p, q) => q.g - p.g);
       const crG = cresc(G[0], Gp);
+      // ordenação da tabela da ficha: clique no título da coluna (de novo inverte)
+      if (!S.fichaOrd) S.fichaOrd = { col: "g", dir: -1 };
+      const COLS_F = [["nome", "Ramo", ""], ["g", "GWP", "n"], ["pos", "Posição", "n"], ["sh", "Share", "n"], ["dsh", "Var. share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade <small>(mercado)</small>", "n"], ["comis", "Comissão", "n"], ["outros", "Outros custos", "n"], ["akPos", "Akad", "n"]];
+      const valF = (r, c) => (c === "nome" ? r.l.nome : c === "akPos" ? r.akPos || null : r[c]);
+      const ordenarF = () => {
+        const { col, dir } = S.fichaOrd;
+        rows.sort((p, q) => {
+          const va = valF(p, col), vb = valF(q, col);
+          if (va == null && vb == null) return q.g - p.g;
+          if (va == null) return 1;
+          if (vb == null) return -1;
+          return (typeof va === "string" ? va.localeCompare(vb, "pt-BR") : va - vb) * dir || q.g - p.g;
+        });
+      };
+      const thF = () => COLS_F.map(([c, rot, cls]) => `<th class="ord ${cls}" data-col="${c}"${S.fichaOrd.col === c ? ` aria-sort="${S.fichaOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`).join("");
+      const linhaF = (r) => `<tr class="clic" data-abrir="${r.l.id}" tabindex="0"><td class="c2-atn">${esc(r.l.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${pctPart(r.sh)}</td>
+            <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppTxt(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? "novo" : r.cr > 999 ? "> +999%" : sgn(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
+            <td class="n">${sinCel(r)}</td><td class="n">${r.comis == null ? "–" : nf0.format(r.comis) + "%"}</td><td class="n">${r.outros == null ? "–" : nf0.format(r.outros) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`;
+      const linhasF = () => { ordenarF(); return rows.map(linhaF).join(""); };
       const sinCel = (r) => {
         if (r.sin == null) return "–";
         const c = r.msin == null ? "" : r.sin > r.msin + 5 ? "dn" : r.sin < r.msin - 5 ? "up" : "";
@@ -1724,10 +1742,8 @@
             <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
           </div>
           <p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>
-          <div class="tab-wrap"><table class="c2-at"><thead><tr><th>Ramo</th><th class="n">GWP</th><th class="n">Posição</th><th class="n">Share</th><th class="n">Var. share</th><th class="n">Cresc.</th><th class="n">Sinistralidade <small>(mercado)</small></th><th class="n">Comissão</th><th class="n">Outros custos</th><th class="n">Akad</th></tr></thead>
-          <tbody>${rows.map((r) => `<tr class="clic" data-abrir="${r.l.id}" tabindex="0"><td class="c2-atn">${esc(r.l.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${pctPart(r.sh)}</td>
-            <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppTxt(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? "novo" : r.cr > 999 ? "> +999%" : sgn(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
-            <td class="n">${sinCel(r)}</td><td class="n">${r.comis == null ? "–" : nf0.format(r.comis) + "%"}</td><td class="n">${r.outros == null ? "–" : nf0.format(r.outros) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`).join("")}</tbody></table></div>
+          <div class="tab-wrap"><table class="c2-at"><thead><tr>${thF()}</tr></thead>
+          <tbody>${linhasF()}</tbody></table></div>
           <p class="c2-fnota">${perC} contra ${perA}, em todos os ramos em que a seguradora vende. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Clique num ramo para abrir a visão do ramo.</p>
         </aside>`;
       document.body.classList.add("c2-trava");
@@ -1736,10 +1752,22 @@
       const tecla = (e) => { if (e.key === "Escape") fechar(); };
       document.addEventListener("keydown", tecla);
       host.querySelectorAll("[data-fechar]").forEach((x) => x.addEventListener("click", fechar));
-      host.querySelectorAll("tr[data-abrir]").forEach((tr) => {
+      const ligarLinhas = () => host.querySelectorAll("tr[data-abrir]").forEach((tr) => {
         const ir = () => { const id = tr.dataset.abrir; host.innerHTML = ""; document.body.classList.remove("c2-trava"); document.removeEventListener("keydown", tecla); abrirLinha(id); };
         tr.addEventListener("click", ir);
         tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ir(); } });
+      });
+      ligarLinhas();
+      host.querySelector("table.c2-at thead").addEventListener("click", (e) => {
+        const th = e.target.closest("th[data-col]");
+        if (!th) return;
+        const c = th.dataset.col;
+        // primeira ordem: nome e posição em ordem crescente; números do maior para o menor
+        S.fichaOrd = S.fichaOrd.col === c ? { col: c, dir: -S.fichaOrd.dir } : { col: c, dir: c === "nome" || c === "pos" || c === "akPos" ? 1 : -1 };
+        host.querySelector("table.c2-at thead tr").innerHTML = thF();
+        host.querySelector("table.c2-at tbody").innerHTML = linhasF();
+        ligarLinhas();
+        host.querySelector(`table.c2-at th[data-col="${c}"] button`)?.focus();
       });
       dr.focus();
     }
