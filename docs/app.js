@@ -404,7 +404,7 @@
     return peq ? Math.max(0, fim - 11) : Math.max(0, janAnt >= 0 ? janAnt : fim - 23);
   }
   function graficoProducao(el, sm, P) {
-    const met = S.prodMet || "gwp", vis = S.prodVis || "mes";
+    const met = "gwp", vis = S.prodVis || "mes"; // sempre GWP
     const A = Array.from(sm.ent.get(AKAD)), T = Array.from(sm.mercado);
     const W = Math.max(280, el.clientWidth || 600), peq = W < 560, H = peq ? 230 : 280;
     const m = { t: vis !== "mes" ? (peq ? 26 : 46) : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
@@ -1330,7 +1330,6 @@
         <div class="bloco c12">
           <div class="bloco-cab pr-cab"><div><h2>Produção da Akad em ${esc(nomeSel(S.linha))}</h2><p class="nota" id="g-prod-nota"></p></div>
             <div class="pr-btns">
-              <div class="seg-ctrl" role="group" aria-label="Medida">${[["gwp", "GWP"], ["share", "Market share"]].map(([k, r]) => `<button type="button" data-pmet="${k}" aria-pressed="${(S.prodMet || "gwp") === k}">${r}</button>`).join("")}</div>
               <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
             </div>
           </div>
@@ -1454,7 +1453,7 @@
     desenharSin();
     const desenharProd = () => {
       const itens = graficoProducao($("#g-prod"), sm, P);
-      const vis = S.prodVis || "mes", met = S.prodMet || "gwp";
+      const vis = S.prodVis || "mes", met = "gwp";
       const fimLab = mesLabel(P.b, true);
       $("#g-prod-nota").textContent = vis === "mes"
         ? `${met === "gwp" ? "GWP" : "Market share"} da Akad por mês, de ${itens[0].tit} a ${fimLab}. Cada cor é um ano.`
