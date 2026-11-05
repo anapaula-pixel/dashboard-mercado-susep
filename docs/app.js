@@ -1071,9 +1071,9 @@
       <div class="tr-qc" data-q="${g.k}">
         <div class="tr-qh">${miniQ(g.k)}<b style="color:${QUAD[g.k].tit}">${QUAD[g.k].nome}</b></div>
         <div class="tr-ql" style="background:${QUAD[g.k].cor}"></div>
+        <p class="tr-qv"><b>${pct(g.part)}</b> do GWP da Akad · ${g.n} ${g.n === 1 ? "ramo" : "ramos"}</p>
         <p class="tr-qcrit">${QUAD[g.k].crit}</p>
         <p class="tr-qd">${QUAD[g.k].desc}</p>
-        <p class="tr-qv"><b>${pct(g.part)}</b> do GWP da Akad · ${g.n} ${g.n === 1 ? "ramo" : "ramos"}</p>
       </div>`).join("");
 
     // ----- tabela comparativa
@@ -1133,23 +1133,22 @@
       });
     };
 
+    const cMedTxtL = cMed != null ? (cMed >= 0 ? "+" : "−") + nf1.format(Math.abs(cMed)) + "%" : "–";
+    AJUDA.trLer = `**Como ler a matriz**\n• **Eixo horizontal:** posição da Akad no ranking de cada ramo. Quanto mais à esquerda, melhor a posição.\n• **Eixo vertical:** crescimento do mercado nos últimos 12 meses${per12 ? ` (${per12})` : ""}.\n• **Tamanho das bolhas:** GWP da Akad em ${per}.\n• **Linha vertical:** limite do Top ${TOP_N}.\n• **Linha horizontal:** crescimento médio do mercado (${cMedTxtL}).\n• Clicar em uma bolha abre os detalhes do ramo.\n\nA matriz é inspirada na matriz BCG, adaptada para usar o ranking da Akad. Os quadrantes mostram posição relativa e ritmo de crescimento. Não representam, isoladamente, rentabilidade, atratividade ou recomendação de investimento.`;
     el.innerHTML = `
       <div class="cab-aba">
         <div>
-          <h2>Todos os ramos</h2>
-          <p>Compare os ${IDX.linhas.length} mercados em que a Akad atua e descubra onde ela está forte, onde perde espaço e onde há oportunidade.</p>
+          <h2>Posicionamento por ramo</h2>
+          <p>Veja onde a Akad está mais bem posicionada e quais mercados apresentam oportunidades de crescimento.</p>
         </div>
       </div>
-      <section class="tr-card tr-bcg" aria-labelledby="h-bcg">
-        <h3 id="h-bcg" class="tr-tit">Matriz de posicionamento dos ramos ${ajuda("trBcg", "matriz de posicionamento")}</h3>
-        <p class="tr-sub">Entenda onde a Akad está mais bem posicionada, quais mercados estão crescendo e onde existem oportunidades de expansão. Cada bolha é um ramo e o tamanho é o GWP da Akad em ${per}. O crescimento do mercado considera os últimos 12 meses${per12 ? ` (${per12})` : ""}. Clique numa bolha para abrir o ramo.</p>
-        <div class="tr-refs"><span><i class="v"></i>Linha vertical: limite do Top ${TOP_N} do ranking</span><span><i class="h"></i>Linha horizontal: crescimento médio do mercado (${cMed != null ? (cMed >= 0 ? "+" : "−") + nf1.format(Math.abs(cMed)) + "%" : "–"})</span></div>
+      <section class="tr-card tr-bcg" aria-label="Matriz de posicionamento dos ramos">
+        <div class="tr-mcab"><button type="button" class="ajuda tr-ler" data-ajuda="trLer" aria-label="Como ler a matriz"><i aria-hidden="true">?</i>Como ler a matriz</button></div>
         <div class="tr-mat" id="tr-mat"></div>
         ${fora.length ? `<p class="tr-rodape">Fora da matriz: ${fora.map((x) => esc(rotCurto(x.l.nome)) + (x.tem ? " (sem histórico)" : " (Akad sem prêmio)")).join(", ")}.</p>` : ""}
         <div class="tr-qs">
           <h4 class="tr-qtit">O que significa cada quadrante</h4>
           <div class="tr-q4">${colsQ}</div>
-          <div class="tr-interp"><b>Como interpretar</b><p>Os quadrantes indicam o posicionamento relativo da Akad e o ritmo de crescimento de cada mercado. Não representam, isoladamente, rentabilidade, atratividade ou recomendação de investimento. A análise é inspirada na matriz BCG, adaptada para considerar o ranking da Akad.</p></div>
         </div>
       </section>`;
 
@@ -1157,7 +1156,7 @@
     const host = el.querySelector("#tr-mat");
     const W = Math.max(300, Math.round(host.clientWidth || 700));
     const peq = W < 560;
-    const H = peq ? 400 : 470;
+    const H = peq ? 460 : 560;
     const L = 52, Rr = peq ? 44 : 46, T = 22, B = 46;
     const nMax = Math.max(10, ...naMatriz.map((x) => x.n));
     const lx0 = Math.log(0.8), lx1 = Math.log(nMax * 1.25);
@@ -1208,14 +1207,16 @@
       s += `<circle class="tr-b" data-linha="${x.l.id}" data-q="${x.q}" cx="${cx}" cy="${cy}" r="${r}" fill="${corQ(x.q)}" fill-opacity=".3" stroke="${corQ(x.q)}" stroke-width="1.5" tabindex="0" role="button" aria-label="${esc(x.l.nome)}: ${QUAD[x.q].nome}"/>`;
     }
     const bate = (b) => ocup.some((p) => !(b[2] < p[0] || b[0] > p[2] || b[3] < p[1] || b[1] > p[3]))
-      || circ.some(([cx, cy, r]) => b[0] < cx + r * 0.6 && b[2] > cx - r * 0.6 && b[1] < cy + r * 0.6 && b[3] > cy - r * 0.6)
+      || circ.some(([cx, cy, r]) => { const dx = Math.max(b[0] - cx, 0, cx - b[2]), dy = Math.max(b[1] - cy, 0, cy - b[3]); return dx * dx + dy * dy < (r + 1) * (r + 1); })
       || b[0] < L + 2 || b[2] > W - Rr - 2 || b[1] < T || b[3] > H - B;
     let rotulos = "";
     for (const x of ord) {
       const [cx, cy, r] = x._b;
-      const t = rotCurto(x.l.nome) + (x.novo ? " (ramo novo) ↑" : x.crM > ymax ? " ↑" : "");
+      // rótulo curto; o nome completo e os detalhes ficam no tooltip
+      const t = (ABREV_RAMO[x.l.id] || rotCurto(x.l.nome)) + (x.novo ? " (novo) ↑" : x.crM > ymax ? " ↑" : "");
       const w = t.length * 6.2;
-      for (const [anc, tx, ty] of [["start", cx + r + 3, cy + 4], ["end", cx - r - 3, cy + 4], ["middle", cx, cy - r - 4], ["middle", cx, cy + r + 12], ["start", cx + r + 2, cy - r], ["start", cx + r + 2, cy + r + 8]]) {
+      const d = r * 0.72;
+      for (const [anc, tx, ty] of [["start", cx + r + 3, cy + 4], ["end", cx - r - 3, cy + 4], ["middle", cx, cy - r - 4], ["middle", cx, cy + r + 12], ["start", cx + d + 2, cy - d - 2], ["end", cx - d - 2, cy - d - 2], ["start", cx + d + 2, cy + d + 10], ["end", cx - d - 2, cy + d + 10]]) {
         const x0 = anc === "start" ? tx : anc === "end" ? tx - w : tx - w / 2;
         const b = [x0, ty - 10, x0 + w, ty + 2];
         if (!bate(b)) { ocup.push(b); rotulos += `<text x="${tx}" y="${ty}" text-anchor="${anc}" class="tr-rot" data-linha="${x.l.id}">${esc(t)}</text>`; break; }
