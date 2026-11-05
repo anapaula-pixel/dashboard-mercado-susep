@@ -1005,7 +1005,13 @@ body { color: var(--ink); }
 #aba-geral .ev-cr { font-size: 11px; font-weight: 400; color: var(--g-label); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #aba-geral .ev-trilho { width: 100%; max-width: 72px; height: 200px; display: flex; align-items: flex-end; border-bottom: 1px solid var(--g-rule); }
 #aba-geral .ev-trilho i { display: block; width: 100%; background: #7C97B8; border-radius: 4px 4px 0 0; }
+#aba-geral .ev.ak .ev-trilho i { background: #F5B3CA; }
 #aba-geral .ev.atual .ev-trilho i { background: var(--magenta); }
+#aba-geral .ev-leg { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 10px 0 0; font-size: 12px; color: var(--g-label); }
+#aba-geral .ev-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+#aba-geral .ev-li-ar { background: #7C97B8; } #aba-geral .ev-li-ak { background: #F5B3CA; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-geral .ev.ak:not(.atual) .ev-trilho i, :root:not([data-theme="light"]) #aba-geral .ev-li-ak { background: #9C4A6A; } }
+:root[data-theme="dark"] #aba-geral .ev.ak:not(.atual) .ev-trilho i, :root[data-theme="dark"] #aba-geral .ev-li-ak { background: #9C4A6A; }
 #aba-geral .ev-val { font-size: 12px; color: var(--ink-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 #aba-geral .ev-rot { font-size: 12px; font-weight: 600; color: var(--g-label); white-space: nowrap; }
 #aba-geral .ev.atual .ev-val, #aba-geral .ev.atual .ev-rot { color: var(--ink); font-weight: 600; }
