@@ -408,10 +408,11 @@
     const W = Math.max(280, el.clientWidth || 600), peq = W < 560, H = peq ? 230 : 280;
     const m = { t: vis !== "mes" ? (peq ? 26 : 46) : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
     const fim = P.b;
+    // início do gráfico: no acumulado do ano, mostra também o ano anterior inteiro para comparar; nos outros filtros, o período exato
+    const ini0 = S.periodo === "ytd" ? Math.max(0, D.meses.indexOf(`${+D.meses[fim].slice(0, 4) - 1}01`)) : P.a;
     let itens = [];
     if (vis === "mes") {
-      // segue o período do filtro do topo da página
-      const ini = P.a;
+      const ini = ini0;
       for (let i = ini; i <= fim; i++) {
         const ym = D.meses[i];
         const sh = T[i] > 0 ? (A[i] / T[i]) * 100 : null;
@@ -430,11 +431,11 @@
     } else if (vis === "tri") {
       // trimestres do calendário dentro do período do filtro; um trimestre cortado pelo período fica parcial (comparado com os mesmos meses)
       const somaM = (y, m0, m1) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= m0 && mm <= m1) { a += A[i]; t += T[i]; } }); return [a, t]; };
-      for (let y = +D.meses[P.a].slice(0, 4); y <= +D.meses[fim].slice(0, 4); y++) for (let q = 1; q <= 4; q++) {
+      for (let y = +D.meses[ini0].slice(0, 4); y <= +D.meses[fim].slice(0, 4); y++) for (let q = 1; q <= 4; q++) {
         const q0 = (q - 1) * 3 + 1;
         const r0 = D.meses.indexOf(`${y}${String(q0).padStart(2, "0")}`);
         if (r0 < 0) continue;
-        const i0 = Math.max(r0, P.a), i2 = D.meses.indexOf(`${y}${String(q0 + 2).padStart(2, "0")}`);
+        const i0 = Math.max(r0, ini0), i2 = D.meses.indexOf(`${y}${String(q0 + 2).padStart(2, "0")}`);
         const i1 = Math.min(i2 < 0 ? fim : i2, fim);
         if (i0 < 0 || i0 > i1 || +D.meses[i0].slice(0, 4) !== y) continue;
         const m0 = +D.meses[i0].slice(4), m1 = +D.meses[i1].slice(4);
@@ -449,10 +450,10 @@
       itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anosT.indexOf(x.ano), TONS_ANO.length - 1)]; });
     } else {
       // anos dentro do período do filtro; o primeiro e o último podem ser parciais (comparados com os mesmos meses do ano anterior)
-      const yIni = +D.meses[P.a].slice(0, 4), yFim = +D.meses[fim].slice(0, 4);
+      const yIni = +D.meses[ini0].slice(0, 4), yFim = +D.meses[fim].slice(0, 4);
       const soma = (y, mA, mB) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= mA && mm <= mB) { a += A[i]; t += T[i]; } }); return [a, t]; };
       for (let y = yIni; y <= yFim; y++) {
-        const mA = y === yIni ? +D.meses[P.a].slice(4) : 1, mB = y === yFim ? +D.meses[fim].slice(4) : 12;
+        const mA = y === yIni ? +D.meses[ini0].slice(4) : 1, mB = y === yFim ? +D.meses[fim].slice(4) : 12;
         const parc = mA > 1 || mB < 12;
         const [a, t] = soma(y, mA, mB), [ap, tp] = soma(y - 1, mA, mB);
         const sh = t > 0 ? (a / t) * 100 : null;
