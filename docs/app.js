@@ -234,7 +234,8 @@
       cresc: cresc(c[0], p[0]),
       share, shareP, dShare: share != null && shareP != null ? share - shareP : null,
       pos: pos >= 0 ? pos + 1 : null, posP: posP >= 0 ? posP + 1 : null,
-      sin: c[1] > 0 ? (c[2] / c[1]) * 100 : null,
+      sin: c[0] > 0 ? (c[2] / c[0]) * 100 : null, // sinistralidade sobre o GWP
+      sinPG: c[1] > 0 ? (c[2] / c[1]) * 100 : null, // sobre o prêmio ganho (usada só na margem técnica)
       com: c[1] > 0 ? (c[3] / c[1]) * 100 : null,
       comis: c[6] > 0 ? (c[4] / c[6]) * 100 : null,
       outros: c[6] > 0 ? (c[5] / c[6]) * 100 : null,
@@ -523,7 +524,7 @@
     cresc: "Crescimento: quanto o GWP da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
     pos: "Posição: lugar da Akad no ranking de GWP entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
-    sin: "Sinistralidade: sinistro ocorrido dividido pelo prêmio ganho (a parte do prêmio que corresponde ao tempo de cobertura já decorrido). Ex.: 60% quer dizer que, a cada R$ 100 de prêmio ganho, R$ 60 foram para sinistros. Quanto menor, melhor.",
+    sin: "Sinistralidade: sinistro ocorrido dividido pelo GWP (prêmio emitido) no mesmo período. Ex.: 60% quer dizer que, a cada R$ 100 de GWP, R$ 60 foram para sinistros. O sinistro ocorrido é bruto de resseguro e inclui a variação das reservas, por isso pode ficar negativo quando a seguradora libera reserva. Quanto menor, melhor.",
     lider: "Ramos em que a Akad tem o maior GWP no período.",
     ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
@@ -551,20 +552,20 @@
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz de posicionamento, inspirada na matriz BCG e adaptada ao ranking da Akad. Cada ramo é classificado por dois critérios objetivos. Linha vertical, limite do Top 5: à esquerda dela, a Akad está entre as 5 maiores seguradoras do ramo. Linha horizontal, crescimento médio do mercado: quanto o prêmio do conjunto dos ramos acompanhados cresceu nos últimos 12 meses contra os 12 meses anteriores; acima dela, o mercado do ramo cresce mais que a média. Usamos o Top 5, e não só a liderança, porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
     ccTipos: "**Share:** market share da seguradora nos 22 ramos acompanhados, com a mesma conta do share da Akad: GWP dela nesses ramos ÷ GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.\nEx.: se o mercado dos 22 ramos vendeu R$ 10 bi e a seguradora R$ 500 mi, o share é 5%.\n**Variação:** diferença desse share contra o mesmo período do ano anterior, em p.p.\n**Confronto direto:** aparecem no top 5 junto com a Akad em mais ramos.\n**Em expansão:** maiores ganhos de participação.\n**Perfil parecido:** carteira com distribuição entre os 22 ramos parecida com a da Akad.",
-    ccQual: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\n**vs. mercado:** diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior. Vermelho: é menor.",
+    ccQual: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho (aqui sobre o prêmio ganho, para ficar na mesma base do custo de aquisição; nas outras telas a sinistralidade é sobre o GWP)\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\n**vs. mercado:** diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior. Vermelho: é menor.",
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
     ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
-    ccComp: "Últimos 12 meses até o fim do período escolhido. Sinistralidade e custo de comercialização são calculados sobre o prêmio ganho; resseguro cedido, sobre o GWP. Em ramos pequenos esses índices oscilam bastante.",
+    ccComp: "Últimos 12 meses até o fim do período escolhido. Sinistralidade é calculada sobre o GWP e custo de comercialização sobre o prêmio ganho; resseguro cedido, sobre o GWP. Em ramos pequenos esses índices oscilam bastante.",
     ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização, sobre o prêmio ganho. A SUSEP abre esse custo em duas partes: os custos ligados à vigência da apólice (na prática, a comissão de corretagem e o agenciamento) e os outros custos de aquisição (pró-labore, bônus, campanhas e similares). As duas somadas dão o custo de comercialização.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
-    sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os meses de cada grupo (mês, bimestre ou trimestre), dentro do período escolhido no filtro do topo. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Mês a mês o índice oscila mais. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
-    trIdx: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\nEmbaixo, a margem do mercado no mesmo ramo. Passe o mouse no número para ver a quebra.",
+    sinTri: "Sinistralidade = sinistro ocorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre), dentro do período escolhido no filtro do topo. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o GWP. Mês a mês o índice oscila mais. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
+    trIdx: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho (aqui sobre o prêmio ganho, para ficar na mesma base do custo de aquisição; nas outras telas a sinistralidade é sobre o GWP)\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\nEmbaixo, a margem do mercado no mesmo ramo. Passe o mouse no número para ver a quebra.",
     trDif: "Diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior que a do mercado. Vermelho: é menor.",
-    trSin: "Sinistralidade da Akad no ramo (sinistro ocorrido ÷ prêmio ganho) ao lado da do mercado no mesmo ramo e período. A diferença em p.p. fica verde quando a Akad está abaixo do mercado e vermelha quando está acima. Clique no título para ordenar pelos ramos em que a Akad está pior.",
+    trSin: "Sinistralidade da Akad no ramo (sinistro ocorrido ÷ GWP) ao lado da do mercado no mesmo ramo e período. A diferença em p.p. fica verde quando a Akad está abaixo do mercado e vermelha quando está acima. Clique no título para ordenar pelos ramos em que a Akad está pior.",
     trCom: "Custo de comercialização da Akad no ramo (comissão do corretor, agenciamento, pró-labore e outros custos de venda ÷ prêmio ganho) ao lado do mercado no mesmo ramo e período.",
     trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
@@ -655,7 +656,7 @@
   function dadosGeral(P) {
     const RT = resumo(IDX.todos, P);
     const ak = infoEnt(RT, AKAD);
-    const sinM = RT.tc[1] > 0 ? (RT.tc[2] / RT.tc[1]) * 100 : null;
+    const sinM = RT.tc[0] > 0 ? (RT.tc[2] / RT.tc[0]) * 100 : null;
     const linhas = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
@@ -664,7 +665,7 @@
       const ref = lider === AKAD ? vice : lider;
       const refInfo = ref ? infoEnt(R, ref) : null;
       return { l, R, a, lider, ref, refInfo, mercado: R.tc[0], mercadoP: R.tp[0], n: R.rk.length,
-        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null,
+        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[0] > 0 ? (R.tc[2] / R.tc[0]) * 100 : null,
         temAkad: a.pe > 0, dPos: a.pos && a.posP ? a.posP - a.pos : null,
         dPe: R.tp[0] > 0 && ((a.pe || 0) > 0 || (a.peP || 0) > 0) ? (a.pe || 0) - (a.peP || 0) : null };
     });
@@ -764,7 +765,7 @@
 
     // A3. Sinistralidade: comparação com a própria Akad (subir é ruim)
     const pAk = RT.prev.get(AKAD);
-    const sinP = pAk && pAk[1] > 0 ? (pAk[2] / pAk[1]) * 100 : null;
+    const sinP = pAk && pAk[0] > 0 ? (pAk[2] / pAk[0]) * 100 : null;
     const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
     const cardSin = `
       <section class="card kc" aria-label="Sinistralidade">
@@ -1097,14 +1098,15 @@
       const tc = x.R.tc;
       x.peso = x.tem && totAkC > 0 ? (x.a.pe / totAkC) * 100 : null;
       x.crP = cresc(tc[0], x.R.tp[0]);
-      x.sinM = tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null;
+      x.sinM = tc[0] > 0 ? (tc[2] / tc[0]) * 100 : null;
+      const sinMPG = x.sinMPG = tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null; // margem técnica segue sobre o prêmio ganho
       x.comM = tc[1] > 0 ? (tc[3] / tc[1]) * 100 : null;
       x.comisM = tc[6] > 0 ? (tc[4] / tc[6]) * 100 : null;
       x.outrosM = tc[6] > 0 ? (tc[5] / tc[6]) * 100 : null;
       x.dSin = x.tem && x.a.sin != null && x.sinM != null ? x.a.sin - x.sinM : null;
       x.dCom = x.tem && x.a.com != null && x.comM != null ? x.a.com - x.comM : null;
-      x.idx = x.tem && x.a.sin != null && x.a.com != null ? x.a.sin + x.a.com : null;
-      x.idxM = x.sinM != null && x.comM != null ? x.sinM + x.comM : null;
+      x.idx = x.tem && x.a.sinPG != null && x.a.com != null ? x.a.sinPG + x.a.com : null;
+      x.idxM = sinMPG != null && x.comM != null ? sinMPG + x.comM : null;
       x.dIdx = x.idx != null && x.idxM != null ? x.idx - x.idxM : null;
       x.basePeq = x.tem && x.a.pg < 3000; // menos de R$ 3 mi de prêmio ganho: índices oscilam muito
     });
@@ -1117,7 +1119,7 @@
     const pcM = (v) => `${v < 0 ? "−" : ""}${nf0.format(Math.abs(v))}%`;
     const idxTip = (x) => {
       const l = (r, a, m) => `<div>${r}: Akad ${a == null ? "–" : nf0.format(a) + "%"} · mercado ${m == null ? "–" : nf0.format(m) + "%"}</div>`;
-      return `<b>${esc(x.l.nome)}</b>${l("Sinistralidade", x.tem ? x.a.sin : null, x.sinM)}${l("Comercialização", x.tem ? x.a.com : null, x.comM)}${x.tem && x.a.comis != null ? l("· Comissão", x.a.comis, x.comisM) + l("· Outros custos", x.a.outros, x.outrosM) : ""}${l("Índice combinado", x.idx, x.idxM)}${x.idx != null ? `<div>Margem técnica: Akad ${nf0.format(100 - x.idx)}% · mercado ${nf0.format(100 - x.idxM)}%</div>` : ""}${x.basePeq ? "<div>Base pequena: prêmio ganho abaixo de R$ 3 mi, o índice oscila muito.</div>" : ""}`;
+      return `<b>${esc(x.l.nome)}</b>${l("Sinistros ÷ prêmio ganho", x.tem ? x.a.sinPG : null, x.sinMPG)}${l("Comercialização", x.tem ? x.a.com : null, x.comM)}${x.tem && x.a.comis != null ? l("· Comissão", x.a.comis, x.comisM) + l("· Outros custos", x.a.outros, x.outrosM) : ""}${l("Índice combinado", x.idx, x.idxM)}${x.idx != null ? `<div>Margem técnica: Akad ${nf0.format(100 - x.idx)}% · mercado ${nf0.format(100 - x.idxM)}%</div>` : ""}${x.basePeq ? "<div>Base pequena: prêmio ganho abaixo de R$ 3 mi, o índice oscila muito.</div>" : ""}`;
     };
     const posTr = (x) => x.a.pos ? `<span class="pos-grp">${seloPosicao(x.a.pos)}${movHtml(x.a.pos, x.a.posP).replace(/ title="[^"]*"/, "")}</span>` : "";
     const linhaTr = (x) => `
@@ -1266,7 +1268,7 @@
     const ramos = ramosDaSel(S.linha);
     const R = resumo(ramos, P);
     const ak = infoEnt(R, AKAD);
-    const sinM = R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null;
+    const sinM = R.tc[0] > 0 ? (R.tc[2] / R.tc[0]) * 100 : null;
     const comM = R.tc[1] > 0 ? (R.tc[3] / R.tc[1]) * 100 : null;
     const top = R.rk.filter((k) => k !== AKAD).slice(0, 4);
 
@@ -1399,8 +1401,8 @@
       qs.forEach((x, k) => { for (let i = x.i; i <= x.j; i++) qDe.set(i, k); });
       for (const ri of ramos) for (const r of IDX.porRamo[ri]) {
         const k = qDe.get(r[0]); if (k == null) continue;
-        const x = qs[k]; x.t[0] += r[4]; x.t[1] += r[5];
-        if (IDX.chave[r[1]] === AKAD) { x.a[0] += r[4]; x.a[1] += r[5]; }
+        const x = qs[k]; x.t[0] += r[3]; x.t[1] += r[5];
+        if (IDX.chave[r[1]] === AKAD) { x.a[0] += r[3]; x.a[1] += r[5]; }
       }
       const mesC = (i) => MESES_PT[+D.meses[i].slice(4) - 1], anoC = (i) => D.meses[i].slice(0, 4);
       qs.forEach((x, k) => {
@@ -1435,7 +1437,7 @@
       });
       const nomeVis = vis === "mes" ? "mês" : vis === "bim" ? "bimestre" : "trimestre";
       host.innerHTML = `
-        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro ocorrido ÷ prêmio ganho por ${nomeVis}, da Akad e do mercado no ramo, em ${periodoLabel(P.a, P.b)}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
+        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro ocorrido ÷ GWP por ${nomeVis}, da Akad e do mercado no ramo, em ${periodoLabel(P.a, P.b)}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
           <div class="pr-btns"><div class="seg-ctrl" role="group" aria-label="Agrupar por">${[["mes", "Mês"], ["bim", "Bimestre"], ["tri", "Trimestre"]].map(([k, r]) => `<button type="button" data-svis="${k}" aria-pressed="${vis === k}">${r}</button>`).join("")}</div></div>
         </div>
         <p class="sn-resumo">No período: Akad <b class="${sM != null && sA > sM + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>, mercado <b>${sM != null ? nf0.format(sM) + "%" : "–"}</b>.</p>
@@ -1444,7 +1446,7 @@
       host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
       host.querySelectorAll(".hits").forEach((rc) => {
         const x = qs[+rc.dataset.i];
-        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem prêmio ganho" : pct(x.sa)}</div><div>Mercado: ${pct(x.sm)}</div>${x.sa != null && x.sm != null ? `<div>Diferença: ${x.sa - x.sm > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sm))} p.p.</div>` : ""}`;
+        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem GWP" : pct(x.sa)}</div><div>Mercado: ${pct(x.sm)}</div>${x.sa != null && x.sm != null ? `<div>Diferença: ${x.sa - x.sm > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sm))} p.p.</div>` : ""}`;
         rc.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
         rc.addEventListener("mouseleave", esconderTip);
       });
@@ -1717,7 +1719,7 @@
         const tc = soma5(c), tp = soma5(p)[0];
         const rk = rkDe(c), rkp = rkDe(p);
         rows.push({ l, g: x[0], pos: rk.indexOf(k) + 1, posP: rkp.indexOf(k) + 1, sh: shareDe(c, tc[0], k), dsh: tp > 0 ? shareDe(c, tc[0], k) - shareDe(p, tp, k) : null, cr: cresc(x[0], xp),
-          sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[1] > 0 ? (tc[2] / tc[1]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
+          sin: x[0] > 0 ? (x[2] / x[0]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[0] > 0 ? (tc[2] / tc[0]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
       });
       const crG = cresc(G[0], Gp);
       // ordenação da tabela da ficha: clique no título da coluna (de novo inverte)
@@ -1750,7 +1752,7 @@
           <div class="c2-fm">
             <div><span>GWP ${perC}</span><b>${reais(G[0])}</b></div>
             <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sgn(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
-            <div><span>Sinistralidade</span><b>${G[1] > 0 ? nf0.format((G[2] / G[1]) * 100) + "%" : "–"}</b></div>
+            <div><span>Sinistralidade</span><b>${G[0] > 0 ? nf0.format((G[2] / G[0]) * 100) + "%" : "–"}</b></div>
             <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
           </div>
           <p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>
@@ -2392,7 +2394,7 @@
           <p>SUSEP, Sistema de Estatísticas (SES), base completa. <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">Abrir o SES no site da SUSEP <span aria-hidden="true">↗</span></a></p>
           <ul>
             <li>GWP = prêmio emitido. Por estado, a SUSEP só publica o prêmio direto.</li>
-            <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho.</li>
+            <li>Sinistralidade = sinistro ocorrido ÷ GWP (prêmio emitido).</li>
             <li>Valores em reais correntes, sem correção pela inflação.</li>
           </ul>
         </div>
