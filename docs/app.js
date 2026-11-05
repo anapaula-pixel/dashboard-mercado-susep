@@ -2035,7 +2035,7 @@
     const mostrarValor = () => { const o = atual(); inp.value = o ? o.t : ""; };
     const desenhar = () => {
       lista.innerHTML = filtradas.length
-        ? filtradas.map((o, i) => `<li id="${id}-op-${i}" role="option" class="cb-op${o.ind ? " ind" : ""}${o.v === cfg.valor() ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${o.v === cfg.valor()}" data-i="${i}"><span>${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`).join("")
+        ? filtradas.map((o, i) => `${o.grp && (i === 0 || filtradas[i - 1].grp !== o.grp) ? `<li class="cb-grp" role="presentation">${esc(o.grp)}</li>` : ""}<li id="${id}-op-${i}" role="option" class="cb-op${o.ind ? " ind" : ""}${o.v === cfg.valor() ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${o.v === cfg.valor()}" data-i="${i}"><span>${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`).join("")
         : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
       inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
       const el = lista.querySelector(".ativo");
@@ -2043,7 +2043,7 @@
     };
     const filtrar = (q) => {
       const n = norm(q.trim());
-      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "")).includes(n)) : cfg.opcoes.slice();
+      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "") + " " + (o.grp || "")).includes(n)) : cfg.opcoes.slice();
       ativo = filtradas.findIndex((o) => o.v === cfg.valor());
       if (ativo < 0 && filtradas.length) ativo = 0;
       desenhar();
@@ -2157,18 +2157,29 @@
   }
   const grupoDaSel = (sel) => { const ids = idsDaSel(sel); return GRUPOS_RAMOS.find((g) => g.ids.length === ids.length && g.ids.every((x) => ids.includes(x))); };
 
+  // Ordem do filtro de ramos: por família de produto, começando por RC Profissional
+  const FAMILIAS_RAMOS = [
+    { nome: "Responsabilidade civil", ids: ["rcpro", "do", "rcg"] },
+    { nome: "Transportes", ids: ["transpnac", "transpint", "rctrc", "rcdc", "rcv", "rctrvi", "rctfc", "rctac", "rcac", "dpem"] },
+    { nome: "Patrimonial e engenharia", ids: ["emp", "rno", "equip", "eng"] },
+    { nome: "Garantia e fiança", ids: ["garpub", "garpriv", "fianca"] },
+    { nome: "Prestamista", ids: ["prestcol", "prestind"] },
+  ];
   function opcoesLinhaFiltro() {
-    const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos`, sub: "soma de todos" }];
-    // grupos: aparecem logo abaixo de "Todos"; os ramos do grupo continuam disponíveis sozinhos na lista
-    for (const g of GRUPOS_RAMOS) op.push({ v: selDeIds(g.ids), t: g.nome, sub: g.ids.map((x) => IDX.linhaPorId[x].nome).join(" + ") });
-    // ramos em ordem de GWP da Akad no período do filtro (ramos sem prêmio da Akad no fim, pelo tamanho do mercado)
-    const P = periodo();
-    const gw = IDX.linhas.map((l) => { const R = resumo(l.idx, P); return { l, ak: ((R.cur.get(AKAD) || [0])[0]) || 0, mk: R.tc[0] || 0 }; });
-    gw.sort((p, q) => (q.ak > 0) - (p.ak > 0) || q.ak - p.ak || q.mk - p.mk);
-    for (const { l, ak } of gw) {
-      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", ") + (ak > 0 ? ` · GWP Akad ${reaisCurto(ak)}` : " · Akad sem prêmio") });
-      if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true });
+    const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos` }];
+    const usados = new Set();
+    const addRamo = (l, grp) => {
+      usados.add(l.id);
+      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", "), grp });
+      if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true, grp });
+    };
+    for (const f of FAMILIAS_RAMOS) {
+      // atalhos de grupo (ex.: Transportador = RCTR-C + RC-DC) aparecem no topo da família
+      for (const g of GRUPOS_RAMOS) if (g.ids.every((x) => f.ids.includes(x))) op.push({ v: selDeIds(g.ids), t: `${g.nome} (${g.ids.map((x) => IDX.linhaPorId[x].nome).join(" + ")})`, grp: f.nome });
+      for (const id of f.ids) if (IDX.linhaPorId[id]) addRamo(IDX.linhaPorId[id], f.nome);
     }
+    // ramo novo que ainda não esteja numa família
+    for (const l of IDX.linhas) if (!usados.has(l.id)) addRamo(l, "Outros");
     return op;
   }
 
