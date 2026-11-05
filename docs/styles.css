@@ -969,6 +969,7 @@ body { color: var(--ink); }
 #aba-geral .sec-cab > div:first-child { flex: 1 1 380px; min-width: 0; }
 #aba-geral .sec-cab > .pr-ctrls { flex: 0 0 auto; }
 #aba-geral .sec-cab.pr-cab { flex-direction: column; align-items: flex-start; gap: 14px; }
+#aba-geral .sec-cab.pr-cab > .pr-top { flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; width: 100%; }
 #aba-geral table.tg-part td.nome .nome-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 #aba-geral table.tg-part td.nome .nome-in > div { min-width: 0; }
 #aba-geral .selo-pos { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; }
