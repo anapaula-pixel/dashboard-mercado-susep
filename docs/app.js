@@ -67,6 +67,50 @@
     return `<span class="var ${cls}">${sinal}${v}${sufixo}</span>`;
   }
   const ppHtml = (x) => varHtml(x, " p.p.", 1);
+  // Seletor de mês em calendário: um ano por vez, com setas para trocar o ano.
+  // range: o primeiro clique marca o início e o segundo o fim. max: último mês que pode ser escolhido.
+  function mesPicker(host, o) {
+    const max = o.max != null ? o.max : D.meses.length - 1;
+    const anos = [...new Set(D.meses.filter((_, i) => i <= max).map((m) => m.slice(0, 4)))];
+    let a = o.ini, b = o.range ? o.fim : o.ini, passo = 0;
+    let ano = D.meses[o.range ? b : a].slice(0, 4);
+    const marcar = (x, y, esperando) => {
+      const lo = Math.min(x, y), hi = Math.max(x, y);
+      host.querySelectorAll(".mp-m").forEach((bt) => {
+        const i = +bt.dataset.i;
+        bt.classList.toggle("sel", i === x || (!esperando && i === y));
+        bt.classList.toggle("ini", !!o.range && i === lo && lo !== hi);
+        bt.classList.toggle("fim", !!o.range && i === hi && lo !== hi);
+        bt.classList.toggle("meio", !!o.range && i > lo && i < hi);
+        bt.setAttribute("aria-pressed", String(i === x || i === y));
+      });
+    };
+    const desenhar = (foco) => {
+      const ia = anos.indexOf(ano);
+      host.innerHTML = `<div class="mp" role="group" aria-label="${esc(o.rot || "Escolher mês")}">
+        <div class="mp-cab"><button type="button" class="mp-seta" data-d="-1" aria-label="Ano anterior"${ia <= 0 ? " disabled" : ""}>‹</button><b>${ano}</b><button type="button" class="mp-seta" data-d="1" aria-label="Próximo ano"${ia >= anos.length - 1 ? " disabled" : ""}>›</button></div>
+        <div class="mp-g">${MESES_PT.map((nm, k) => { const i = D.meses.indexOf(ano + String(k + 1).padStart(2, "0")); const ok = i >= 0 && i <= max; return `<button type="button" class="mp-m" data-i="${i}"${ok ? "" : " disabled"} aria-label="${nm}/${ano}">${nm}</button>`; }).join("")}</div>
+        ${o.range ? `<p class="mp-res">${passo === 1 ? `Início em <b>${mesLabel(a, true)}</b>. Agora escolha o mês final.` : `De <b>${mesLabel(Math.min(a, b), true)}</b> a <b>${mesLabel(Math.max(a, b), true)}</b>`}</p>` : ""}
+      </div>`;
+      marcar(a, b, passo === 1);
+      host.querySelectorAll(".mp-seta").forEach((bt) => bt.addEventListener("click", (e) => { e.stopPropagation(); ano = anos[ia + +bt.dataset.d]; desenhar(`.mp-seta[data-d="${bt.dataset.d}"]`); }));
+      host.querySelectorAll(".mp-m:not([disabled])").forEach((bt) => {
+        const i = +bt.dataset.i;
+        bt.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (!o.range) { a = b = i; desenhar(`.mp-m[data-i="${i}"]`); o.onChange(i); return; }
+          if (passo === 0) { a = b = i; passo = 1; } else { b = i; passo = 0; if (b < a) [a, b] = [b, a]; }
+          desenhar(`.mp-m[data-i="${i}"]`);
+          o.onChange(Math.min(a, b), Math.max(a, b), passo === 0);
+        });
+        // escolhendo o fim: mostra o intervalo ao passar o mouse
+        bt.addEventListener("mouseenter", () => { if (o.range && passo === 1) marcar(a, i, false); });
+        bt.addEventListener("mouseleave", () => { if (o.range && passo === 1) marcar(a, a, true); });
+      });
+      if (foco) host.querySelector(foco)?.focus();
+    };
+    desenhar();
+  }
   function mesLabel(i, longo) {
     const m = D.meses[i];
     const mm = +m.slice(4) - 1;
@@ -503,9 +547,9 @@
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz de posicionamento, inspirada na matriz BCG e adaptada ao ranking da Akad. Cada ramo é classificado por dois critérios objetivos. Linha vertical, limite do Top 5: à esquerda dela, a Akad está entre as 5 maiores seguradoras do ramo. Linha horizontal, crescimento médio do mercado: quanto o prêmio do conjunto dos ramos acompanhados cresceu nos últimos 12 meses contra os 12 meses anteriores; acima dela, o mercado do ramo cresce mais que a média. Usamos o Top 5, e não só a liderança, porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
-    ccTipos: "Share: market share médio da seguradora nos ramos em que a Akad vende, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Em expansão: maiores ganhos de participação. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
+    ccTipos: "Share: market share médio da seguradora nos 22 ramos acompanhados, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Em expansão: maiores ganhos de participação. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
     ccQual: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\n**vs. mercado:** diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior. Vermelho: é menor.",
-    ccTop5: "Em quantos dos ramos em que a Akad vende ela está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
+    ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccSinCom: "Sinistro ocorrido mais custo de comercialização (comissão do corretor, agenciamento, pró-labore e outros custos de venda), divididos pelo prêmio ganho. Mostra quanto do prêmio já sai antes das despesas administrativas e do resseguro. O mercado é calculado nos mesmos ramos da Akad. Quanto menor, melhor.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
@@ -1308,7 +1352,7 @@
             <div class="pr-btns">
               <div class="seg-ctrl" role="group" aria-label="Medida">${[["gwp", "GWP"], ["share", "Market share"]].map(([k, r]) => `<button type="button" data-pmet="${k}" aria-pressed="${(S.prodMet || "gwp") === k}">${r}</button>`).join("")}</div>
               <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
-              <label class="pr-ord pr-desde"${(S.prodVis || "mes") === "mes" ? "" : " hidden"}><span class="ctrl-rot">Desde</span><select id="g-prod-ini" class="pr-sel" aria-label="Mostrar meses desde"></select></label>
+              <div class="pr-ord pr-desde"${(S.prodVis || "mes") === "mes" ? "" : " hidden"}><span class="ctrl-rot">Desde</span><div class="mp-dd"><button type="button" class="mp-btn" id="g-prod-ini" aria-haspopup="dialog" aria-expanded="false" aria-label="Mostrar meses desde"></button><div class="mp-pop" id="g-prod-pop" role="dialog" aria-label="Mostrar meses desde" hidden></div></div></div>
             </div>
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
@@ -1440,20 +1484,24 @@
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
       const selIni = $("#g-prod-ini");
       selIni.closest(".pr-desde").hidden = vis !== "mes";
-      if (vis === "mes") {
-        const iniAtual = D.meses.indexOf(itens.length ? itens[0].ym : "");
-        let opts = "";
-        for (let y = +D.meses[P.b].slice(0, 4); y >= +D.meses[0].slice(0, 4); y--) {
-          let o = "";
-          for (let i = P.b; i >= 0; i--) if (+D.meses[i].slice(0, 4) === y) o = `<option value="${D.meses[i]}"${i === iniAtual ? " selected" : ""}>${mesLabel(i, true)}</option>` + o;
-          if (o) opts += `<optgroup label="${y}">${o}</optgroup>`;
-        }
-        selIni.innerHTML = opts;
-      }
+      if (vis === "mes" && itens.length) { selIni.textContent = itens[0].tit; selIni.dataset.ini = itens[0].ym; }
       $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
     };
     desenharProd();
-    $("#g-prod-ini").addEventListener("change", (e) => { S.prodIni = e.target.value; desenharProd(); });
+    {
+      const bt = $("#g-prod-ini"), pop = $("#g-prod-pop");
+      const fechar = (foco) => { pop.hidden = true; bt.setAttribute("aria-expanded", "false"); if (foco) bt.focus(); };
+      bt.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!pop.hidden) { fechar(false); return; }
+        const iniAtual = Math.max(0, D.meses.indexOf(bt.dataset.ini || ""));
+        pop.hidden = false; bt.setAttribute("aria-expanded", "true");
+        mesPicker(pop, { ini: Math.max(0, Math.min(iniAtual, P.b)), max: P.b, rot: "Mostrar meses desde", onChange: (i) => { S.prodIni = D.meses[i]; fechar(true); desenharProd(); } });
+        pop.querySelector(".mp-m.sel, .mp-m:not([disabled])")?.focus();
+      });
+      pop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); fechar(true); } });
+      document.addEventListener("click", (e) => { if (!pop.hidden && !e.target.closest("#g-prod-pop") && e.target !== bt) fechar(false); });
+    }
     el.querySelectorAll("[data-pmet],[data-pvis]").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.pmet) S.prodMet = b.dataset.pmet; else S.prodVis = b.dataset.pvis;
       el.querySelectorAll("[data-pmet]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.pmet === (S.prodMet || "gwp"))));
@@ -1524,19 +1572,20 @@
       const rk = rkDe(c), rkp = rkDe(p);
       return { l, c, p, tc, tp, rk, rkp, ak: gw(c, AKAD), akp: gw(p, AKAD), pos: rk.indexOf(AKAD) + 1, posP: rkp.indexOf(AKAD) + 1, sh: shareDe(c, tc, AKAD), shP: tp > 0 ? shareDe(p, tp, AKAD) : null };
     });
-    const atua = porL.filter((x) => x.ak > 0).sort((p, q) => q.ak - p.ak);
+    // sempre os 22 ramos acompanhados; ramos sem prêmio da Akad no período entram com peso 0 (do maior para o menor GWP da Akad, depois pelo tamanho do mercado)
+    const atua = [...porL].sort((p, q) => q.ak - p.ak || q.tc - p.tc);
     const akT = atua.reduce((s, x) => s + x.ak, 0);
     const akTp = porL.reduce((s, x) => s + x.akp, 0);
     atua.forEach((x) => { x.peso = akT > 0 ? (x.ak / akT) * 100 : 0; x.d = x.shP != null ? x.sh - x.shP : null; });
-    const nomeSelR = `em todos os ${atua.length} ramos em que a Akad vende`;
+    const nomeSelR = `nos ${atua.length} ramos acompanhados`;
 
-    if (!atua.length) {
+    if (!(akT > 0)) {
       el.innerHTML = `<div class="cab-aba"><div><h2>Concorrentes</h2><p>A Akad não tem prêmio ${S.linha === "todas" ? "no período" : `em ${esc(nomeSel(S.linha))}`} em ${perC}.</p></div></div>`;
       return;
     }
 
     // ----- cards
-    const ramosAk = atua.flatMap((x) => x.l.idx.filter((i) => ramosSel.includes(i)));
+    const ramosAk = ramosSel;
     const X = soma5(new Map(atua.map((x, i) => [i, x.c.get(AKAD) || [0, 0, 0, 0, 0]])));
     const MT = soma5(agg5(ramosAk, a0, b));
     const sinA = X[1] > 0 ? (X[2] / X[1]) * 100 : null, comA = X[1] > 0 ? (X[3] / X[1]) * 100 : null;
@@ -1637,7 +1686,7 @@
         const fora = x.d != null && (Math.abs(x.d) / mxD) * 50 > 50;
         return `<div class="c2-dv" role="row">
           <span class="c2-rn" role="cell"><button type="button" class="c2-lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button></span>
-          <span class="c2-pw" role="cell"><span class="c2-pb"><i style="width:${(x.peso / pesoMx) * 100}%"></i></span>${x.peso < 0.05 ? "&lt; 0,1%" : nf1.format(x.peso) + "%"}</span>
+          <span class="c2-pw" role="cell"><span class="c2-pb"><i style="width:${(x.peso / pesoMx) * 100}%"></i></span>${x.ak <= 0 ? "sem prêmio" : x.peso < 0.05 ? "&lt; 0,1%" : nf1.format(x.peso) + "%"}</span>
           <span class="c2-tr" role="cell" aria-hidden="true"><i class="c2-z"></i>${x.d != null && Math.abs(x.d) >= 0.05 ? `<i class="c2-bar ${x.d < 0 ? "neg" : "pos"}${fora ? " fora" : ""}" style="width:${w}%;${x.d < 0 ? "right" : "left"}:50%"></i>` : ""}</span>
           <span class="c2-dvv ${clsV(x.d || 0)}" role="cell">${x.d == null ? "novo" : ppTxt(x.d)}</span>
           <span class="c2-whoc" role="cell">${ds.length ? quemNm(ds[0]) : '<span class="c2-vz">–</span>'}</span>
@@ -2235,7 +2284,6 @@
     S.ano = fechados[fechados.length - 1] || anoUlt;
     S.ate = ult; S.de = Math.max(0, ult - 11);
     const mesUlt = MESES_PT[+D.meses[ult].slice(4) - 1];
-    const optsMes = D.meses.map((m, i) => `<option value="${i}">${mesLabel(i, true)}</option>`).reverse().join("");
 
     $("#pop-periodo").innerHTML = `
       <div class="pp-sec">
@@ -2252,13 +2300,13 @@
       <div class="pp-sec">
         <h3>Personalizado</h3>
         <div class="pp-custom">
-          <label>De <select id="pp-de">${optsMes}</select></label>
-          <label>Até <select id="pp-ate">${optsMes}</select></label>
+          <div id="pp-mp"></div>
           <button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button>
         </div>
       </div>
       <p class="pp-nota">A comparação é sempre com o mesmo período do ano anterior.</p>`;
-    $("#pp-de").value = S.de; $("#pp-ate").value = S.ate;
+    let ppDe = S.de, ppAte = S.ate;
+    mesPicker($("#pp-mp"), { range: true, ini: ppDe, fim: ppAte, rot: "Período personalizado", onChange: (x, y, pronto) => { ppDe = x; ppAte = y; $("#pp-aplicar").disabled = !pronto; } });
 
     const btn = $("#pp-btn"), pop = $("#pop-periodo");
     const abrir = () => { pop.hidden = false; btn.setAttribute("aria-expanded", "true"); (pop.querySelector('[aria-pressed="true"]') || pop.querySelector("button")).focus(); };
@@ -2272,7 +2320,7 @@
       fechar(true); render();
     }));
     $("#pp-aplicar").addEventListener("click", () => {
-      S.periodo = "custom"; S.de = +$("#pp-de").value; S.ate = +$("#pp-ate").value;
+      S.periodo = "custom"; S.de = ppDe; S.ate = ppAte;
       fechar(true); render();
     });
 
