@@ -166,9 +166,14 @@ def processar(zip_path):
     #     12479 = custos ligados à vigência do risco (na prática, comissão de corretagem e agenciamento)
     #     12486 = outros custos de aquisição (pró-labore, bônus, campanhas etc.)
     #     A soma dos dois bate com a despesa comercial de Ses_seguros. Só complementa linhas que já existem.
+    # 1c) Sinistro incorrido no padrão da Akad (quadro 6 do FIP), lido no mesmo arquivo:
+    #     indenizações avisadas (12182, já líquidas de cosseguro) + despesas com sinistros avisadas (12196)
+    #     - salvados e ressarcidos avisados (12207). Bruto de resseguro, sem IBNR e sem IBNER.
     t0 = time.time()
     CAMPOS_AQ = {"12479": 0, "12486": 1}
+    CAMPOS_SIN = {"12182": 1.0, "12196": 1.0, "12207": -1.0}
     aq = {}
+    inc = {}
     try:
         alvo = next(n for n in zf.namelist() if n.lower().replace(" ", "") == "ses_valoresmovramos.csv")
         with zf.open(alvo) as raw:
@@ -179,20 +184,32 @@ def processar(zip_path):
             for c in leitor:
                 if len(c) <= n_max:
                     continue
-                j = CAMPOS_AQ.get(c[i_c].strip())
-                if j is None:
+                cmp = c[i_c].strip()
+                j = CAMPOS_AQ.get(cmp)
+                sinal = CAMPOS_SIN.get(cmp)
+                if j is None and sinal is None:
                     continue
                 mes = c[i_m].strip()
                 if mes < DESDE:
                     continue
                 ramo = c[i_g].strip().zfill(2) + c[i_r].strip().zfill(2)
+                if ramo not in RAMOS:
+                    continue
                 k = (mes, c[i_e].strip(), ramo)
+                if sinal is not None:
+                    inc[k] = inc.get(k, 0.0) + sinal * num(c[i_v])
+                    continue
                 if k not in seg:
                     continue
                 aq.setdefault(k, [0.0, 0.0])[j] += num(c[i_v])
     except (StopIteration, ValueError) as e:
         print(f"  Abertura de comissão indisponível nesta base ({e}); segue sem ela.", flush=True)
-    print(f"Custos de aquisição: {len(aq)} combinações ({time.time()-t0:.0f}s)", flush=True)
+    print(f"Custos de aquisição: {len(aq)} combinações; sinistro incorrido: {len(inc)} ({time.time()-t0:.0f}s)", flush=True)
+    # seguradora com sinistro incorrido no mês mas sem linha de prêmio: entra com prêmio zero (só meses que já existem)
+    meses_seg = {k[0] for k in seg}
+    for k in inc:
+        if k not in seg and k[0] in meses_seg:
+            seg[k] = [0.0] * 6
 
     # 2) Prêmios e sinistros por UF
     t0 = time.time()
@@ -253,10 +270,10 @@ def processar(zip_path):
     seg_rows = []
     for (m, c, r), a in seg.items():
         v = [mil(x) for x in a]
-        if any(v):
+        if any(v) or inc.get((m, c, r)):
             q = aq.get((m, c, r))
-            # comissão e outros custos de aquisição no fim da linha (null quando a SUSEP não abriu)
-            seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None]))
+            # comissão e outros custos de aquisição (null quando a SUSEP não abriu) e sinistro incorrido no fim da linha
+            seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None]) + [mil(inc.get((m, c, r), 0.0))])
 
     ufm_rows = []
     for (m, r, u), a in ufm.items():
@@ -293,7 +310,7 @@ def processar(zip_path):
         "cols": {
             "seg": ["mes", "cia", "ramo", "premio_emitido", "premio_ganho", "sinistro_ocorrido",
                     "despesa_comercial", "despesa_resseguro", "receita_resseguro",
-                    "comissao", "outros_custos_aquisicao"],
+                    "comissao", "outros_custos_aquisicao", "sinistro_incorrido"],
             "ufm": ["mes", "ramo", "uf", "premio_mercado", "premio_akad", "sinistro_mercado", "sinistro_akad"],
             "ufa": ["ano", "ramo", "uf", "cia", "premio"],
         },
