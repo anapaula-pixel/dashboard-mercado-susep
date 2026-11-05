@@ -1157,7 +1157,11 @@
         </div>
       </div>
       <section class="tr-card tr-bcg" aria-label="Matriz de posicionamento dos ramos">
-        <div class="tr-mcab"><button type="button" class="ajuda tr-ler" data-ajuda="trLer" aria-label="Como ler a matriz"><i aria-hidden="true">?</i>Como ler a matriz</button></div>
+        <div class="tr-mhead">
+          <h3 class="tr-mtit">Posição da Akad × crescimento do mercado</h3>
+          <button type="button" class="ajuda tr-ler" data-ajuda="trLer" aria-label="Como ler a matriz"><i aria-hidden="true">?</i>Como ler a matriz</button>
+        </div>
+        <p class="tr-msub">Cada bolha representa um ramo. O tamanho indica o GWP da Akad no ramo em ${per}.</p>
         <div class="tr-mat" id="tr-mat"></div>
         ${fora.length ? `<p class="tr-rodape">Fora da matriz: ${fora.map((x) => esc(rotCurto(x.l.nome)) + (x.tem ? " (sem histórico)" : " (Akad sem prêmio)")).join(", ")}.</p>` : ""}
         <div class="tr-qs">
