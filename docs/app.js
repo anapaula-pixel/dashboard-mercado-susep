@@ -2261,43 +2261,63 @@
     S.ate = ult; S.de = Math.max(0, ult - 11);
     const mesUlt = MESES_PT[+D.meses[ult].slice(4) - 1];
 
-    $("#pop-periodo").innerHTML = `
-      <div class="pp-sec">
-        <h3>Atalhos</h3>
-        <div class="pp-chips">
-          <button type="button" data-p="ytd"><b>Acumulado de ${anoUlt}</b><small>jan a ${mesUlt}</small></button>
-          <button type="button" data-p="12m"><b>Últimos 12 meses</b><small>${mesLabel(Math.max(0, ult - 11))} a ${mesLabel(ult)}</small></button>
-        </div>
-      </div>
-      <div class="pp-sec">
-        <h3>Ano completo</h3>
-        <div class="pp-anos">${fechados.slice().reverse().map((y) => `<button type="button" data-p="ano" data-ano="${y}">${y}</button>`).join("")}</div>
-      </div>
-      <div class="pp-sec">
-        <h3>Personalizado</h3>
-        <div class="pp-custom">
-          <div id="pp-mp"></div>
-          <button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button>
-        </div>
-      </div>
-      <p class="pp-nota">A comparação é sempre com o mesmo período do ano anterior.</p>`;
-    let ppDe = S.de, ppAte = S.ate;
-    mesPicker($("#pp-mp"), { range: true, ini: ppDe, fim: ppAte, rot: "Período personalizado", onChange: (x, y, pronto) => { ppDe = x; ppAte = y; $("#pp-aplicar").disabled = !pronto; } });
-
+    const anoFech = fechados[fechados.length - 1];
     const btn = $("#pp-btn"), pop = $("#pop-periodo");
-    const abrir = () => { pop.hidden = false; btn.setAttribute("aria-expanded", "true"); (pop.querySelector('[aria-pressed="true"]') || pop.querySelector("button")).focus(); };
+    // estado do calendário enquanto o popover está aberto: início, fim, qual campo está sendo editado e o ano exibido
+    const ed = { de: 0, ate: ult, alvo: "de", ano: anoUlt };
+    const anosCal = anos;
+    const desenharPop = (foco) => {
+      const lo = Math.min(ed.de, ed.ate), hi = Math.max(ed.de, ed.ate), ia = anosCal.indexOf(ed.ano);
+      const nM = hi - lo + 1;
+      pop.innerHTML = `
+        <div class="dp-de">
+          <button type="button" class="dp-campo${ed.alvo === "de" ? " at" : ""}" data-alvo="de" aria-pressed="${ed.alvo === "de"}"><span>De</span><b>${mesLabel(lo, true)}</b></button>
+          <button type="button" class="dp-campo${ed.alvo === "ate" ? " at" : ""}" data-alvo="ate" aria-pressed="${ed.alvo === "ate"}"><span>Até</span><b>${mesLabel(hi, true)}</b></button>
+        </div>
+        <div class="dp-cab"><button type="button" class="dp-seta" data-d="-1" aria-label="Ano anterior"${ia <= 0 ? " disabled" : ""}>‹</button><b>${ed.ano}</b><button type="button" class="dp-seta" data-d="1" aria-label="Próximo ano"${ia >= anosCal.length - 1 ? " disabled" : ""}>›</button></div>
+        <div class="dp-g" role="group" aria-label="Meses de ${ed.ano}">${MESES_PT.map((nm, k) => {
+          const i = D.meses.indexOf(ed.ano + String(k + 1).padStart(2, "0"));
+          if (i < 0) return `<button type="button" class="dp-m" disabled>${nm}</button>`;
+          const cls = i === lo && i === hi ? " sel so" : i === lo ? " sel ini" : i === hi ? " sel fim" : i > lo && i < hi ? " meio" : "";
+          return `<button type="button" class="dp-m${cls}" data-i="${i}" aria-label="${nm}/${ed.ano}" aria-pressed="${i === lo || i === hi}"><i>${nm}</i></button>`;
+        }).join("")}</div>
+        <p class="dp-res">Período: <b>${mesLabel(lo, true)} a ${mesLabel(hi, true)}</b> (${nM} ${nM === 1 ? "mês" : "meses"})</p>
+        <div class="dp-sep"></div>
+        <div class="dp-atl">
+          <button type="button" data-p="ytd">Acumulado de ${anoUlt}</button>
+          <button type="button" data-p="12m">Últimos 12 meses</button>
+          ${anoFech ? `<button type="button" data-p="ano" data-ano="${anoFech}">Ano de ${anoFech}</button>` : ""}
+        </div>
+        <div class="dp-acoes"><button type="button" class="dp-cancel" id="pp-cancelar">Cancelar</button><button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button></div>`;
+      pop.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === S.periodo && (S.periodo !== "ano" || b.dataset.ano === String(S.ano)))));
+      if (foco) pop.querySelector(foco)?.focus();
+    };
+    const abrir = () => {
+      const P = periodo();
+      ed.de = P.a; ed.ate = P.b; ed.alvo = "de"; ed.ano = D.meses[P.a].slice(0, 4);
+      desenharPop();
+      pop.hidden = false; btn.setAttribute("aria-expanded", "true");
+      pop.querySelector(".dp-m.sel, .dp-m:not([disabled])")?.focus();
+    };
     const fechar = (foco) => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (foco) btn.focus(); };
     btn.addEventListener("click", () => (pop.hidden ? abrir() : fechar(false)));
-    document.addEventListener("click", (e) => { if (!pop.hidden && !e.target.closest("#pop-periodo") && !e.target.closest("#pp-btn")) fechar(false); });
+    document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && e.target.isConnected && !e.target.closest("#pp-btn")) fechar(false); });
     pop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); fechar(true); } });
-    pop.querySelectorAll("[data-p]").forEach((b) => b.addEventListener("click", () => {
-      S.periodo = b.dataset.p;
-      if (b.dataset.ano) S.ano = b.dataset.ano;
-      fechar(true); render();
-    }));
-    $("#pp-aplicar").addEventListener("click", () => {
-      S.periodo = "custom"; S.de = ppDe; S.ate = ppAte;
-      fechar(true); render();
+    // um só ouvinte no popover: o conteúdo é redesenhado a cada clique
+    pop.addEventListener("click", (e) => {
+      const t = e.target.closest("button");
+      if (!t || !pop.contains(t)) return;
+      if (t.dataset.alvo) { ed.alvo = t.dataset.alvo; ed.ano = D.meses[ed.alvo === "de" ? Math.min(ed.de, ed.ate) : Math.max(ed.de, ed.ate)].slice(0, 4); desenharPop(`[data-alvo="${ed.alvo}"]`); return; }
+      if (t.dataset.d) { ed.ano = anosCal[anosCal.indexOf(ed.ano) + +t.dataset.d]; desenharPop(`.dp-seta[data-d="${t.dataset.d}"]`); return; }
+      if (t.dataset.i != null && t.classList.contains("dp-m")) {
+        const i = +t.dataset.i, lo = Math.min(ed.de, ed.ate), hi = Math.max(ed.de, ed.ate);
+        if (ed.alvo === "de") { ed.de = i; ed.ate = Math.max(i, hi); ed.alvo = "ate"; }
+        else { ed.de = Math.min(lo, i); ed.ate = Math.max(lo, i); ed.alvo = "de"; }
+        desenharPop(`.dp-m[data-i="${i}"]`); return;
+      }
+      if (t.dataset.p) { S.periodo = t.dataset.p; if (t.dataset.ano) S.ano = t.dataset.ano; fechar(true); render(); return; }
+      if (t.id === "pp-cancelar") { fechar(true); return; }
+      if (t.id === "pp-aplicar") { S.periodo = "custom"; S.de = Math.min(ed.de, ed.ate); S.ate = Math.max(ed.de, ed.ate); fechar(true); render(); }
     });
 
     document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
