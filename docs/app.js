@@ -1151,21 +1151,6 @@
           <div class="tr-q4">${colsQ}</div>
           <div class="tr-interp"><b>Como interpretar</b><p>Os quadrantes indicam o posicionamento relativo da Akad e o ritmo de crescimento de cada mercado. Não representam, isoladamente, rentabilidade, atratividade ou recomendação de investimento. A análise é inspirada na matriz BCG, adaptada para considerar o ranking da Akad.</p></div>
         </div>
-      </section>
-      <section class="tr-card" aria-labelledby="h-comp">
-        <div class="tr-cab tr-cab-t"><div><h3 id="h-comp" class="tr-tit">Comparativo dos ramos</h3><p class="tr-sub">${per} contra ${P.pa != null ? periodoLabel(P.pa, P.pb) : "período anterior"}. Margem técnica = 100% menos o índice combinado parcial (sinistralidade + comercialização sobre o prêmio ganho). Negativa, o ramo é deficitário. "vs. mercado" em verde quando a margem da Akad está acima da do mercado.</p></div>
-          <div class="tr-ctrls">
-            <label class="rc-busca"><input type="search" id="tr-q" aria-label="Buscar ramo por nome ou código" placeholder="Buscar por nome ou código" value="${esc(S.rcBusca || "")}" autocomplete="off"></label>
-            <label class="pr-ord"><span class="ctrl-rot">Mostrar</span><select id="tr-f" class="pr-sel" aria-label="Filtrar ramos">
-              ${filtros.map(([k, n, f]) => `<option value="${k}"${S.trFiltro === k ? " selected" : ""}>${n} (${itens.filter(f).length})</option>`).join("")}
-            </select></label>
-          </div>
-        </div>
-        <div class="tab-wrap"><table class="tr-tab">
-          <thead><tr>${ths.map(([c, r, cls, aj]) => c ? `<th class="ord ${cls}" data-col="${c}"${S.trOrd.col === c ? ` aria-sort="${S.trOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${r}</button>${aj ? " " + ajuda(aj, r) : ""}</th>` : `<th>${r}</th>`).join("")}</tr></thead>
-          <tbody>${ordenar().map(linhaTr).join("")}</tbody>
-        </table></div>
-        <p class="rc-vazio" hidden>Nenhum ramo encontrado com esse filtro.</p>
       </section>`;
 
     // ----- desenho da matriz (SVG na largura real do card, para o texto não encolher)
@@ -1258,27 +1243,6 @@
       n.addEventListener("mouseenter", () => hlQ(n.dataset.q));
       n.addEventListener("mouseleave", () => hlQ(null));
     });
-    const aplicar = () => {
-      const q = (S.rcBusca || "").trim().toLowerCase();
-      const f = S.trFiltro;
-      let n = 0;
-      el.querySelectorAll(".tr-tab tbody tr").forEach((tr) => {
-        const okF = f === "todos" || (f === "lider" ? tr.dataset.lider === "1" : f === "sem" ? tr.dataset.sem === "1" : tr.dataset.q === f);
-        const ok = okF && (!q || tr.dataset.busca.includes(q));
-        tr.hidden = !ok; if (ok) n++;
-      });
-      el.querySelector(".rc-vazio").hidden = n > 0;
-    };
-    el.querySelector("#tr-q").addEventListener("input", (e) => { S.rcBusca = e.target.value; aplicar(); });
-    el.querySelector("#tr-f").addEventListener("change", (e) => { S.trFiltro = e.target.value; aplicar(); });
-    el.querySelectorAll(".tr-tab th.ord > button:not(.ajuda)").forEach((b) => b.addEventListener("click", () => {
-      const c = b.parentElement.dataset.col;
-      S.trOrd = S.trOrd.col === c ? { col: c, dir: -S.trOrd.dir } : { col: c, dir: c === "nome" || c === "pos" ? 1 : -1 };
-      renderCatalogo(el, P);
-    }));
-    el.querySelectorAll(".tr-tab tbody tr").forEach((tr) => tr.addEventListener("click", (e) => { if (!e.target.closest(".ajuda")) abrirR(tr.dataset.linha); }));
-    el.querySelectorAll(".tr-tab [data-tip]").forEach((g) => { g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev)); g.addEventListener("mouseleave", esconderTip); });
-    aplicar();
   }
 
   function renderLinhas() {
