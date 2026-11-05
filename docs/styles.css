@@ -355,6 +355,8 @@ th.ord { cursor: pointer; user-select: none; }
 th.ord:hover { color: var(--ink); }
 th.ord[aria-sort="descending"]::after { content: " ↓"; }
 th.ord[aria-sort="ascending"]::after { content: " ↑"; }
+.c2-at th.ord button { background: none; border: 0; padding: 0; font: inherit; color: inherit; text-transform: inherit; letter-spacing: inherit; cursor: pointer; text-align: inherit; }
+.c2-at th.ord button:hover, .c2-at th[aria-sort] { color: var(--ink); }
 td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
 tr.akad td { background: var(--linha-akad); font-weight: 600; }
 tr.clic { cursor: pointer; }
