@@ -410,9 +410,8 @@
     const fim = P.b;
     let itens = [];
     if (vis === "mes") {
-      // início escolhido pela pessoa; sem escolha: janeiro do ano anterior (no celular, últimos 12 meses)
-      const escolhido = S.prodIni ? D.meses.indexOf(S.prodIni) : -1;
-      const ini = escolhido >= 0 && escolhido <= fim ? escolhido : inicioProdPadrao(fim, peq);
+      // segue o período do filtro do topo da página
+      const ini = P.a;
       for (let i = ini; i <= fim; i++) {
         const ym = D.meses[i];
         const sh = T[i] > 0 ? (A[i] / T[i]) * 100 : null;
@@ -429,35 +428,38 @@
       };
       itens.forEach((x) => { x.cor = tom(anos.indexOf(x.ano)); });
     } else if (vis === "tri") {
-      // trimestres desde o 1º trimestre de dois anos antes; o último pode ser parcial (comparado com os mesmos meses)
-      const yFim = +D.meses[fim].slice(0, 4);
-      const somaM = (y, m0, m1) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= m0 && mm <= m1 && i <= fim) { a += A[i]; t += T[i]; } }); return [a, t]; };
-      for (let y = Math.max(+D.meses[0].slice(0, 4), yFim - 2); y <= yFim; y++) for (let q = 1; q <= 4; q++) {
-        const m0 = (q - 1) * 3 + 1;
-        const iIni = D.meses.indexOf(`${y}${String(m0).padStart(2, "0")}`);
-        if (iIni < 0 || iIni > fim) continue;
-        const m1 = Math.min(m0 + 2, y === yFim ? +D.meses[fim].slice(4) : 12);
-        const parc = m1 < m0 + 2;
+      // trimestres do calendário dentro do período do filtro; um trimestre cortado pelo período fica parcial (comparado com os mesmos meses)
+      const somaM = (y, m0, m1) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= m0 && mm <= m1) { a += A[i]; t += T[i]; } }); return [a, t]; };
+      for (let y = +D.meses[P.a].slice(0, 4); y <= +D.meses[fim].slice(0, 4); y++) for (let q = 1; q <= 4; q++) {
+        const q0 = (q - 1) * 3 + 1;
+        const r0 = D.meses.indexOf(`${y}${String(q0).padStart(2, "0")}`);
+        if (r0 < 0) continue;
+        const i0 = Math.max(r0, P.a), i2 = D.meses.indexOf(`${y}${String(q0 + 2).padStart(2, "0")}`);
+        const i1 = Math.min(i2 < 0 ? fim : i2, fim);
+        if (i0 < 0 || i0 > i1 || +D.meses[i0].slice(0, 4) !== y) continue;
+        const m0 = +D.meses[i0].slice(4), m1 = +D.meses[i1].slice(4);
+        const parc = m1 - m0 < 2;
         const [a, t] = somaM(y, m0, m1), [ap, tp] = somaM(y - 1, m0, m1);
         const sh = t > 0 ? (a / t) * 100 : null;
-        const meses = `${MESES_PT[m0 - 1]} a ${MESES_PT[m1 - 1]}`;
+        const meses = m0 === m1 ? MESES_PT[m0 - 1] : `${MESES_PT[m0 - 1]} a ${MESES_PT[m1 - 1]}`;
         itens.push({ l1: `${q}º tri${parc ? "*" : ""}`, l2: q === 1 || itens.length === 0 ? String(y) : "", ano: String(y), v: met === "gwp" ? a : sh, a, sh, parc,
           cr: ap > 0 ? cresc(a, ap) : null, dsh: tp > 0 && sh != null ? sh - (ap / tp) * 100 : null, tit: `${q}º trimestre de ${y} (${meses}${parc ? ", parcial" : ""})`, refP: `${meses}/${y - 1}` });
       }
       const anosT = [...new Set(itens.map((x) => x.ano))].reverse();
       itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anosT.indexOf(x.ano), TONS_ANO.length - 1)]; });
     } else {
-      const yFim = D.meses[fim].slice(0, 4), mFim = +D.meses[fim].slice(4);
-      const anos = [...new Set(D.meses.map((x) => x.slice(0, 4)))].filter((y) => y <= yFim);
-      const soma = (y, ate) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { if (ym.slice(0, 4) === y && +ym.slice(4) <= ate && i <= fim) { a += A[i]; t += T[i]; } }); return [a, t]; };
-      anos.forEach((y, k) => {
-        const parc = y === yFim && mFim < 12;
-        const [a, t] = soma(y, parc ? mFim : 12);
+      // anos dentro do período do filtro; o primeiro e o último podem ser parciais (comparados com os mesmos meses do ano anterior)
+      const yIni = +D.meses[P.a].slice(0, 4), yFim = +D.meses[fim].slice(0, 4);
+      const soma = (y, mA, mB) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= mA && mm <= mB) { a += A[i]; t += T[i]; } }); return [a, t]; };
+      for (let y = yIni; y <= yFim; y++) {
+        const mA = y === yIni ? +D.meses[P.a].slice(4) : 1, mB = y === yFim ? +D.meses[fim].slice(4) : 12;
+        const parc = mA > 1 || mB < 12;
+        const [a, t] = soma(y, mA, mB), [ap, tp] = soma(y - 1, mA, mB);
         const sh = t > 0 ? (a / t) * 100 : null;
-        let cr = null, dsh = null;
-        if (k > 0) { const [ap, tp] = soma(anos[k - 1], parc ? mFim : 12); cr = cresc(a, ap); dsh = sh != null && tp > 0 ? sh - (ap / tp) * 100 : null; }
-        itens.push({ l1: y + (parc ? "*" : ""), v: met === "gwp" ? a : sh, a, sh, cr, dsh, parc, tit: parc ? `${y} (jan a ${MESES_PT[mFim - 1]})` : y, refP: k > 0 ? (parc ? `jan a ${MESES_PT[mFim - 1]}/${anos[k - 1]}` : anos[k - 1]) : null, cor: y === yFim ? TONS_ANO[0] : "#F5B3CA" });
-      });
+        const meses = `${MESES_PT[mA - 1]} a ${MESES_PT[mB - 1]}`;
+        itens.push({ l1: y + (parc ? "*" : ""), v: met === "gwp" ? a : sh, a, sh, parc, cr: ap > 0 ? cresc(a, ap) : null, dsh: sh != null && tp > 0 ? sh - (ap / tp) * 100 : null,
+          tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFim ? TONS_ANO[0] : "#F5B3CA" });
+      }
     }
     const vals = itens.map((x) => x.v || 0);
     const vMax = Math.max(met === "gwp" ? 1 : 0.5, ...vals) * 1.05;
@@ -1317,7 +1319,6 @@
             <div class="pr-btns">
               <div class="seg-ctrl" role="group" aria-label="Medida">${[["gwp", "GWP"], ["share", "Market share"]].map(([k, r]) => `<button type="button" data-pmet="${k}" aria-pressed="${(S.prodMet || "gwp") === k}">${r}</button>`).join("")}</div>
               <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
-              <div class="pr-ord pr-desde"${(S.prodVis || "mes") === "mes" ? "" : " hidden"}><span class="ctrl-rot">Desde</span><div class="mp-dd"><button type="button" class="mp-btn" id="g-prod-ini" aria-haspopup="dialog" aria-expanded="false" aria-label="Mostrar meses desde"></button><div class="mp-pop" id="g-prod-pop" role="dialog" aria-label="Mostrar meses desde" hidden></div></div></div>
             </div>
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
@@ -1447,26 +1448,9 @@
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
-      const selIni = $("#g-prod-ini");
-      selIni.closest(".pr-desde").hidden = vis !== "mes";
-      if (vis === "mes" && itens.length) { selIni.textContent = itens[0].tit; selIni.dataset.ini = itens[0].ym; }
       $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
     };
     desenharProd();
-    {
-      const bt = $("#g-prod-ini"), pop = $("#g-prod-pop");
-      const fechar = (foco) => { pop.hidden = true; bt.setAttribute("aria-expanded", "false"); if (foco) bt.focus(); };
-      bt.addEventListener("click", (e) => {
-        e.stopPropagation();
-        if (!pop.hidden) { fechar(false); return; }
-        const iniAtual = Math.max(0, D.meses.indexOf(bt.dataset.ini || ""));
-        pop.hidden = false; bt.setAttribute("aria-expanded", "true");
-        mesPicker(pop, { ini: Math.max(0, Math.min(iniAtual, P.b)), max: P.b, rot: "Mostrar meses desde", onChange: (i) => { S.prodIni = D.meses[i]; fechar(true); desenharProd(); } });
-        pop.querySelector(".mp-m.sel, .mp-m:not([disabled])")?.focus();
-      });
-      pop.addEventListener("keydown", (e) => { if (e.key === "Escape") { e.preventDefault(); fechar(true); } });
-      document.addEventListener("click", (e) => { if (!pop.hidden && !e.target.closest("#g-prod-pop") && e.target !== bt) fechar(false); });
-    }
     el.querySelectorAll("[data-pmet],[data-pvis]").forEach((b) => b.addEventListener("click", () => {
       if (b.dataset.pmet) S.prodMet = b.dataset.pmet; else S.prodVis = b.dataset.pvis;
       el.querySelectorAll("[data-pmet]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.pmet === (S.prodMet || "gwp"))));
