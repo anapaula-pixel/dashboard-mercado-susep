@@ -1176,7 +1176,16 @@ body { color: var(--ink); }
 #aba-geral table.tg-part .th-pos-btn:hover, #aba-geral table.tg-part .th-pos-btn[aria-sort] { color: var(--ink); }
 /* Produção da Akad no detalhe do ramo */
 #aba-linhas .pr-cab { align-items: flex-start; }
-#aba-linhas .pr-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+#aba-linhas .pr-btns { display: flex; flex-wrap: wrap; justify-content: flex-end; align-items: center; gap: 8px; }
+#aba-linhas .bloco-cab.pr-cab { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: 10px 24px; }
+#aba-linhas .pr-cab .pr-desde { flex-basis: 100%; display: flex; justify-content: flex-end; align-items: center; gap: 8px; }
+@media (max-width: 760px) {
+  #aba-linhas .bloco-cab.pr-cab { grid-template-columns: minmax(0, 1fr); }
+  #aba-linhas .pr-cab > div:first-child { display: contents; }
+  #aba-linhas .pr-cab h2 { order: 0; margin: 0; }
+  #aba-linhas .pr-cab .pr-btns { order: 1; }
+  #aba-linhas .pr-cab .nota { order: 2; margin: 0; }
+}
 #aba-linhas .pr-leg { display: flex; gap: 16px; font-size: .78rem; color: var(--ink-2); margin: -4px 0 8px; min-height: 1em; }
 #aba-linhas .pr-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 #g-prod .pr-l1 { fill: var(--ink-2); font-size: 11px; }
