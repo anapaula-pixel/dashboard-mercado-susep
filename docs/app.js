@@ -724,7 +724,7 @@
       <div class="cab-aba cab-geral">
         <div>
           <h2>Visão geral</h2>
-          <p>Acompanhe o desempenho da Akad nos ${nL} ramos em que atua, com base nos <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">dados oficiais da SUSEP</a>. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada uma vez por dia.`)}" aria-label="Sobre os dados">?</button></p>
+          <p>Desempenho da Akad nos ${nL} ramos em que atua. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada uma vez por dia.`)}" aria-label="Sobre os dados">?</button></p>
         </div>
       </div>`;
 
@@ -803,8 +803,8 @@
       </li>`;
     }).join("");
     const cardEvo = `
-      <section class="card kc kc-evo" aria-label="GWP ano a ano">
-        <div class="kc-cab"><h2 class="kc-tit">GWP ano a ano</h2><span class="kc-aux">${recorte}</span></div>
+      <section class="card kc kc-evo" aria-label="Evolução do GWP da Akad">
+        <div class="kc-cab"><h2 class="kc-tit">Evolução do GWP da Akad</h2><span class="kc-aux">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}.</span></div>
         <ol class="ev-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
       </section>`;
 
@@ -814,8 +814,8 @@
     const pesoTop = ak.pe > 0 ? (top5.reduce((t, x) => t + x.a.pe, 0) / ak.pe) * 100 : null;
     const maxPeso = top5.length ? top5[0].a.pe : 1;
     const cardCart = `
-      <section class="card kc kc-cart" aria-label="Onde está o GWP da Akad">
-        <div class="kc-cab"><h2 class="kc-tit">Onde está o GWP da Akad</h2><span class="kc-aux">top 5 ramos</span></div>
+      <section class="card kc kc-cart" aria-label="Ramos com maior peso na carteira">
+        <div class="kc-cab"><h2 class="kc-tit">Ramos com maior peso na carteira</h2><span class="kc-aux">Os 5 maiores em GWP.</span></div>
         <ul class="ct-lista">${top5.map((x) => `
           <li><button type="button" class="ct-item" data-linha="${x.l.id}" aria-label="${esc(x.l.nome)}: ${pctPart((x.a.pe / ak.pe) * 100)} do GWP da Akad, ${reais(x.a.pe)}. Abrir detalhe">
             <span class="ct-nome">${esc(x.l.nome)}</span>
@@ -953,20 +953,15 @@
           </tbody>
         </table></div>`;
 
-    const ordAtivo = Object.keys(ORD_TAB).find((k) => ORD_TAB[k].col === T.col && ORD_TAB[k].dir === T.dir);
-    const ORD_ROT = { pe: "Maior GWP", pos: "Melhor posição no ranking", share: "Maior market share", ganho: "Mais ganhou market share" };
-    const ordSel = `<select id="pr-ord" class="pr-sel" aria-label="Ordenar ramos por">
-      ${ordAtivo ? "" : `<option value="" selected>${{ nome: "Ramo", dShare: "Variação do market share", mov: "Variação no ranking", pe: "GWP da Akad", dPe: "Variação do GWP (R$)", cresc: "Variação do GWP (%)", vs: "vs. mercado", peso: "Peso na carteira", mercado: "Mercado do ramo", crescM: "Variação do mercado (%)", refShare: "Market share do concorrente", share: "Market share", pos: "Posição no ranking (do último ao 1º)" }[T.col] || "Coluna da tabela"}</option>`}
-      ${Object.keys(ORD_ROT).map((k) => `<option value="${k}"${ordAtivo === k ? " selected" : ""}>${ORD_ROT[k]}</option>`).join("")}
-    </select>`;
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
       <section class="card sec" aria-labelledby="h-pbar">
         <div class="sec-cab pr-cab">
-          <h2 id="h-pbar" class="sec-tit">Participação por ramo</h2>
-          <div class="pr-ctrls">
+          <div class="pr-top">
+            <h2 id="h-pbar" class="sec-tit">Desempenho da Akad por ramo</h2>
             <div class="seg-ctrl ctrl-modo" role="group" aria-label="Nível de detalhe">${modoBtn("resumo", "Resumo")}${modoBtn("detalhado", "Detalhado")}</div>
-            <label class="pr-ord"><span class="ctrl-rot">Ordenar por</span>${ordSel}</label>
+          </div>
+          <div class="pr-ctrls">
             ${det ? "" : `<p class="legenda-pb legenda-topo pr-leg"><span class="lg-i"><span class="lg-fill"></span>Market share em ${per}</span>${perP ? `<span class="lg-i"><span class="lg-ant"></span>Como estava em ${perP}</span>` : ""}</p>`}
           </div>
         </div>
@@ -991,7 +986,6 @@
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
       n.addEventListener("focusout", () => hl(n.dataset.linha, false));
     });
-    el.querySelector("#pr-ord")?.addEventListener("change", (e) => { if (!e.target.value) return; S.geralOrd = e.target.value; S.geralTab = null; renderGeral(); el.querySelector("#pr-ord")?.focus(); });
     el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
     const porColuna = (c, foco) => {
       const padrao = c === "pos" || c === "nome" ? 1 : -1;
@@ -1620,12 +1614,12 @@
       ${lst.length ? `<div class="c2-rw c2-rh"><span></span><span class="c2-v">Share</span><span class="c2-v">Variação</span></div>${lst.map(linC).join("")}` : `<p class="c2-vz">${vz}</p>`}</div>`;
     const bQuem = `
       <section class="c2-sec" aria-labelledby="h-c2a">
-        <h3 id="h-c2a" class="c2-tit">Quem são os concorrentes ${ajuda("ccTipos", "tipos de concorrente")}</h3>
-        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Market share nos ${atua.length} ramos acompanhados (GWP da seguradora ÷ GWP do mercado nesses ramos) e variação contra ${perA}.`} Clique num nome para abrir a ficha do concorrente.</p>
+        <h3 id="h-c2a" class="c2-tit">Concorrentes nos ramos da Akad ${ajuda("ccTipos", "tipos de concorrente")}</h3>
+        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Market share de cada seguradora nos ${atua.length} ramos da Akad e variação contra ${perA}.`}</p>
         <div class="c2-g3">
-          ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
-          ${colC("Perfil parecido", "var(--cc-link)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
-          ${colC("Em expansão", "#C78800", umRamo ? "Maiores ganhos de participação no ramo" : "Maiores ganhos de participação nos ramos da Akad", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
+          ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad." : "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
+          ${colC("Perfil parecido", "var(--cc-link)", "Carteiras com distribuição semelhante à da Akad.", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
+          ${colC("Em expansão", "#C78800", umRamo ? "Maiores ganhos de participação no ramo." : "Maiores ganhos de participação nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
         </div>
       </section>`;
 
@@ -1666,7 +1660,7 @@
     const bGP = `
       <section class="c2-sec" aria-labelledby="h-c2b">
         <h3 id="h-c2b" class="c2-tit">Variação de market share da Akad por ramo ${ajuda("ccGanho", "ganhos e perdas")}</h3>
-        <p class="c2-sub">${umRamo ? `Variação de market share em ${esc(linhasSel[0].nome)}, nos últimos 12 meses contra os 12 anteriores.` : `Variação do market share da Akad em cada ramo (${perC} contra ${perA}), do ramo que mais pesa na carteira para o que menos pesa.`}</p>
+        <p class="c2-sub">${umRamo ? `Variação de market share em ${esc(linhasSel[0].nome)}, nos últimos 12 meses contra os 12 anteriores.` : `Comparação com ${perA}, em pontos percentuais.`}</p>
         <div class="c2-card">${corpoGP}</div>
       </section>`;
 
