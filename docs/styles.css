@@ -210,6 +210,7 @@ select:hover { border-color: var(--axis); }
 .dp-res { margin: 12px 0 0; font-size: .8rem; color: var(--ink-2); }
 .dp-res b { color: var(--ink); }
 .dp-sep { height: 1px; background: var(--line); margin: 14px 0 12px; }
+.dp-rot { margin: 0 0 8px; font-size: .66rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
 .dp-atl { display: flex; flex-wrap: wrap; gap: 6px; }
 .dp-atl button { flex: 1 1 auto; white-space: nowrap; background: var(--surface-2); border: 0; border-radius: 8px; padding: 8px 8px; font-size: .76rem; font-weight: 500; color: var(--ink); cursor: pointer; }
 .dp-atl button:hover { box-shadow: inset 0 0 0 1px var(--navy); }
