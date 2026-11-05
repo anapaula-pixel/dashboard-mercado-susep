@@ -1379,7 +1379,7 @@
     // ----- sinistralidade: Akad x mercado (sinistro ocorrido ÷ prêmio ganho), no período do filtro, por mês, bimestre ou trimestre
     const desenharSin = () => {
       const host = $("#b-sin");
-      const vis = S.sinVis || "tri", N = vis === "mes" ? 1 : vis === "bim" ? 2 : 3;
+      const vis = S.sinVis || "mes", N = vis === "mes" ? 1 : vis === "bim" ? 2 : 3;
       const qs = [];
       for (let i = P.a; i <= P.b; i += N) {
         const j = Math.min(i + N - 1, P.b);
