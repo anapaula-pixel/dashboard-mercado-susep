@@ -2311,6 +2311,13 @@
       const lo = Math.min(ed.de, ed.ate), hi = Math.max(ed.de, ed.ate), ia = anosCal.indexOf(ed.ano);
       const nM = hi - lo + 1;
       pop.innerHTML = `
+        <div class="dp-atl">
+          <button type="button" data-p="ytd">Acumulado de ${anoUlt}</button>
+          <button type="button" data-p="12m">Últimos 12 meses</button>
+          ${anoFech ? `<button type="button" data-p="ano" data-ano="${anoFech}">Ano de ${anoFech}</button>` : ""}
+        </div>
+        <div class="dp-sep"></div>
+        <p class="dp-rot">Personalizado</p>
         <div class="dp-de">
           <button type="button" class="dp-campo${ed.alvo === "de" ? " at" : ""}" data-alvo="de" aria-pressed="${ed.alvo === "de"}"><span>De</span><b>${mesLabel(lo, true)}</b></button>
           <button type="button" class="dp-campo${ed.alvo === "ate" ? " at" : ""}" data-alvo="ate" aria-pressed="${ed.alvo === "ate"}"><span>Até</span><b>${mesLabel(hi, true)}</b></button>
@@ -2323,12 +2330,6 @@
           return `<button type="button" class="dp-m${cls}" data-i="${i}" aria-label="${nm}/${ed.ano}" aria-pressed="${i === lo || i === hi}"><i>${nm}</i></button>`;
         }).join("")}</div>
         <p class="dp-res">Período: <b>${mesLabel(lo, true)} a ${mesLabel(hi, true)}</b> (${nM} ${nM === 1 ? "mês" : "meses"})</p>
-        <div class="dp-sep"></div>
-        <div class="dp-atl">
-          <button type="button" data-p="ytd">Acumulado de ${anoUlt}</button>
-          <button type="button" data-p="12m">Últimos 12 meses</button>
-          ${anoFech ? `<button type="button" data-p="ano" data-ano="${anoFech}">Ano de ${anoFech}</button>` : ""}
-        </div>
         <div class="dp-acoes"><button type="button" class="dp-cancel" id="pp-cancelar">Cancelar</button><button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button></div>`;
       pop.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === S.periodo && (S.periodo !== "ano" || b.dataset.ano === String(S.ano)))));
       if (foco) pop.querySelector(foco)?.focus();
