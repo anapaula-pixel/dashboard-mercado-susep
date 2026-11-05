@@ -1244,6 +1244,7 @@ body { color: var(--ink); }
 /* Matriz BCG (Todos os ramos) */
 #aba-linhas .tr-bcg { padding: 16px 22px 20px; }
 #aba-linhas > .tr-card.tr-bcg { margin-top: -8px; position: relative; }
+#aba-linhas .cab-aba:has(+ .tr-bcg) p { max-width: none; }
 .tr-mcab { position: absolute; top: 10px; right: 22px; z-index: 1; }
 @media (max-width: 600px) { .tr-mcab { position: static; display: flex; justify-content: flex-end; margin: -6px 0 2px; } }
 .ajuda.tr-ler { width: auto; height: auto; border: 0; border-radius: 0; opacity: 1; gap: 6px; padding: 4px 0; font-size: .82rem; font-weight: 600; color: var(--cc-link, #1C4173); cursor: pointer; }
