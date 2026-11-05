@@ -550,7 +550,7 @@
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz de posicionamento, inspirada na matriz BCG e adaptada ao ranking da Akad. Cada ramo é classificado por dois critérios objetivos. Linha vertical, limite do Top 5: à esquerda dela, a Akad está entre as 5 maiores seguradoras do ramo. Linha horizontal, crescimento médio do mercado: quanto o prêmio do conjunto dos ramos acompanhados cresceu nos últimos 12 meses contra os 12 meses anteriores; acima dela, o mercado do ramo cresce mais que a média. Usamos o Top 5, e não só a liderança, porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
-    ccTipos: "Share: market share médio da seguradora nos 22 ramos acompanhados, dando mais peso aos ramos que mais pesam na carteira da Akad (assim um ramo enorme em que a Akad quase não atua, como Prestamista, não domina o número). Variação: diferença desse share contra o mesmo período do ano anterior. Confronto direto: aparecem no top 5 junto com a Akad em mais ramos. Em expansão: maiores ganhos de participação. Perfil parecido: carteira com distribuição entre os 22 ramos parecida com a da Akad.",
+    ccTipos: "**Share:** market share da seguradora nos 22 ramos acompanhados, com a mesma conta do share da Akad: GWP dela nesses ramos ÷ GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.\nEx.: se o mercado dos 22 ramos vendeu R$ 10 bi e a seguradora R$ 500 mi, o share é 5%.\n**Variação:** diferença desse share contra o mesmo período do ano anterior, em p.p.\n**Confronto direto:** aparecem no top 5 junto com a Akad em mais ramos.\n**Em expansão:** maiores ganhos de participação.\n**Perfil parecido:** carteira com distribuição entre os 22 ramos parecida com a da Akad.",
     ccQual: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\n**vs. mercado:** diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior. Vermelho: é menor.",
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
@@ -1585,14 +1585,15 @@
       sinA == null ? "sem prêmio ganho no período" : `a cada R$ 100 de prêmio ganho, R$ ${nf0.format(sinA)} foram para sinistros e R$ ${nf0.format(comA)} para comercialização`,
       stk("Mercado", sinM, comM) + stk("Akad", sinA, comA, true) + `<p class="c2-lg"><i style="background:var(--mercado)"></i>Sinistros <i style="background:#7C97B8"></i>Comercialização</p>`, "ccSinCom");
 
-    // ----- quem são os concorrentes (share médio ponderado pelo peso na carteira da Akad)
+    // ----- quem são os concorrentes: market share nos 22 ramos acompanhados (GWP da seguradora ÷ GWP do mercado nesses ramos), mesma conta do share da Akad
+    const mercT = atua.reduce((s, x) => s + x.tc, 0), mercTp = atua.reduce((s, x) => s + x.tp, 0);
     const todosL = IDX.linhas.map((l) => agg5(l.idx, a0, b));
     const akVec = todosL.map((m) => gw(m, AKAD));
     const nAk = Math.sqrt(akVec.reduce((s, v) => s + v * v, 0));
     const ents = new Set(); for (const x of atua) { for (const k of x.c.keys()) if (k !== AKAD) ents.add(k); for (const k of x.p.keys()) if (k !== AKAD) ents.add(k); }
     const info = [...ents].map((k) => {
-      const ws = atua.reduce((s, x) => s + (x.peso / 100) * shareDe(x.c, x.tc, k), 0);
-      const wsp = atua.reduce((s, x) => s + (x.peso / 100) * shareDe(x.p, x.tp, k), 0);
+      const ws = mercT > 0 ? (atua.reduce((s, x) => s + gw(x.c, k), 0) / mercT) * 100 : 0;
+      const wsp = mercTp > 0 ? (atua.reduce((s, x) => s + gw(x.p, k), 0) / mercTp) * 100 : 0;
       const h2h = atua.filter((x) => { const i = x.rk.indexOf(k); return i > -1 && i < 5 && x.pos && x.pos <= 5; }).length;
       const v = todosL.map((m) => gw(m, k));
       const nv = Math.sqrt(v.reduce((s, y) => s + y * y, 0));
@@ -1616,7 +1617,7 @@
     const bQuem = `
       <section class="c2-sec" aria-labelledby="h-c2a">
         <h3 id="h-c2a" class="c2-tit">Quem são os concorrentes ${ajuda("ccTipos", "tipos de concorrente")}</h3>
-        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Share médio nos ramos da Akad, dando mais peso aos ramos que mais pesam na carteira dela, e variação contra ${perA}.`} Clique num nome para abrir a ficha do concorrente.</p>
+        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Market share nos ${atua.length} ramos acompanhados (GWP da seguradora ÷ GWP do mercado nesses ramos) e variação contra ${perA}.`} Clique num nome para abrir a ficha do concorrente.</p>
         <div class="c2-g3">
           ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad" : "Dividem o top 5 com a Akad em mais ramos", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
           ${colC("Perfil parecido", "var(--cc-link)", "Carteira com o mix de ramos mais parecido com o da Akad", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
