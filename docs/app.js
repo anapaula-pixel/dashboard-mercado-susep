@@ -796,7 +796,7 @@
     const barrasH = hist.map((h, i) => {
       const atual = h.sel;
       const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
-      return `<li class="ev${atual ? " atual" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
+      return `<li class="ev${atual ? " atual" : ""}${+D.meses[h.b].slice(0, 4) >= 2022 ? " ak" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
         <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i>${h.cr == null ? "" : `<span class="ev-cr ${h.cr >= 0 ? "sobe" : "cai"}" style="bottom:calc(${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}% + 6px)">${crTxt}</span>`}</span>
         <span class="ev-val" aria-hidden="true">${reaisCurto(h.v)}</span>
         <span class="ev-rot" aria-hidden="true">${rotH(h)}</span>
@@ -806,6 +806,7 @@
       <section class="card kc kc-evo" aria-label="Evolução do GWP da Akad">
         <div class="kc-cab"><h2 class="kc-tit">Evolução do GWP da Akad</h2><span class="kc-aux">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}.</span></div>
         <ol class="ev-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
+        ${hist.some((h) => +D.meses[h.b].slice(0, 4) < 2022) ? `<p class="ev-leg"><span><i class="ev-li-ar"></i>Argo (até 2021)</span><span><i class="ev-li-ak"></i>Akad (desde 2022)</span></p>` : ""}
       </section>`;
 
     // A5. Onde está o GWP da Akad: os 5 maiores ramos da carteira
