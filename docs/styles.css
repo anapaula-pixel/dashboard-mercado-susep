@@ -248,6 +248,8 @@ select:hover { border-color: var(--axis); }
 .cb-op { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: .9rem; color: var(--ink); }
 .cb-op small { font-size: .76rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .cb-op.ind { padding-left: 26px; font-size: .86rem; color: var(--ink-2); }
+.cb-grp { padding: 10px 10px 4px; font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); border-top: 1px solid var(--line); margin-top: 4px; list-style: none; }
+.cb-grp:first-child { border-top: 0; margin-top: 0; }
 .cb-op.ativo { background: var(--surface-2); }
 .cb-op.sel { font-weight: 600; }
 .cb-op.sel > span::before { content: "✓ "; color: var(--navy); }
