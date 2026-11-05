@@ -514,7 +514,7 @@
     ccCom: "Custo de comercialização: o que a SUSEP chama de despesa de comercialização, sobre o prêmio ganho. A SUSEP abre esse custo em duas partes: os custos ligados à vigência da apólice (na prática, a comissão de corretagem e o agenciamento) e os outros custos de aquisição (pró-labore, bônus, campanhas e similares). As duas somadas dão o custo de comercialização.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
-    sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os três meses de cada trimestre. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. Por trimestre porque mês a mês o índice oscila demais. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
+    sinTri: "Sinistralidade = sinistro ocorrido ÷ prêmio ganho, somando os meses de cada grupo (mês, bimestre ou trimestre), dentro do período escolhido no filtro do topo. A linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio ganho. Mês a mês o índice oscila mais. Em ramos pequenos, um sinistro grande pode mexer muito no número.",
     trIdx: "**Margem técnica**\nResultado do ramo em % do prêmio ganho, antes das despesas administrativas.\n\n**Conta:** margem técnica = 100% − sinistralidade − custo de aquisição\n• Sinistralidade = sinistros ocorridos ÷ prêmio ganho\n• Custo de aquisição = (comissão + outros custos de venda) ÷ prêmio ganho\n\n**Exemplo:** prêmio ganho de R$ 10 mi, sinistros de R$ 4 mi e custo de aquisição de R$ 2,5 mi. Sinistralidade de 40% e custo de aquisição de 25%.\nMargem técnica = 100% − 40% − 25% = **35%**\n\nNão inclui despesas administrativas nem resseguro, porque a SUSEP não abre esses números por ramo. Quando fica abaixo de 0%, o ramo é deficitário.\n\nEmbaixo, a margem do mercado no mesmo ramo. Passe o mouse no número para ver a quebra.",
     trDif: "Diferença entre a margem técnica da Akad e a do mercado no mesmo ramo, em pontos percentuais. Verde: a margem da Akad é maior que a do mercado. Vermelho: é menor.",
     trSin: "Sinistralidade da Akad no ramo (sinistro ocorrido ÷ prêmio ganho) ao lado da do mercado no mesmo ramo e período. A diferença em p.p. fica verde quando a Akad está abaixo do mercado e vermelha quando está acima. Clique no título para ordenar pelos ramos em que a Akad está pior.",
@@ -1365,30 +1365,41 @@
     // gráficos
     const chaves = [AKAD, ...top];
     const sm = serieMensal(ramos, chaves);
-    // ----- sinistralidade por trimestre: Akad x mercado (sinistro ocorrido ÷ prêmio ganho)
-    (() => {
+    // ----- sinistralidade: Akad x mercado (sinistro ocorrido ÷ prêmio ganho), no período do filtro, por mês, bimestre ou trimestre
+    const desenharSin = () => {
       const host = $("#b-sin");
-      const ult = D.meses.length - 1, yF = +D.meses[ult].slice(0, 4), mF = +D.meses[ult].slice(4);
+      const vis = S.sinVis || "tri", N = vis === "mes" ? 1 : vis === "bim" ? 2 : 3;
       const qs = [];
-      for (let y = Math.max(+D.meses[0].slice(0, 4), yF - 2); y <= yF; y++) for (let q = 1; q <= 4; q++) {
-        const m0 = (q - 1) * 3 + 1;
-        if (y === yF && m0 > mF) break;
-        qs.push({ y, q, m0, m1: y === yF ? Math.min(m0 + 2, mF) : m0 + 2, a: [0, 0], t: [0, 0] });
+      for (let i = P.a; i <= P.b; i += N) {
+        const j = Math.min(i + N - 1, P.b);
+        qs.push({ i, j, parc: j - i + 1 < N, a: [0, 0], t: [0, 0] });
       }
       const qDe = new Map();
-      qs.forEach((x, k) => { for (let m = x.m0; m <= x.m1; m++) qDe.set(D.meses.indexOf(`${x.y}${String(m).padStart(2, "0")}`), k); });
+      qs.forEach((x, k) => { for (let i = x.i; i <= x.j; i++) qDe.set(i, k); });
       for (const ri of ramos) for (const r of IDX.porRamo[ri]) {
         const k = qDe.get(r[0]); if (k == null) continue;
         const x = qs[k]; x.t[0] += r[4]; x.t[1] += r[5];
         if (IDX.chave[r[1]] === AKAD) { x.a[0] += r[4]; x.a[1] += r[5]; }
       }
-      qs.forEach((x) => { x.sa = x.a[0] > 0 ? (x.a[1] / x.a[0]) * 100 : null; x.sm = x.t[0] > 0 ? (x.t[1] / x.t[0]) * 100 : null; x.parc = x.m1 < x.m0 + 2; });
-      if (!qs.some((x) => x.sa != null)) { host.hidden = true; return; }
+      const mesC = (i) => MESES_PT[+D.meses[i].slice(4) - 1], anoC = (i) => D.meses[i].slice(0, 4);
+      qs.forEach((x, k) => {
+        x.sa = x.a[0] > 0 ? (x.a[1] / x.a[0]) * 100 : null; x.sm = x.t[0] > 0 ? (x.t[1] / x.t[0]) * 100 : null;
+        x.l1 = x.i === x.j ? mesC(x.i) : `${mesC(x.i)}–${mesC(x.j)}`;
+        x.l2 = k === 0 || anoC(x.i) !== anoC(qs[k - 1].i) ? anoC(x.i) : "";
+        x.tit = x.i === x.j ? mesLabel(x.i, true) : `${mesC(x.i)} a ${mesC(x.j)}/${anoC(x.j)}`;
+      });
+      const totA = qs.reduce((t, x) => [t[0] + x.a[0], t[1] + x.a[1]], [0, 0]), totM = qs.reduce((t, x) => [t[0] + x.t[0], t[1] + x.t[1]], [0, 0]);
+      if (!(totA[0] > 0)) { host.hidden = true; return; }
+      host.hidden = false;
+      const sA = (totA[1] / totA[0]) * 100, sM = totM[0] > 0 ? (totM[1] / totM[0]) * 100 : null;
       const W = Math.max(280, host.clientWidth - 40 || 600), peq = W < 560, H = peq ? 220 : 260, m = { t: 18, r: 12, b: 36, l: 40 };
       const vals = qs.flatMap((x) => [x.sa, x.sm]).filter((v) => v != null);
       const vMax = Math.max(100, ...vals.map((v) => Math.min(v, 250))) * 1.08, vMin = Math.min(0, ...vals);
       const passo = niceMax((vMax - vMin) / 4), max = Math.ceil(vMax / passo) * passo, min = Math.floor(vMin / passo) * passo;
-      const X = (i) => m.l + (i + 0.5) * ((W - m.l - m.r) / qs.length), Y = (v) => m.t + (1 - (Math.min(v, max) - min) / (max - min)) * (H - m.t - m.b);
+      const bw = (W - m.l - m.r) / qs.length;
+      const X = (i) => m.l + (i + 0.5) * bw, Y = (v) => m.t + (1 - (Math.min(v, max) - min) / (max - min)) * (H - m.t - m.b);
+      const cada = [1, 2, 3, 4, 6, 12].find((c) => c * bw >= (vis === "mes" ? 30 : peq ? 52 : 60)) || 12;
+      const comVal = !peq && bw >= 36;
       let g = "";
       for (let v = min; v <= max + 0.001; v += passo) g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v)}%</text>`;
       if (max >= 100) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(100)}" y2="${Y(100)}" stroke="var(--ruim)" stroke-dasharray="4 3" opacity=".5"/>`;
@@ -1396,25 +1407,28 @@
       g += linha("sm", "var(--axis)", 2.5) + linha("sa", "var(--akad)", 2.5);
       qs.forEach((x, i) => {
         if (x.sm != null) g += `<circle cx="${X(i)}" cy="${Y(x.sm)}" r="3" fill="var(--axis)"/>`;
-        if (x.sa != null) g += `<circle cx="${X(i)}" cy="${Y(x.sa)}" r="4" fill="var(--akad)"/>${peq ? "" : `<text x="${X(i)}" y="${Y(x.sa) - 9}" text-anchor="middle" class="sn-val">${nf0.format(x.sa)}%</text>`}`;
-        g += `<text x="${X(i)}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${peq ? `T${x.q}` : `${x.q}º tri`}${x.parc ? "*" : ""}</text>${x.q === 1 || i === 0 ? `<text x="${X(i)}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.y}</text>` : ""}`;
-        g += `<rect x="${X(i) - (W - m.l - m.r) / qs.length / 2}" y="${m.t}" width="${(W - m.l - m.r) / qs.length}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hits"/>`;
+        if (x.sa != null) g += `<circle cx="${X(i)}" cy="${Y(x.sa)}" r="4" fill="var(--akad)"/>${comVal ? `<text x="${X(i)}" y="${Y(x.sa) - 9}" text-anchor="middle" class="sn-val">${nf0.format(x.sa)}%</text>` : ""}`;
+        if (i % cada === 0) g += `<text x="${X(i)}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${x.l1}${x.parc ? "*" : ""}</text>`;
+        if (x.l2 && (i % cada === 0 || i === 0)) g += `<text x="${X(i)}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
+        g += `<rect x="${X(i) - bw / 2}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hits"/>`;
       });
-      const ultQ = qs.filter((x) => x.sa != null).slice(-4);
-      const sA = ultQ.reduce((t, x) => t + x.a[1], 0) / Math.max(1, ultQ.reduce((t, x) => t + x.a[0], 0)) * 100;
-      const sM = ultQ.reduce((t, x) => t + x.t[1], 0) / Math.max(1, ultQ.reduce((t, x) => t + x.t[0], 0)) * 100;
+      const nomeVis = vis === "mes" ? "mês" : vis === "bim" ? "bimestre" : "trimestre";
       host.innerHTML = `
-        <div class="bloco-cab"><h2>Sinistralidade por trimestre ${ajuda("sinTri", "sinistralidade por trimestre")}</h2><p class="nota">Sinistro ocorrido ÷ prêmio ganho, da Akad e do mercado no ramo.${qs.some((x) => x.parc) ? " * trimestre parcial." : ""}</p></div>
-        <p class="sn-resumo">Nos últimos 4 trimestres: Akad <b class="${sA > sM + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>, mercado <b>${nf0.format(sM)}%</b>.</p>
+        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro ocorrido ÷ prêmio ganho por ${nomeVis}, da Akad e do mercado no ramo, em ${periodoLabel(P.a, P.b)}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
+          <div class="pr-btns"><div class="seg-ctrl" role="group" aria-label="Agrupar por">${[["mes", "Mês"], ["bim", "Bimestre"], ["tri", "Trimestre"]].map(([k, r]) => `<button type="button" data-svis="${k}" aria-pressed="${vis === k}">${r}</button>`).join("")}</div></div>
+        </div>
+        <p class="sn-resumo">No período: Akad <b class="${sM != null && sA > sM + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>, mercado <b>${sM != null ? nf0.format(sM) + "%" : "–"}</b>.</p>
         <div class="pr-leg"><span><i style="background:var(--akad)"></i>Akad</span><span><i style="background:var(--axis)"></i>Mercado do ramo</span>${max >= 100 ? '<span><i class="sn-100"></i>100%</span>' : ""}</div>
-        <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad e do mercado por trimestre">${g}</svg></div>`;
+        <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad e do mercado por ${nomeVis}">${g}</svg></div>`;
+      host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
       host.querySelectorAll(".hits").forEach((rc) => {
         const x = qs[+rc.dataset.i];
-        const html = `<b>${x.q}º trimestre de ${x.y}${x.parc ? " (parcial)" : ""}</b><div>Akad: ${x.sa == null ? "sem prêmio ganho" : pct(x.sa)}</div><div>Mercado: ${pct(x.sm)}</div>${x.sa != null && x.sm != null ? `<div>Diferença: ${x.sa - x.sm > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sm))} p.p.</div>` : ""}`;
+        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem prêmio ganho" : pct(x.sa)}</div><div>Mercado: ${pct(x.sm)}</div>${x.sa != null && x.sm != null ? `<div>Diferença: ${x.sa - x.sm > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sm))} p.p.</div>` : ""}`;
         rc.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
         rc.addEventListener("mouseleave", esconderTip);
       });
-    })();
+    };
+    desenharSin();
     const desenharProd = () => {
       const itens = graficoProducao($("#g-prod"), sm, P);
       const vis = S.prodVis || "mes", met = S.prodMet || "gwp";
