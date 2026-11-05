@@ -1009,6 +1009,9 @@
     if (sel.startsWith("r:")) return [IDX.ramoIdx[sel.slice(2)]];
     return IDX.linhaPorId[sel].idx;
   }
+  // nome completo de alguns ramos, usado só no filtro e no título do detalhe (na SUSEP o ramo junta produtos que a Akad separa)
+  const NOME_COMPLETO = { rcpro: "RC Profissional (E&O + RCPM)" };
+  const nomeTitulo = (sel) => NOME_COMPLETO[sel] || nomeSel(sel);
   function nomeSel(sel) {
     if (sel === "todas") return `Todos os ${IDX.linhas.length} ramos acompanhados`;
     if (sel.startsWith("m:")) {
@@ -1314,7 +1317,7 @@
     el.innerHTML = `
       <div class="cab-aba">
         <div>
-          <h2>${esc(nomeSel(S.linha))}</h2>
+          <h2>${esc(nomeTitulo(S.linha))}</h2>
           <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? `Valores somados de ${ramos.length} ramos. Códigos SUSEP: ` : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
         </div>
       </div>
@@ -2207,7 +2210,7 @@
     const usados = new Set();
     const addRamo = (l, grp) => {
       usados.add(l.id);
-      op.push({ v: l.id, t: l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", "), grp });
+      op.push({ v: l.id, t: NOME_COMPLETO[l.id] || l.nome, sub: (l.ramos.length > 1 ? "códigos " : "código ") + l.ramos.join(", "), grp });
       if (l.ramos.length > 1) for (const c of l.ramos) op.push({ v: "r:" + c, t: D.ramos[IDX.ramoIdx[c]][1], sub: "código " + c, ind: true, grp });
     };
     for (const f of FAMILIAS_RAMOS) {
