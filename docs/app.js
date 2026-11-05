@@ -427,20 +427,7 @@
     for (let k = 0; k <= nT; k++) { const v = passo * k, y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${fmtE(v)}</text>`; }
     const bw = (W - m.l - m.r) / itens.length;
     const cada = vis === "mes" ? [1, 2, 3, 4, 6, 12].find((c) => c * bw >= 30) || 12 : 1;
-    // linha de tendência: média dos últimos 12 meses (só na visão mensal)
-    let tend = "";
-    if (vis === "mes") {
-      const pts = [];
-      itens.forEach((x, i) => {
-        const j = D.meses.indexOf(x.ym);
-        if (j < 11) return;
-        let sa = 0, st = 0;
-        for (let k = j - 11; k <= j; k++) { sa += A[k]; st += T[k]; }
-        const v = met === "gwp" ? sa / 12 : st > 0 ? (sa / st) * 100 : null;
-        if (v != null) { pts.push(`${m.l + i * bw + bw / 2},${Y(v)}`); x.mm = v; x.mmDe = mesLabel(j - 11, true); }
-      });
-      if (pts.length > 1) tend = `<polyline points="${pts.join(" ")}" fill="none" stroke="var(--mercado)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" class="pr-tend"/>`;
-    } // muitos meses: rótulo a cada N meses, sempre incluindo janeiro
+    // muitos meses: rótulo a cada N meses, sempre incluindo janeiro
     itens.forEach((x, i) => {
       const w = bw * (vis !== "mes" ? 0.6 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
       if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
@@ -458,12 +445,11 @@
       g += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hitb"/>`;
     });
     g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
-    g = g.replace(/(<rect [^>]*class="hitb"\/>)/, tend + "$1");
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : vis === "tri" ? "por trimestre" : "por ano"}">${g}</svg>`;
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
     el.querySelectorAll(".hitb").forEach((r) => {
       const x = itens[+r.dataset.i];
-      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div><div>Market share: ${pctPart(x.sh)}</div>${x.mm != null ? `<div>Ritmo dos últimos 12 meses: ${met === "gwp" ? `${reais(x.mm)} por mês (soma de ${esc(x.mmDe)} a ${esc(x.tit)} ÷ 12)` : `${pctPart(x.mm)} (share somando ${esc(x.mmDe)} a ${esc(x.tit)})`}</div>` : ""}${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
+      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div><div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
       r.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
       r.addEventListener("mouseleave", esconderTip);
     });
@@ -1434,7 +1420,7 @@
       const vis = S.prodVis || "mes", met = S.prodMet || "gwp";
       const fimLab = mesLabel(P.b, true);
       $("#g-prod-nota").textContent = vis === "mes"
-        ? `${met === "gwp" ? "GWP" : "Market share"} por mês, de ${itens[0].tit} a ${fimLab}. A linha azul é o ritmo do ano: em cada mês, a soma do GWP dos 12 meses até ali dividida por 12. Como sempre olha um ano inteiro, um mês forte ou fraco quase não mexe nela; se desce, a Akad está vendendo menos.`
+        ? `${met === "gwp" ? "GWP" : "Market share"} da Akad por mês, de ${itens[0].tit} a ${fimLab}. Cada cor é um ano.`
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
@@ -1450,8 +1436,7 @@
         }
         selIni.innerHTML = opts;
       }
-      $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("")
-        + (vis === "mes" && itens.some((x) => x.mm != null) ? `<span><i class="pr-leg-ln"></i>Ritmo dos últimos 12 meses (média por mês)</span>` : "");
+      $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
     };
     desenharProd();
     $("#g-prod-ini").addEventListener("change", (e) => { S.prodIni = e.target.value; desenharProd(); });
