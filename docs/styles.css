@@ -889,6 +889,13 @@ body { color: var(--ink); }
 .rod-col p { margin: 0 0 6px; }
 .rod-col ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; }
 .rod-col a { color: var(--magenta); font-weight: 600; text-decoration: none; }
+.rod-metodo { max-width: 1320px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left, 0px)) 32px; font-size: .8rem; }
+.rod-metodo summary { cursor: pointer; font-weight: 600; color: inherit; padding: 10px 0; }
+.rod-metodo table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; min-width: 640px; }
+.rod-metodo th, .rod-metodo td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid rgba(255, 255, 255, .18); color: inherit; }
+.rod-metodo thead th { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; opacity: .7; }
+.rod-metodo tbody th { font-weight: 600; white-space: nowrap; text-transform: none; letter-spacing: 0; font-size: .8rem; }
+.rod-metodo p { margin: 0; opacity: .8; }
 .rod-col a:hover { text-decoration: underline; }
 @media (max-width: 1000px) { .rod-in { grid-template-columns: 1fr 1fr; } }
 @media (max-width: 600px) { .rod-in { grid-template-columns: 1fr; } }
