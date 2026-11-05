@@ -667,7 +667,7 @@
     abrirDe("linhas", () => { S.linha = id; });
   }
   // Navegação de detalhe: lembra de onde veio para mostrar "Voltar"
-  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", conc: "Concorrentes", uf: "Por estado" };
+  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", uf: "Por estado" };
   function abrirDe(destino, antes) {
     S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" ? (S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha)) : NOME_ABA[S.aba] });
     if (antes) antes();
@@ -1367,7 +1367,7 @@
     });
     el.querySelectorAll("tr.clic[data-ent], .gp-li[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
       S.ccAbrir = tr.dataset.ent;
-      abrirDe("conc");
+      abrirDe("geral");
     }));
 
     // gráficos
@@ -1692,9 +1692,7 @@
         </tbody></table></div></div>
       </section>`;
     el.innerHTML = `
-      <div class="cab-aba"><div><h2>Concorrentes</h2><p>Quem disputa mercado com a Akad e quem está ganhando espaço. ${perC} contra ${perA}, ${nomeSelR}.</p></div></div>
-      <div class="c2-kcs">${k1}${k2}${k3}${k4}</div>
-      ${bQuem}${bGP}${bQual}
+      ${bQuem}${bGP}
       <div id="c2-ficha-host"></div>`;
 
     el.querySelectorAll("[data-tip]").forEach((g) => {
@@ -1989,9 +1987,9 @@
   }
 
   /* ---------- Navegação e filtros ---------- */
-  const ABAS = ["geral", "linhas", "conc", "uf"];
+  const ABAS = ["geral", "linhas", "uf"];
   // Quais filtros cada página usa (o período vale para todas)
-  const FILTROS_ABA = { geral: [], linhas: ["linha"], conc: [], uf: ["linha", "uf"] };
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], uf: ["linha", "uf"] };
 
   function irPara(aba, manterVoltar) {
     if (!manterVoltar) S.pilha = [];
@@ -2001,6 +1999,7 @@
       if (a.dataset.aba === aba) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
     });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
+    $("#aba-conc").hidden = aba !== "geral";
     if (location.hash.slice(1) !== aba) { try { history.replaceState(null, "", "#" + aba); } catch (e) { /* ignora */ } }
     render();
     window.scrollTo({ top: 0 });
@@ -2012,7 +2011,8 @@
     const topo = S.pilha[S.pilha.length - 1];
     vt.hidden = !(topo && (topo.aba !== S.aba || topo.linha !== S.linha));
     if (!vt.hidden) vt.innerHTML = `<span aria-hidden="true">←</span> Voltar para ${esc(topo.rotulo)}`;
-    ({ geral: renderGeral, linhas: renderLinhas, conc: renderConc, uf: renderUF })[S.aba]();
+    // os blocos de concorrentes ficam no fim da Visão geral
+    ({ geral: () => { renderGeral(); renderConc(); }, linhas: renderLinhas, uf: renderUF })[S.aba]();
   }
 
   // Busca sem diferenciar acento e maiúscula
@@ -2299,6 +2299,7 @@
       const topo = S.pilha[S.pilha.length - 1];
       if (topo && topo.aba === h) voltar();
       else if (ABAS.includes(h) && h !== S.aba) irPara(h);
+      else if (h === "conc") irPara("geral");
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
 
@@ -2347,7 +2348,7 @@
     montarIndices();
     montarFiltros();
     const h = (location.hash || "").slice(1);
-    irPara(["geral", "linhas", "conc", "uf"].includes(h) ? h : "geral");
+    irPara(["geral", "linhas", "uf"].includes(h) ? h : "geral");
   }
   iniciar();
 })();
