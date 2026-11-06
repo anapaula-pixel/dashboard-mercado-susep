@@ -201,7 +201,7 @@
         if (!x) { x = [0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
         x[0] += r[3]; x[1] += r[4]; x[2] += r[11] != null ? r[11] : r[5]; x[3] += r[6];
         // comissão e outros custos de aquisição (colunas 9 e 10; nulas quando a SUSEP não abriu o custo)
-        if (r[9] != null) { x[4] += r[9]; x[5] += r[10] || 0; x[6] += r[3]; }
+        if (r[9] != null) { x[4] += r[9]; x[5] += r[10] || 0; x[6] += r[4]; }
       }
     }
     return m;
@@ -235,7 +235,7 @@
       share, shareP, dShare: share != null && shareP != null ? share - shareP : null,
       pos: pos >= 0 ? pos + 1 : null, posP: posP >= 0 ? posP + 1 : null,
       sin: c[0] > 0 ? (c[2] / c[0]) * 100 : null, // sinistro incorrido ÷ GWP
-      com: c[0] > 0 ? (c[3] / c[0]) * 100 : null, // despesa comercial ÷ GWP
+      com: c[1] > 0 ? (c[3] / c[1]) * 100 : null, // despesa comercial ÷ prêmio ganho (é apropriada ao longo da vigência)
       comis: c[6] > 0 ? (c[4] / c[6]) * 100 : null,
       outros: c[6] > 0 ? (c[5] / c[6]) * 100 : null,
     };
@@ -554,7 +554,7 @@
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
-    ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o GWP) e a posição da Akad no mesmo ramo.",
+    ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
     sinTri: "**Sinistralidade** = sinistro incorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER. É a mesma conta dos relatórios de sinistralidade do time de BI.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nA linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio. Mês a mês o índice oscila mais, e em ramos pequenos um sinistro grande mexe muito no número.",
@@ -1206,7 +1206,7 @@
     const R = resumo(ramos, P);
     const ak = infoEnt(R, AKAD);
     const sinM = R.tc[0] > 0 ? (R.tc[2] / R.tc[0]) * 100 : null;
-    const comM = R.tc[0] > 0 ? (R.tc[3] / R.tc[0]) * 100 : null;
+    const comM = R.tc[1] > 0 ? (R.tc[3] / R.tc[1]) * 100 : null;
     const top = R.rk.filter((k) => k !== AKAD).slice(0, 4);
 
     // tabela de ranking
@@ -1261,7 +1261,7 @@
         <div class="kpi"><span class="rot">GWP Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Mercado</span><span class="val">${reais(R.tc[0])}</span><span class="det">${varHtml(cresc(R.tc[0], R.tp[0]))} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Sinistralidade</span><span class="val">${pct(ak.sin)}</span><span class="det">Mercado: ${pct(sinM)}</span></div>
-        <div class="kpi"><span class="rot">Despesa comercial</span><span class="val">${pct(ak.com)}</span><span class="det">Mercado: ${pct(comM)} (÷ GWP)</span></div>
+        <div class="kpi"><span class="rot">Despesa comercial</span><span class="val">${pct(ak.com)}</span><span class="det">Mercado: ${pct(comM)} (÷ prêmio ganho)</span></div>
       </div>
       <div class="grade">
         <div class="bloco c12">
@@ -1285,7 +1285,7 @@
               <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
               <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Market share</th>
               <th class="n ord" data-col="dShare">Variação do share</th><th class="n ord" data-col="cresc">Crescimento</th>
-              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o GWP">Comissão</th><th class="n ord" data-col="outros" title="Outros custos de aquisição (pró-labore, bônus, campanhas e similares), sobre o GWP">Outros custos</th>
+              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th><th class="n ord" data-col="outros" title="Outros custos de aquisição (pró-labore, bônus, campanhas e similares), sobre o prêmio ganho">Outros custos</th>
             </tr></thead>
             <tbody>${linhasTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}" data-ent="${esc(x.k)}">
@@ -1438,7 +1438,7 @@
       const k = IDX.chave[r[1]];
       let x = m.get(k); if (!x) { x = [0, 0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
       x[0] += r[3]; x[1] += r[4]; x[2] += r[11] != null ? r[11] : r[5]; x[3] += r[6]; x[4] += r[7] || 0;
-      if (r[9] != null) { x[5] += r[9]; x[6] += r[10] || 0; x[7] += r[3]; }
+      if (r[9] != null) { x[5] += r[9]; x[6] += r[10] || 0; x[7] += r[4]; }
     }
     return m;
   }
@@ -1593,7 +1593,7 @@
         const tc = soma5(c), tp = soma5(p)[0];
         const rk = rkDe(c), rkp = rkDe(p);
         rows.push({ l, g: x[0], pos: rk.indexOf(k) + 1, posP: rkp.indexOf(k) + 1, sh: shareDe(c, tc[0], k), dsh: tp > 0 ? shareDe(c, tc[0], k) - shareDe(p, tp, k) : null, cr: cresc(x[0], xp),
-          sin: x[0] > 0 ? (x[2] / x[0]) * 100 : null, com: x[0] > 0 ? (x[3] / x[0]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[0] > 0 ? (tc[2] / tc[0]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
+          sin: x[0] > 0 ? (x[2] / x[0]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[0] > 0 ? (tc[2] / tc[0]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
       });
       const crG = cresc(G[0], Gp);
       // ordenação da tabela da ficha: clique no título da coluna (de novo inverte)
@@ -1627,7 +1627,7 @@
             <div><span>GWP ${perC}</span><b>${reais(G[0])}</b></div>
             <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sgn(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
             <div><span>Sinistralidade</span><b>${G[0] > 0 ? nf0.format((G[2] / G[0]) * 100) + "%" : "–"}</b></div>
-            <div><span>Comercialização</span><b>${G[0] > 0 ? nf0.format((G[3] / G[0]) * 100) + "%" : "–"}</b></div>
+            <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
           </div>
           <p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>
           <div class="tab-wrap"><table class="c2-at"><thead><tr>${thF()}</tr></thead>
@@ -2325,7 +2325,7 @@
         <summary>Como calculamos cada indicador</summary>
         <div class="tab-wrap"><table>
           <thead><tr><th>Indicador</th><th>Conta</th><th>Base da SUSEP</th><th>O que fica de fora</th></tr></thead>
-          <tbody><tr><th scope="row">GWP</th><td>Prêmio emitido, líquido de cosseguro.</td><td>SES (Ses_seguros)</td><td>Correção pela inflação.</td></tr><tr><th scope="row">Market share</th><td>GWP da seguradora ÷ GWP de todas as seguradoras, no mesmo ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Participação de mercado (total)</th><td>GWP da Akad nos ramos acompanhados ÷ GWP do mercado nesses mesmos ramos.</td><td>SES (Ses_seguros)</td><td>Ramos em que a Akad não atua.</td></tr><tr><th scope="row">Posição no ranking</th><td>Ordem das seguradoras pelo GWP no ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Crescimento</th><td>GWP do período ÷ GWP dos mesmos meses do ano anterior, menos 1.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Sinistralidade</th><td>Sinistro incorrido ÷ GWP. Sinistro incorrido = indenizações avisadas + despesas com sinistros − salvados e ressarcidos, líquido de cosseguro.</td><td>FIP, quadro 6 (sinistro) e SES (prêmio)</td><td>IBNR, IBNER e recuperação de resseguro.</td></tr><tr><th scope="row">Despesa comercial</th><td>Despesa de comercialização ÷ GWP.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Comissão e outros custos</th><td>Custos de aquisição ligados à vigência (comissão e agenciamento) e demais custos de aquisição, ÷ GWP.</td><td>FIP, quadro 8</td><td>Ramos em que a SUSEP não abre o custo.</td></tr><tr><th scope="row">Prêmio por estado</th><td>Prêmio direto da seguradora no estado.</td><td>SES (SES_UF2)</td><td>Cosseguro aceito: a SUSEP só publica o prêmio direto por UF.</td></tr><tr><th scope="row">Share dos concorrentes</th><td>GWP da seguradora nos 22 ramos acompanhados ÷ GWP do mercado nesses ramos.</td><td>SES (Ses_seguros)</td><td>–</td></tr></tbody>
+          <tbody><tr><th scope="row">GWP</th><td>Prêmio emitido, líquido de cosseguro.</td><td>SES (Ses_seguros)</td><td>Correção pela inflação.</td></tr><tr><th scope="row">Market share</th><td>GWP da seguradora ÷ GWP de todas as seguradoras, no mesmo ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Participação de mercado (total)</th><td>GWP da Akad nos ramos acompanhados ÷ GWP do mercado nesses mesmos ramos.</td><td>SES (Ses_seguros)</td><td>Ramos em que a Akad não atua.</td></tr><tr><th scope="row">Posição no ranking</th><td>Ordem das seguradoras pelo GWP no ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Crescimento</th><td>GWP do período ÷ GWP dos mesmos meses do ano anterior, menos 1.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Sinistralidade</th><td>Sinistro incorrido ÷ GWP. Sinistro incorrido = indenizações avisadas + despesas com sinistros − salvados e ressarcidos, líquido de cosseguro.</td><td>FIP, quadro 6 (sinistro) e SES (prêmio)</td><td>IBNR, IBNER e recuperação de resseguro.</td></tr><tr><th scope="row">Despesa comercial</th><td>Despesa de comercialização ÷ prêmio ganho. Usa o prêmio ganho porque essa despesa é apropriada ao longo da vigência da apólice, no mesmo ritmo do prêmio ganho.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Comissão e outros custos</th><td>Custos de aquisição ligados à vigência (comissão e agenciamento) e demais custos de aquisição, ÷ prêmio ganho.</td><td>FIP, quadro 8</td><td>Ramos em que a SUSEP não abre o custo.</td></tr><tr><th scope="row">Prêmio por estado</th><td>Prêmio direto da seguradora no estado.</td><td>SES (SES_UF2)</td><td>Cosseguro aceito: a SUSEP só publica o prêmio direto por UF.</td></tr><tr><th scope="row">Share dos concorrentes</th><td>GWP da seguradora nos 22 ramos acompanhados ÷ GWP do mercado nesses ramos.</td><td>SES (Ses_seguros)</td><td>–</td></tr></tbody>
         </table></div>
         <p>Na SUSEP, RC Profissional (ramo 0378) reúne os produtos E&amp;O e RCPM, que a Akad acompanha separados internamente.</p>
       </details>`;
