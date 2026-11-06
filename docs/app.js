@@ -1902,9 +1902,41 @@
     });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
     $("#aba-conc").hidden = aba !== "geral";
-    if (location.hash.slice(1) !== aba) { try { history.replaceState(null, "", "#" + aba); } catch (e) { /* ignora */ } }
     render();
     window.scrollTo({ top: 0 });
+  }
+  // Endereço compartilhável: a aba e os filtros (ramo, estado e período) ficam no link.
+  // Ex.: #linhas?ramo=rcpro&periodo=12m · #uf?estado=SP · #geral?periodo=202501-202608
+  function hashDoEstado() {
+    const q = new URLSearchParams();
+    const usa = FILTROS_ABA[S.aba] || [];
+    if (usa.includes("linha") && S.linha && S.linha !== "todas") q.set("ramo", S.linha);
+    if (usa.includes("uf") && S.uf != null && S.uf !== "todos" && D.ufs[+S.uf]) q.set("estado", D.ufs[+S.uf]);
+    if (S.periodo === "12m") q.set("periodo", "12m");
+    else if (S.periodo === "ano" && S.ano) q.set("periodo", String(S.ano));
+    else if (S.periodo === "custom" && S.de != null && S.ate != null) q.set("periodo", `${D.meses[Math.min(S.de, S.ate)]}-${D.meses[Math.max(S.de, S.ate)]}`);
+    const qs = q.toString().replace(/%2C/g, ",").replace(/%3A/g, ":");
+    return "#" + S.aba + (qs ? "?" + qs : "");
+  }
+  // Lê o link e aplica os filtros; devolve a aba (valores inválidos são ignorados)
+  function lerHash(h) {
+    const [abaH, qs] = String(h || "").replace(/^#/, "").split("?");
+    const aba = ABAS.includes(abaH) ? abaH : "geral";
+    const q = new URLSearchParams(qs || "");
+    const ramo = q.get("ramo");
+    if (ramo == null) S.linha = "todas";
+    else if (ramo === "todas" || IDX.linhaPorId[ramo] || (ramo.startsWith("r:") && IDX.ramoIdx[ramo.slice(2)] != null)) S.linha = ramo;
+    else if (ramo.startsWith("m:") && idsDaSel(ramo).length) S.linha = selDeIds(idsDaSel(ramo));
+    const est = (q.get("estado") || "").toUpperCase();
+    S.uf = est && D.ufs.includes(est) ? String(D.ufs.indexOf(est)) : "todos";
+    const per = q.get("periodo") || "";
+    let m;
+    if (!per || per === "ytd") S.periodo = "ytd";
+    else if (per === "12m") S.periodo = "12m";
+    else if (/^\d{4}$/.test(per) && D.meses.includes(per + "01")) { S.periodo = "ano"; S.ano = per; }
+    else if ((m = per.match(/^(\d{6})-(\d{6})$/)) && D.meses.includes(m[1]) && D.meses.includes(m[2])) { S.periodo = "custom"; S.de = D.meses.indexOf(m[1]); S.ate = D.meses.indexOf(m[2]); }
+    else S.periodo = "ytd";
+    return aba;
   }
   // Google Analytics: eventos de uso (o gtag é carregado no index.html; se estiver bloqueado, nada acontece)
   function ga(evento, params) { try { if (typeof window.gtag === "function") window.gtag("event", evento, params || {}); } catch (e) { /* ignora */ } }
@@ -1924,6 +1956,8 @@
     const topo = S.pilha[S.pilha.length - 1];
     vt.hidden = !(topo && (topo.aba !== S.aba || topo.linha !== S.linha));
     if (!vt.hidden) vt.innerHTML = `<span aria-hidden="true">←</span> Voltar para ${esc(topo.rotulo)}`;
+    // o endereço acompanha os filtros, para o link poder ser compartilhado
+    { const h = hashDoEstado(); if (location.hash !== h) { try { history.replaceState(null, "", h); } catch (e) { /* ignora */ } } }
     // os blocos de concorrentes ficam no fim da Visão geral
     ({ geral: () => { renderGeral(); renderConc(); }, linhas: renderLinhas, uf: renderUF })[S.aba]();
   }
@@ -2169,8 +2203,9 @@
     const ult = D.meses.length - 1;
     const anoUlt = D.meses[ult].slice(0, 4);
     const fechados = anos.filter((y) => D.meses.includes(y + "12"));
-    S.ano = fechados[fechados.length - 1] || anoUlt;
-    S.ate = ult; S.de = Math.max(0, ult - 11);
+    // valores padrão (o link pode já ter definido o período)
+    if (S.ano == null) S.ano = fechados[fechados.length - 1] || anoUlt;
+    if (S.de == null || S.ate == null) { S.ate = ult; S.de = Math.max(0, ult - 11); }
     const mesUlt = MESES_PT[+D.meses[ult].slice(4) - 1];
 
     const anoFech = fechados[fechados.length - 1];
@@ -2240,13 +2275,26 @@
     }));
     // Voltar do navegador: desfaz o último "abrir detalhe"; senão, segue o endereço
     window.addEventListener("popstate", () => {
-      const h = location.hash.slice(1);
+      const h = location.hash.slice(1).split("?")[0];
       const topo = S.pilha[S.pilha.length - 1];
       if (topo && topo.aba === h) voltar();
-      else if (ABAS.includes(h) && h !== S.aba) irPara(h);
       else if (h === "conc") irPara("geral");
+      else irPara(lerHash(location.hash));
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
+    // copia o link da tela atual, com os filtros
+    $("#copiar-link")?.addEventListener("click", async (e) => {
+      const b = e.currentTarget, txt = b.querySelector("span:last-child");
+      const url = location.href.split("#")[0] + hashDoEstado();
+      let ok = false;
+      try { await navigator.clipboard.writeText(url); ok = true; } catch (err) {
+        try { const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch (e2) { /* ignora */ }
+      }
+      txt.textContent = ok ? "Link copiado" : "Copie o endereço do navegador";
+      b.classList.toggle("ok", ok);
+      ga("copiar_link", { aba: NOME_ABA[S.aba] || S.aba });
+      clearTimeout(b._t); b._t = setTimeout(() => { txt.textContent = "Copiar link"; b.classList.remove("ok"); }, 2500);
+    });
 
     const gerado = new Date(D.gerado);
     montarStatus();
@@ -2299,9 +2347,9 @@
       return;
     }
     montarIndices();
+    const abaIni = lerHash(location.hash);
     montarFiltros();
-    const h = (location.hash || "").slice(1);
-    irPara(["geral", "linhas", "uf"].includes(h) ? h : "geral");
+    irPara(abaIni);
   }
   iniciar();
 })();
