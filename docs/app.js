@@ -523,7 +523,7 @@
     cresc: "Crescimento: quanto o GWP da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
     pos: "Posição: lugar da Akad no ranking de GWP entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
-    sin: "**Sinistralidade** = sinistro incorrido ÷ GWP, no mesmo período.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER. É a mesma conta dos relatórios de sinistralidade do time de BI.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nPode ficar 1 a 2 p.p. acima do relatório interno, porque a SUSEP registra mais despesas com sinistros do que a base operacional. Quanto menor, melhor.",
+    sin: "**Sinistralidade** = sinistro incorrido ÷ GWP, no mesmo período.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER. É a mesma conta dos relatórios de sinistralidade do time de BI.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nQuanto menor, melhor.",
     lider: "Ramos em que a Akad tem o maior GWP no período.",
     ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
