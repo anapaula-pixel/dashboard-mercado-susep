@@ -865,25 +865,6 @@ body { color: var(--ink); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lk-copiar { color: #9DB4D1; } :root:not([data-theme="light"]) .lk-copiar.ok { color: #A9E88B; } }
 :root[data-theme="dark"] .lk-copiar { color: #9DB4D1; } :root[data-theme="dark"] .lk-copiar.ok { color: #A9E88B; }
 @media (max-width: 760px) { .lk-copiar { margin-top: 0; } }
-.fg-dir { margin-left: auto; align-self: center; margin-top: 18px; display: flex; align-items: center; gap: 10px; }
-.filtros .fg-dir .status { margin: 0; }
-.fg-share { position: relative; }
-.fg-share .lk-copiar { margin-top: 0; }
-.lk-copiar[aria-expanded="true"] { border-color: var(--navy); }
-.sh-pop { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; width: 300px; max-width: calc(100vw - 32px); background: var(--surface); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 18px 40px rgba(33, 33, 33, .16); padding: 14px; }
-.sh-pop[hidden] { display: none; }
-.sh-pop h4 { margin: 0 0 2px; font-family: var(--font-display); font-size: .95rem; color: var(--ink); }
-.sh-pop > p { margin: 0 0 10px; font-size: .76rem; color: var(--ink-2); }
-.sh-it { display: flex; align-items: center; gap: 12px; width: 100%; padding: 9px 10px; border: 0; background: none; border-radius: 8px; font-size: .86rem; color: var(--ink); cursor: pointer; text-align: left; text-decoration: none; }
-.sh-it:hover, .sh-it:focus-visible { background: var(--surface-2); }
-.sh-ic { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; flex: none; }
-.sh-it small { display: block; font-size: .72rem; color: var(--muted); }
-.sh-link { display: flex; gap: 6px; margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--line); }
-.sh-link input { flex: 1; min-width: 0; border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font-size: .74rem; color: var(--ink-2); background: var(--surface-2); }
-.sh-link button { border: 0; border-radius: 8px; background: var(--navy); color: #fff; font-weight: 600; font-size: .76rem; padding: 0 12px; cursor: pointer; white-space: nowrap; }
-.sh-link button.ok { background: #2E7D32; }
-@media (max-width: 760px) { .fg-dir { margin: 0; width: 100%; flex-wrap: wrap; } .filtros .fg-dir .status { width: 100%; } }
-.sh-pop.esq { right: auto; left: 0; }
 @media (max-width: 1180px) { .filtros .status { order: 0; margin-bottom: 0; } }
 @media (max-width: 760px) { .filtros .status { margin: 0; max-width: 100%; width: 100%; } }
 
