@@ -859,6 +859,12 @@ body { color: var(--ink); }
 
 /* Selo de atualização na barra de filtros, alinhado à direita */
 .filtros .status { margin-left: auto; align-self: center; margin-top: 18px; }
+.lk-copiar { display: inline-flex; align-items: center; gap: 6px; align-self: center; margin-top: 18px; height: 32px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--navy); font-size: .78rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.lk-copiar:hover { border-color: var(--navy); }
+.lk-copiar.ok { border-color: #70C24A; color: #2E7D32; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lk-copiar { color: #9DB4D1; } :root:not([data-theme="light"]) .lk-copiar.ok { color: #A9E88B; } }
+:root[data-theme="dark"] .lk-copiar { color: #9DB4D1; } :root[data-theme="dark"] .lk-copiar.ok { color: #A9E88B; }
+@media (max-width: 760px) { .lk-copiar { margin-top: 0; } }
 @media (max-width: 1180px) { .filtros .status { order: 0; margin-bottom: 0; } }
 @media (max-width: 760px) { .filtros .status { margin: 0; max-width: 100%; width: 100%; } }
 
