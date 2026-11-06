@@ -528,7 +528,7 @@
     ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
-    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Uma vez por dia (agendado para as 9h, mas pode atrasar algumas horas) o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
+    status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Uma vez por dia, às 9h (pode atrasar algumas horas), o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     tPeso: "Quanto esse ramo representa do GWP total da Akad no período: GWP da Akad no ramo dividido pelo GWP da Akad em todos os ramos.",
     tShare: "Market share da Akad no ramo no período escolhido: GWP da Akad dividido pelo GWP de todas as seguradoras no ramo.",
     tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
@@ -2270,7 +2270,8 @@
 
     document.querySelectorAll(".nav a").forEach((a) => a.addEventListener("click", (e) => {
       e.preventDefault();
-      // o filtro de ramo é compartilhado entre as páginas: ao trocar pelo menu, mantém o ramo escolhido
+      // ao trocar de página pelo menu, ramo e estado voltam para "todos" (o período continua o mesmo)
+      if (a.dataset.aba !== S.aba) { S.linha = "todas"; S.uf = "todos"; }
       irPara(a.dataset.aba);
     }));
     // Voltar do navegador: desfaz o último "abrir detalhe"; senão, segue o endereço
