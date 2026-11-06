@@ -2283,62 +2283,19 @@
       else irPara(lerHash(location.hash));
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
-    // Compartilhar: WhatsApp, Teams, e-mail ou copiar o link (no celular, abre a tela de compartilhar do aparelho)
-    {
-      const btn = $("#sh-btn"), pop = $("#pop-share");
-      const url = () => location.href.split("#")[0] + hashDoEstado();
-      const titulo = () => {
-        const P = periodo(), per = periodoLabel(P.a, P.b);
-        const ramo = S.linha && S.linha !== "todas" ? nomeTitulo(S.linha) : null;
-        if (S.aba === "linhas") return `${ramo || "Posicionamento por ramo"}, ${per}`;
-        if (S.aba === "uf") { const uf = S.uf !== "todos" && D.ufs[+S.uf] ? UF_NOME[D.ufs[+S.uf]] || D.ufs[+S.uf] : "Por estado"; return `${uf}${ramo ? `, ${ramo}` : ""}, ${per}`; }
-        return `Visão geral, ${per}`;
-      };
-      const msg = () => `Painel de mercado SUSEP: ${titulo()}`;
-      const IC = {
-        whatsapp: '<path d="M3 13l.8-2.6A5.5 5.5 0 1 1 6 12.6z"/>',
-        teams: '<rect x="2" y="4" width="8" height="8" rx="1.5"/><path d="M10 6.5h3.5v4a1.5 1.5 0 0 1-1.5 1.5h-2"/>',
-        email: '<rect x="2" y="3.5" width="12" height="9" rx="1.5"/><path d="M2.5 4.5L8 9l5.5-4.5"/>',
-      };
-      const item = (canal, cor, nome, sub, href) => `<a class="sh-it" data-canal="${canal}" href="${esc(href)}" target="_blank" rel="noopener"><span class="sh-ic" style="background:${cor}" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.5">${IC[canal]}</svg></span><span>${nome}<small>${sub}</small></span></a>`;
-      const fechar = (foco) => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (foco) btn.focus(); };
-      const abrir = () => {
-        const u = url(), m = msg();
-        pop.innerHTML = `<h4>Compartilhar esta tela</h4><p>${esc(titulo())}</p>
-          ${item("whatsapp", "#25A244", "WhatsApp", "Abre o WhatsApp com o link pronto", `https://wa.me/?text=${encodeURIComponent(m + "\n" + u)}`)}
-          ${item("teams", "#5059C9", "Microsoft Teams", "Escolha a conversa ou o canal", `https://teams.microsoft.com/share?href=${encodeURIComponent(u)}&msgText=${encodeURIComponent(m)}`)}
-          ${item("email", "var(--navy)", "E-mail", "Abre um e-mail com o link no corpo", `mailto:?subject=${encodeURIComponent(m)}&body=${encodeURIComponent(m + "\n\n" + u)}`)}
-          <div class="sh-link"><input readonly value="${esc(u)}" aria-label="Link desta tela"><button type="button" id="sh-copiar">Copiar</button></div>`;
-        pop.hidden = false; btn.setAttribute("aria-expanded", "true");
-        // abre para o lado que tiver espaço
-        pop.classList.toggle("esq", btn.getBoundingClientRect().right - pop.offsetWidth < 8);
-        pop.querySelector(".sh-it")?.focus();
-      };
-      btn.addEventListener("click", async () => {
-        if (!pop.hidden) { fechar(); return; }
-        // celular: usa o compartilhar do próprio aparelho, que já lista WhatsApp, Teams etc.
-        if (navigator.share && window.matchMedia?.("(pointer: coarse)").matches) {
-          try { await navigator.share({ title: msg(), text: msg(), url: url() }); ga("compartilhar", { canal: "celular", aba: NOME_ABA[S.aba] || S.aba }); } catch (e) { /* cancelado */ }
-          return;
-        }
-        abrir();
-      });
-      pop.addEventListener("click", async (e) => {
-        const a = e.target.closest(".sh-it");
-        if (a) { ga("compartilhar", { canal: a.dataset.canal, aba: NOME_ABA[S.aba] || S.aba }); setTimeout(() => fechar(), 0); return; }
-        const c = e.target.closest("#sh-copiar");
-        if (!c) return;
-        const u = url();
-        let ok = false;
-        try { await navigator.clipboard.writeText(u); ok = true; } catch (err) {
-          const inp = pop.querySelector(".sh-link input"); inp.select(); try { ok = document.execCommand("copy"); } catch (e2) { /* ignora */ }
-        }
-        c.textContent = ok ? "Copiado" : "Selecione e copie"; c.classList.toggle("ok", ok);
-        ga("compartilhar", { canal: "copiar", aba: NOME_ABA[S.aba] || S.aba });
-      });
-      document.addEventListener("click", (e) => { if (!pop.hidden && !pop.contains(e.target) && !btn.contains(e.target)) fechar(); });
-      document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !pop.hidden) fechar(true); });
-    }
+    // copia o link da tela atual, com os filtros
+    $("#copiar-link")?.addEventListener("click", async (e) => {
+      const b = e.currentTarget, txt = b.querySelector("span:last-child");
+      const url = location.href.split("#")[0] + hashDoEstado();
+      let ok = false;
+      try { await navigator.clipboard.writeText(url); ok = true; } catch (err) {
+        try { const t = document.createElement("textarea"); t.value = url; document.body.appendChild(t); t.select(); ok = document.execCommand("copy"); t.remove(); } catch (e2) { /* ignora */ }
+      }
+      txt.textContent = ok ? "Link copiado" : "Copie o endereço do navegador";
+      b.classList.toggle("ok", ok);
+      ga("copiar_link", { aba: NOME_ABA[S.aba] || S.aba });
+      clearTimeout(b._t); b._t = setTimeout(() => { txt.textContent = "Copiar link"; b.classList.remove("ok"); }, 2500);
+    });
 
     const gerado = new Date(D.gerado);
     montarStatus();
