@@ -26,6 +26,8 @@ from datetime import datetime, timezone
 ZIP_URL = "https://www2.susep.gov.br/download/estatisticas/BaseCompleta.zip"
 AKAD = "02798"
 DESDE = "201901"
+# Ficha do concorrente (todos os ramos): arquivo separado, só desde este mês, para não pesar o painel
+CONC_DESDE = "202201"
 
 # Ramos acompanhados (definidos com o time de produto)
 RAMOS = {
@@ -144,6 +146,7 @@ def processar(zip_path):
     # 1) Prêmios e sinistros por seguradora x ramo x mês
     t0 = time.time()
     seg = {}
+    segc = {}  # ficha do concorrente: todos os ramos, desde CONC_DESDE -> [GWP, prêmio ganho, sinistro ocorrido, despesa comercial]
     for c in linhas_csv(zf, "Ses_seguros.csv"):
         if len(c) < 16:
             continue
@@ -151,6 +154,9 @@ def processar(zip_path):
         if mes < DESDE:
             continue
         ramo = c[3].strip()
+        if mes >= CONC_DESDE:
+            xc = segc.setdefault((mes, c[1].strip(), ramo), [0.0] * 4)
+            xc[0] += num(c[11]); xc[1] += num(c[7]); xc[2] += num(c[14]); xc[3] += num(c[10])
         if ramo not in RAMOS:
             continue
         k = (mes, c[1].strip(), ramo)
@@ -182,6 +188,8 @@ def processar(zip_path):
                    "12216": (4, 1.0), "12226": (4, -1.0), "12227": (4, -1.0), "12228": (4, -1.0)}
     aq = {}
     inc = {}
+    incc = {}  # ficha do concorrente: sinistro incorrido, todos os ramos
+    aqc = {}   # ficha do concorrente: comissão e outros custos, todos os ramos
     comp = {}  # (mes, cia, ramo) -> [ind. administrativa, ind. judicial, despesas, salvados, recuperação de resseguro]
     try:
         alvo = next(n for n in zf.namelist() if n.lower().replace(" ", "") == "ses_valoresmovramos.csv")
@@ -203,10 +211,16 @@ def processar(zip_path):
                 if mes < DESDE:
                     continue
                 ramo = c[i_g].strip().zfill(2) + c[i_r].strip().zfill(2)
+                val = num(c[i_v])
+                if mes >= CONC_DESDE and (j is not None or sinal is not None):
+                    kc = (mes, c[i_e].strip(), ramo)
+                    if sinal is not None:
+                        incc[kc] = incc.get(kc, 0.0) + sinal * val
+                    if j is not None:
+                        aqc.setdefault(kc, [0.0, 0.0])[j] += val
                 if ramo not in RAMOS:
                     continue
                 k = (mes, c[i_e].strip(), ramo)
-                val = num(c[i_v])
                 if jc is not None:
                     comp.setdefault(k, [0.0] * 5)[jc[0]] += jc[1] * val
                 if sinal is not None:
@@ -269,6 +283,8 @@ def processar(zip_path):
             return None
         return g
 
+    conc = montar_conc(zf, segc, incc, aqc, nomes)
+
     # Índices compactos
     ramos = sorted(RAMOS)
     ri = {r: i for i, r in enumerate(ramos)}
@@ -310,7 +326,7 @@ def processar(zip_path):
     ufm_rows.sort()
     ufa_rows.sort()
 
-    return {
+    return conc, {
         "v": 1,
         "gerado": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "fonte": "SUSEP, Sistema de Estatísticas (SES), BaseCompleta.zip",
@@ -333,6 +349,45 @@ def processar(zip_path):
         "seg": seg_rows,
         "ufm": ufm_rows,
         "ufa": ufa_rows,
+    }
+
+
+def montar_conc(zf, segc, incc, aqc, nomes):
+    """Arquivo da ficha do concorrente: todos os ramos de todas as seguradoras, por mês (desde CONC_DESDE).
+    Linha: [mês, seguradora, ramo, GWP, prêmio ganho, sinistro incorrido, despesa comercial, comissão, outros custos]
+    (comissão e outros custos ficam null quando a SUSEP não abriu o custo). Valores em R$ mil."""
+    nr = {}
+    try:
+        for c in linhas_csv(zf, "Ses_ramos.csv"):
+            if len(c) > 1 and c[0].strip():
+                nr[c[0].strip().zfill(4)] = c[1].strip()
+    except StopIteration:
+        pass
+    meses = sorted({k[0] for k in segc})
+    mi = {m: i for i, m in enumerate(meses)}
+    cias = sorted({k[1] for k in segc})
+    ci = {c: i for i, c in enumerate(cias)}
+    ramos = sorted({k[2] for k in segc})
+    ri = {r: i for i, r in enumerate(ramos)}
+    rows = []
+    for (m, c, r), a in segc.items():
+        k = (m, c, r)
+        # sinistro incorrido no padrão da Akad; sem ele, cai no sinistro ocorrido (como no painel)
+        sin = incc[k] if k in incc else a[2]
+        q = aqc.get(k)
+        v = [mil(a[0]), mil(a[1]), mil(sin), mil(a[3])]
+        if any(v):
+            rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None]))
+    rows.sort()
+    return {
+        "v": 1,
+        "unidade": "R$ mil",
+        "desde": CONC_DESDE,
+        "meses": meses,
+        "ramos": [[r, nr.get(r, r)] for r in ramos],
+        "cias": [[c, nomes.get(c, c)] for c in cias],
+        "cols": ["mes", "cia", "ramo", "gwp", "premio_ganho", "sinistro_incorrido", "despesa_comercial", "comissao", "outros_custos"],
+        "rows": rows,
     }
 
 
@@ -377,13 +432,18 @@ def main():
         zip_path = tmp.name
         baixar(zip_path)
 
-    dados = processar(zip_path)
+    conc, dados = processar(zip_path)
     checar(dados)
 
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, separators=(",", ":"))
     print(f"Gravado {args.out} ({os.path.getsize(args.out)/1e6:.1f} MB), último mês {dados['meses'][-1]}")
+
+    out_conc = os.path.join(os.path.dirname(os.path.abspath(args.out)), "conc.json")
+    with open(out_conc, "w", encoding="utf-8") as f:
+        json.dump(conc, f, ensure_ascii=False, separators=(",", ":"))
+    print(f"Gravado {out_conc} ({os.path.getsize(out_conc)/1e6:.1f} MB), {len(conc['rows'])} linhas, {len(conc['ramos'])} ramos, {len(conc['cias'])} seguradoras")
 
     if tmp:
         os.unlink(zip_path)
