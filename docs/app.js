@@ -2238,9 +2238,14 @@
     const ramo = S.sinRamo && S.sinRamo !== "todos" ? Rc.find((x) => x.l.id === S.sinRamo) : null;
     const escopo = ramo ? [ramo] : Rc;
     // concorrentes: as maiores por GWP no escopo, com sinistro avisado no período
-    const gw = new Map();
-    for (const x of escopo) for (const [k, y] of B[x.li]) if (k !== AKAD && incDe(y) > 0 && y[0] > 0) gw.set(k, (gw.get(k) || 0) + y[0]);
-    const concs = [...gw.entries()].sort((p, q) => q[1] - p[1]).slice(0, 20);
+    // a lista fechada mostra só as maiores, mas a busca encontra todas as seguradoras com prêmio ou sinistro no escopo
+    const gw = new Map(), comSin = new Set();
+    for (const x of escopo) for (const [k, y] of B[x.li]) {
+      if (k === AKAD || !(y[0] > 0 || incDe(y) > 0)) continue;
+      gw.set(k, (gw.get(k) || 0) + Math.max(0, y[0]));
+      if (incDe(y) > 0) comSin.add(k);
+    }
+    const concs = [...gw.entries()].sort((p, q) => q[1] - p[1]);
     if (S.sinCmp && S.sinCmp !== "mercado" && !gw.has(S.sinCmp)) S.sinCmp = "mercado";
     const cmp = S.sinCmp || "mercado";
     const nomeCmp = cmp === "mercado" ? "mercado" : nomeCurtoCia(nomeEnt(cmp));
@@ -2253,6 +2258,10 @@
     const pegar = (x) => (cmp === "mercado" ? x.M : B[x.li].get(cmp));
     const cC = !ab ? null : ramo ? compDe(pegar(ramo)) : compMix(Rc, pegar);
     const rotC = cmp === "mercado" ? "Mercado" : nomeCmp;
+    // valores em R$ do comparado, nos mesmos ramos (o total soma as três partes; salvados ficam à parte)
+    const Cval = ramo ? (pegar(ramo) || [0, 0, 0, 0, 0, 0, 0]) : somaSin(Rc.map(pegar));
+    const totA = Aval[2] + Aval[3] + Aval[4], totC = Cval[2] + Cval[3] + Cval[4];
+    const rot = (nome, tot) => `<span class="sn-cb-rot cn-rt" title="${esc(nome)}${tot > 0 ? ": indenizações e despesas, antes dos salvados e ressarcimentos" : ""}"><b>${esc(nome)}</b>${tot > 0 ? `<small>${reais(tot)}</small>` : ""}</span>`;
     const barra = (c, quem) => !c
       ? `<span class="sn-stk vazio">${quem === "Akad" ? "A Akad não teve sinistro avisado" : "Sem sinistro avisado"} no período</span>`
       : `<span class="sn-stk sn-stk-g" data-tip="${esc(`<b>${esc(quem)}</b>${COMP_SIN.map((k, j) => `<div class="lin"><span><i style="background:${k.cor}"></i>${k.nome}</span><b>${pct(c.p[j])}</b></div>`).join("")}<div>Salvados e ressarcimentos: ${pct(c.salv)} do sinistro</div>`)}" role="img" aria-label="${esc(`${quem}: ${COMP_SIN.map((k, j) => `${k.nome} ${pct(c.p[j])}`).join(", ")}`)}">${c.p.map((v, j) => `<i style="width:${v}%;background:${COMP_SIN[j].cor};color:${COMP_SIN[j].tx}">${v >= 6 ? pct(v) : ""}</i>`).join("")}</span>`;
@@ -2260,17 +2269,19 @@
       const k = COMP_SIN[j];
       return `<div class="sn-c4-it"><h3><span class="sn-sw" style="background:${k.cor}" aria-hidden="true"></span>${k.nome} ${ajuda(k.aj, k.nome.toLowerCase())}</h3>
         <b class="sn-c4-v">${reais(Aval[2 + j])}</b>
-        <span class="sn-c4-s">${cA && cC ? `${ppTxt(cA.p[j] - cC.p[j])} vs ${esc(nomeCmp)}` : "–"}</span></div>`;
+        <span class="sn-c4-s">${cA && cC ? `${ppTxt(cA.p[j] - cC.p[j])} vs ${esc(nomeCmp)}` : "–"}</span>
+        ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${reais(Cval[2 + j])}</span>` : ""}</div>`;
     };
     const corpo = !ab
       ? '<p class="vazio">A abertura do sinistro está sendo carregada da base da SUSEP. Ela aparece aqui na próxima atualização do painel.</p>'
       : !cA
         ? `<p class="vazio">A Akad não teve sinistro avisado${ramo ? ` em ${esc(nomeR)}` : ""} no período.</p>`
-        : `<div class="sn-cb"><span class="sn-cb-rot">Akad</span>${barra(cA, "Akad")}<span class="sn-cb-rot" title="${esc(rotC)}">${esc(rotC)}</span>${barra(cC, rotC)}</div>
+        : `<div class="sn-cb">${rot("Akad", totA)}${barra(cA, "Akad")}${rot(rotC, totC)}${barra(cC, rotC)}</div>
           <div class="sn-c4">${[0, 1, 2].map(col).join("")}
             <div class="sn-c4-it"><h3><span class="sn-sw vazado" aria-hidden="true"></span>Salvados e ressarcimentos ${ajuda("sinSalv", "salvados e ressarcimentos")}</h3>
               <b class="sn-c4-v">${Aval[5] ? "−" + reais(Aval[5]) : reais(0)}</b>
-              <span class="sn-c4-s">${pct(cA.salv)} do sinistro${cC ? ` · ${ppTxt(cA.salv - cC.salv)} vs ${esc(nomeCmp)}` : ""}</span></div>
+              <span class="sn-c4-s">${pct(cA.salv)} do sinistro${cC ? ` · ${ppTxt(cA.salv - cC.salv)} vs ${esc(nomeCmp)}` : ""}</span>
+              ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${Cval[5] ? "−" + reais(Cval[5]) : reais(0)}</span>` : ""}</div>
           </div>`;
     host.innerHTML = `
       <div class="sn-comp-cab">
@@ -2287,8 +2298,8 @@
       ga("filtro_ramo", { ramo: v === "todos" ? "Todos os ramos" : nomeSel(v), tela: "Sinistros: composição" });
       desenharCompSin(Rc, P);
     } });
-    const opC = [{ v: "mercado", t: "Mercado", sub: ramo ? "todas as seguradoras do ramo" : "todas as seguradoras" }, ...concs.map(([k, g], i) => ({ v: k, t: nomeEnt(k), sub: `${i + 1}ª em GWP · ${reais(g)}` }))];
-    combo($("#cb-sncmp"), { id: "cb-sncmp-in", opcoes: opC, valor: () => cmp, placeholder: "Buscar seguradora", aoEscolher: (v) => {
+    const opC = [{ v: "mercado", t: "Mercado", sub: ramo ? "todas as seguradoras do ramo" : "todas as seguradoras" }, ...concs.map(([k, g], i) => ({ v: k, t: nomeEnt(k), sub: `${i + 1}ª em GWP · ${reais(g)}${comSin.has(k) ? "" : " · sem sinistro avisado"}` }))];
+    combo($("#cb-sncmp"), { id: "cb-sncmp-in", opcoes: opC, limite: 16, dica: `Digite para buscar entre as ${concs.length} seguradoras`, valor: () => cmp, placeholder: "Buscar seguradora", aoEscolher: (v) => {
       S.sinCmp = v;
       ga("comparar_com", { concorrente: v === "mercado" ? "Mercado" : nomeEnt(v), tela: "Sinistros: composição" });
       desenharCompSin(Rc, P);
@@ -2396,16 +2407,20 @@
     let filtradas = [], ativo = -1, aberto = false;
     const mostrarValor = () => { const o = atual(); inp.value = o ? o.t : ""; };
     const desenhar = () => {
-      lista.innerHTML = filtradas.length
+      const corte = !inp.value.trim() && cfg.limite && cfg.opcoes.length > filtradas.length;
+      lista.innerHTML = (filtradas.length
         ? filtradas.map((o, i) => `${o.grp && (i === 0 || filtradas[i - 1].grp !== o.grp) ? `<li class="cb-grp" role="presentation">${esc(o.grp)}</li>` : ""}<li id="${id}-op-${i}" role="option" class="cb-op${o.ind ? " ind" : ""}${o.v === cfg.valor() ? " sel" : ""}${i === ativo ? " ativo" : ""}" aria-selected="${o.v === cfg.valor()}" data-i="${i}"><span>${esc(o.t)}</span>${o.sub ? `<small>${esc(o.sub)}</small>` : ""}</li>`).join("")
-        : '<li class="cb-vazio" role="presentation">Nada encontrado</li>';
+        : '<li class="cb-vazio" role="presentation">Nada encontrado</li>') + (corte && cfg.dica ? `<li class="cb-dica" role="presentation">${esc(cfg.dica)}</li>` : "");
       inp.setAttribute("aria-activedescendant", ativo >= 0 ? `${id}-op-${ativo}` : "");
       const el = lista.querySelector(".ativo");
       if (el) el.scrollIntoView({ block: "nearest" });
     };
     const filtrar = (q) => {
       const n = norm(q.trim());
-      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "") + " " + (o.grp || "")).includes(n)) : cfg.opcoes.slice();
+      filtradas = n ? cfg.opcoes.filter((o) => norm(o.t + " " + (o.sub || "") + " " + (o.grp || "")).includes(n)) : cfg.opcoes.slice(0, cfg.limite || cfg.opcoes.length);
+      // sem busca, a lista curta sempre mostra a opção atual, mesmo que ela seja uma das menores
+      const cur = !n && cfg.limite && cfg.opcoes.find((o) => o.v === cfg.valor());
+      if (cur && !filtradas.includes(cur)) filtradas.push(cur);
       ativo = filtradas.findIndex((o) => o.v === cfg.valor());
       if (ativo < 0 && filtradas.length) ativo = 0;
       desenhar();
