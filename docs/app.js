@@ -1523,9 +1523,8 @@
       ganhando: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     };
     const itemQ = (x) => `
-      <li><button type="button" class="mv-item" data-ficha="${esc(x.k)}" aria-label="${esc(nomeC(x.k))}: share ${pctPart(x.ws)}, abrir a página da seguradora">
+      <li><button type="button" class="mv-item" data-ficha="${esc(x.k)}" aria-label="${esc(nomeC(x.k))}: GWP ${reais(x.g)}, abrir a página da seguradora">
         <span class="mv-nome">${esc(nomeC(x.k))}</span>
-        <span class="mv-val">${pctPart(x.ws - x.dws)} <span aria-hidden="true">→</span> <b>${pctPart(x.ws)}</b> de share</span>
         <span class="mv-var mv-gwp">${reais(x.g)}</span>
       </button></li>`;
     const colQ = (tit, ico, crit, lst, vz) => `
