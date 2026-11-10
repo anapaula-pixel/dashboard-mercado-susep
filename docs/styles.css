@@ -1748,7 +1748,6 @@ body { color: var(--ink); }
 .mk-nm { background: none; border: 0; padding: 0; font: inherit; color: var(--cc-link); font-weight: 500; cursor: pointer; text-align: left; }
 .mk-nm:hover { text-decoration: underline; }
 @media (max-width: 760px) { .mk-busca { min-width: 0; width: 100%; } .mk-2 { grid-template-columns: minmax(0, 1fr); } }
-#mk-quem .c2-sec { margin: 8px 0 8px; }
 #mk-quem:empty { display: none; }
 
 /* ===== Menu com ícones: texto escuro em negrito; a página ativa fica magenta com barra embaixo ===== */
@@ -1769,3 +1768,30 @@ body { color: var(--ink); }
 :root[data-theme="dark"] .nav a svg { color: #9E9E9E; }
 :root[data-theme="dark"] .nav a:hover, :root[data-theme="dark"] .nav a[aria-current="page"], :root[data-theme="dark"] .nav a:hover svg, :root[data-theme="dark"] .nav a[aria-current="page"] svg { color: #FF5C93; }
 @media (max-width: 760px) { .nav a { padding: 0 10px; font-size: .88rem; gap: 6px; } .nav a svg { width: 16px; height: 16px; } .nav a::after { left: 8px; right: 8px; } }
+
+/* ===== Quem disputa espaço com a Akad (mesmo desenho dos Destaques do período) ===== */
+#mk-quem { --g-up: #319C00; --g-hover: #F5F5F5; --g-label: #616161; --g-rule: #E0E0E0; margin: 24px 0 16px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #mk-quem { --g-up: #A9E88B; --g-hover: #424242; --g-label: #BDBDBD; --g-rule: #424242; } }
+:root[data-theme="dark"] #mk-quem { --g-up: #A9E88B; --g-hover: #424242; --g-label: #BDBDBD; --g-rule: #424242; }
+#mk-quem .mq-tit { font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink); margin: 0; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; }
+#mk-quem .mq-sub { margin: 8px 0 0; font-size: .85rem; color: var(--g-label); }
+#mk-quem .mq-card { margin-top: 16px; background: var(--surface); border: 1px solid var(--g-rule); border-radius: var(--r-md); padding: 20px 28px 12px; }
+#mk-quem .mv-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px; }
+#mk-quem .mv-col h3 { font-family: var(--font-body); font-size: .9rem; font-weight: 700; color: var(--ink); margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+#mk-quem .mv-col ul { list-style: none; margin: 0; padding: 0; }
+#mk-quem .mv-item { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "nome var" "val val"; gap: 2px 12px; text-align: left; background: none; border: 0; border-top: 1px solid var(--g-rule); padding: 11px 8px; cursor: pointer; border-radius: 0; color: var(--ink); font: inherit; }
+#mk-quem .mv-item:hover { background: var(--g-hover); }
+#mk-quem .mv-nome { grid-area: nome; font-weight: 600; }
+#mk-quem .mv-val { grid-area: val; font-size: .84rem; color: var(--g-label); font-variant-numeric: tabular-nums; }
+#mk-quem .mv-val b { color: var(--ink); font-weight: 600; }
+#mk-quem .mv-var { grid-area: var; text-align: right; font-size: .88rem; }
+#mk-quem .mv-gwp { font-weight: 600; color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+#mk-quem .mv-tit { flex: 1; }
+#mk-quem .mv-col-rot { font-size: 11px; font-weight: 600; color: var(--g-label); letter-spacing: .04em; padding-right: 8px; }
+#mk-quem .mv-vazio { margin: 0; padding: 12px 0; font-size: .86rem; color: var(--g-label); border-top: 1px solid var(--g-rule); }
+#mk-quem .mq-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; flex: none; }
+#mk-quem .mq-ico svg { width: 12px; height: 12px; }
+#mk-quem .mq-direto { color: var(--magenta); background: rgba(218, 10, 91, .1); }
+#mk-quem .mq-parecido { color: var(--cc-link); background: rgba(28, 65, 115, .1); }
+#mk-quem .mq-ganhando { color: var(--g-up); background: rgba(112, 194, 74, .15); }
+@media (max-width: 760px) { #mk-quem .mv-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; } #mk-quem .mq-card { padding: 18px 16px 8px; } }
