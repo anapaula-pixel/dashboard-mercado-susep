@@ -25,7 +25,10 @@
 <link rel="stylesheet" href="styles.css">
 <!-- Google Analytics 4 (uso do painel; sem dados pessoais) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-Q2CNVB1V96"></script>
-<script>window.dataLayer = window.dataLayer || []; function gtag(){ dataLayer.push(arguments); } gtag("js", new Date()); gtag("config", "G-Q2CNVB1V96", { send_page_view: false });</script>
+<script>window.dataLayer = window.dataLayer || []; function gtag(){ dataLayer.push(arguments); } gtag("js", new Date());
+// Modo de teste: abrir o site uma vez com ?interno=1 marca este navegador como uso interno (o GA4 exclui pelo filtro "Tráfego interno"); ?interno=0 desmarca
+var gaInterno = false; try { var qi = new URLSearchParams(location.search).get("interno"); if (qi === "1") localStorage.setItem("akadInterno", "1"); if (qi === "0") localStorage.removeItem("akadInterno"); gaInterno = localStorage.getItem("akadInterno") === "1"; if (qi !== null) history.replaceState(null, "", location.pathname + location.hash); } catch (e) { /* sem armazenamento: conta normalmente */ }
+gtag("config", "G-Q2CNVB1V96", gaInterno ? { send_page_view: false, traffic_type: "internal" } : { send_page_view: false });</script>
 </head>
 <body>
 <a class="pular" href="#conteudo">Pular para o conteúdo</a>
@@ -38,9 +41,9 @@
     <nav class="nav" aria-label="Páginas do dashboard">
       <a href="#visao-geral" data-aba="geral" aria-current="page">Visão geral</a>
       <a href="#ramos" data-aba="linhas">Ramos</a>
-      <a href="#estados" data-aba="uf">Por estado</a>
       <a href="#concorrentes" data-aba="concorrentes">Concorrentes</a>
       <a href="#sinistros" data-aba="sinistros">Sinistros</a>
+      <a href="#estados" data-aba="uf">Por estado</a>
     </nav>
   </div>
 </header>
