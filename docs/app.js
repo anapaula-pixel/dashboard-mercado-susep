@@ -554,7 +554,7 @@
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
-    ccFicha: "Todos os ramos em que a seguradora vende, do maior para o menor GWP. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
+    ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
     sinTri: "**Sinistralidade** = sinistro incorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nA linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio. Mês a mês o índice oscila mais, e em ramos pequenos um sinistro grande mexe muito no número.",
@@ -683,9 +683,9 @@
     abrirDe("linhas", () => { S.linha = id; });
   }
   // Navegação de detalhe: lembra de onde veio para mostrar "Voltar"
-  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", uf: "Por estado", sinistros: "Sinistros" };
+  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", uf: "Por estado", sinistros: "Sinistros", concorrente: "Concorrente" };
   function abrirDe(destino, antes) {
-    S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" ? (S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha)) : NOME_ABA[S.aba] });
+    S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" ? (S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha)) : S.aba === "concorrente" ? nomeC(S.conc) : NOME_ABA[S.aba], conc: S.conc });
     if (antes) antes();
     try { history.pushState(null, "", "#" + destino); } catch (e) { /* ignora */ }
     if (destino === S.aba) { render(); window.scrollTo({ top: 0 }); } else irPara(destino, true);
@@ -694,6 +694,7 @@
     const v = S.pilha.pop();
     if (!v) return;
     S.linha = v.linha;
+    if (v.conc) S.conc = v.conc;
     try { history.replaceState(null, "", "#" + v.aba); } catch (e) { /* ignora */ }
     if (v.aba === S.aba) render(); else irPara(v.aba, true);
     requestAnimationFrame(() => window.scrollTo({ top: v.y }));
@@ -1327,8 +1328,7 @@
       });
     });
     el.querySelectorAll("tr.clic[data-ent], .gp-li[data-ent]").forEach((tr) => tr.addEventListener("click", () => {
-      S.ccAbrir = tr.dataset.ent;
-      abrirDe("geral");
+      abrirConcorrente(tr.dataset.ent);
     }));
 
     // gráficos
@@ -1575,8 +1575,7 @@
       </section>`;
 
     el.innerHTML = `
-      ${bQuem}${bGP}
-      <div id="c2-ficha-host"></div>`;
+      ${bQuem}${bGP}`;
 
     el.querySelectorAll("[data-tip]").forEach((g) => {
       g.addEventListener("mouseenter", (ev) => mostrarTip(g.dataset.tip, ev));
@@ -1584,91 +1583,184 @@
       g.addEventListener("mouseleave", () => esconderTip());
     });
     el.querySelectorAll(".c2-lk").forEach((bt) => bt.addEventListener("click", () => abrirLinha(bt.dataset.abrir)));
-    el.querySelectorAll("[data-ficha]").forEach((bt) => bt.addEventListener("click", () => abrirFicha(bt.dataset.ficha, bt)));
-    if (S.ccAbrir) { const k = S.ccAbrir; S.ccAbrir = null; setTimeout(() => abrirFicha(k, null), 0); }
+    el.querySelectorAll("[data-ficha]").forEach((bt) => bt.addEventListener("click", () => abrirConcorrente(bt.dataset.ficha)));
     el.querySelector("#c2-mais")?.addEventListener("click", () => { S.ccTodos = !S.ccTodos; renderConc(); el.querySelector("#c2-mais")?.focus(); });
+  }
 
-    // ----- ficha do concorrente (abre ao clicar num nome)
-    function abrirFicha(k, origem) {
-      ga("abrir_concorrente", { concorrente: nomeC(k) });
-      const host = el.querySelector("#c2-ficha-host");
-      const rows = [];
-      let G = [0, 0, 0, 0, 0], Gp = 0;
-      IDX.linhas.forEach((l) => {
-        const c = agg5(l.idx, a0, b), p = agg5(l.idx, pa, pb);
-        const x = c.get(k), xp = gw(p, k);
-        Gp += xp;
-        if (!x || x[0] <= 0) return;
-        for (let i = 0; i < 5; i++) G[i] += x[i];
-        const tc = soma5(c), tp = soma5(p)[0];
-        const rk = rkDe(c), rkp = rkDe(p);
-        rows.push({ l, g: x[0], pos: rk.indexOf(k) + 1, posP: rkp.indexOf(k) + 1, sh: shareDe(c, tc[0], k), dsh: tp > 0 ? shareDe(c, tc[0], k) - shareDe(p, tp, k) : null, cr: cresc(x[0], xp),
-          sin: x[0] > 0 ? (x[2] / x[0]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, comis: x[7] > 0 ? (x[5] / x[7]) * 100 : null, outros: x[7] > 0 ? (x[6] / x[7]) * 100 : null, msin: tc[0] > 0 ? (tc[2] / tc[0]) * 100 : null, akPos: rk.indexOf(AKAD) + 1 });
-      });
-      const crG = cresc(G[0], Gp);
-      // ordenação da tabela da ficha: clique no título da coluna (de novo inverte)
-      if (!S.fichaOrd) S.fichaOrd = { col: "g", dir: -1 };
-      const COLS_F = [["nome", "Ramo", ""], ["g", "GWP", "n"], ["pos", "Posição", "n"], ["sh", "Share", "n"], ["dsh", "Var. share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade <small>(mercado)</small>", "n"], ["comis", "Comissão", "n"], ["outros", "Outros custos", "n"], ["akPos", "Akad", "n"]];
-      const valF = (r, c) => (c === "nome" ? r.l.nome : c === "akPos" ? r.akPos || null : r[c]);
-      const ordenarF = () => {
-        const { col, dir } = S.fichaOrd;
-        rows.sort((p, q) => {
-          const va = valF(p, col), vb = valF(q, col);
-          if (va == null && vb == null) return q.g - p.g;
-          if (va == null) return 1;
-          if (vb == null) return -1;
-          return (typeof va === "string" ? va.localeCompare(vb, "pt-BR") : va - vb) * dir || q.g - p.g;
-        });
-      };
-      const thF = () => COLS_F.map(([c, rot, cls]) => `<th class="ord ${cls}" data-col="${c}"${S.fichaOrd.col === c ? ` aria-sort="${S.fichaOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`).join("");
-      const linhaF = (r) => `<tr class="clic" data-abrir="${r.l.id}" tabindex="0"><td class="c2-atn">${esc(r.l.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${pctPart(r.sh)}</td>
-            <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppTxt(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? "novo" : r.cr > 999 ? "> +999%" : sgn(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
-            <td class="n">${sinCel(r)}</td><td class="n">${r.comis == null ? "–" : nf0.format(r.comis) + "%"}</td><td class="n">${r.outros == null ? "–" : nf0.format(r.outros) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : "–"}</td></tr>`;
-      const linhasF = () => { ordenarF(); return rows.map(linhaF).join(""); };
-      const sinCel = (r) => {
-        if (r.sin == null) return "–";
-        const c = r.msin == null ? "" : r.sin > r.msin + 5 ? "dn" : r.sin < r.msin - 5 ? "up" : "";
-        return `<span class="${c}">${nf0.format(r.sin)}%</span> <span class="c2-mm">${r.msin == null ? "" : nf0.format(r.msin) + "%"}</span>`;
-      };
-      host.innerHTML = `<div class="c2-dim" data-fechar></div>
-        <aside class="c2-dr" role="dialog" aria-modal="true" aria-labelledby="c2-fn" tabindex="-1">
-          <div class="c2-drh"><div><p class="c2-fk">Concorrente</p><h3 id="c2-fn" class="c2-fn">${esc(nomeC(k))}</h3><p class="c2-fs">${esc(nomeEnt(k))}</p></div><button type="button" class="c2-x" data-fechar aria-label="Fechar ficha">×</button></div>
-          <div class="c2-fm">
-            <div><span>GWP ${perC}</span><b>${reais(G[0])}</b></div>
-            <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sgn(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
-            <div><span>Sinistralidade</span><b>${G[0] > 0 ? nf0.format((G[2] / G[0]) * 100) + "%" : "–"}</b></div>
-            <div><span>Comercialização</span><b>${G[1] > 0 ? nf0.format((G[3] / G[1]) * 100) + "%" : "–"}</b></div>
-          </div>
-          <p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>
-          <div class="tab-wrap"><table class="c2-at"><thead><tr>${thF()}</tr></thead>
-          <tbody>${linhasF()}</tbody></table></div>
-          <p class="c2-fnota">${perC} contra ${perA}, em todos os ramos em que a seguradora vende. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Clique num ramo para abrir a visão do ramo.</p>
-        </aside>`;
-      document.body.classList.add("c2-trava");
-      const dr = host.querySelector(".c2-dr");
-      const fechar = () => { host.innerHTML = ""; document.body.classList.remove("c2-trava"); document.removeEventListener("keydown", tecla); origem?.focus(); };
-      const tecla = (e) => { if (e.key === "Escape") fechar(); };
-      document.addEventListener("keydown", tecla);
-      host.querySelectorAll("[data-fechar]").forEach((x) => x.addEventListener("click", fechar));
-      const ligarLinhas = () => host.querySelectorAll("tr[data-abrir]").forEach((tr) => {
-        const ir = () => { const id = tr.dataset.abrir; host.innerHTML = ""; document.body.classList.remove("c2-trava"); document.removeEventListener("keydown", tecla); abrirLinha(id); };
-        tr.addEventListener("click", ir);
-        tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ir(); } });
-      });
-      ligarLinhas();
-      host.querySelector("table.c2-at thead").addEventListener("click", (e) => {
-        const th = e.target.closest("th[data-col]");
-        if (!th) return;
-        const c = th.dataset.col;
-        // primeira ordem: nome e posição em ordem crescente; números do maior para o menor
-        S.fichaOrd = S.fichaOrd.col === c ? { col: c, dir: -S.fichaOrd.dir } : { col: c, dir: c === "nome" || c === "pos" || c === "akPos" ? 1 : -1 };
-        host.querySelector("table.c2-at thead tr").innerHTML = thF();
-        host.querySelector("table.c2-at tbody").innerHTML = linhasF();
-        ligarLinhas();
-        host.querySelector(`table.c2-at th[data-col="${c}"] button`)?.focus();
-      });
-      dr.focus();
+  /* ---------- Página do concorrente (todos os ramos) ---------- */
+  // Nomes amigáveis dos ramos que a Akad não acompanha (os da Akad usam o nome do painel)
+  const NOMES_RAMO_OUT = { "0531": "Automóvel (casco)", "0553": "RC Facultativa de Veículos", "0542": "Assistência e outras coberturas de auto", "0114": "Residencial", "0116": "Condomínio", "0993": "Vida em Grupo", "1734": "Riscos de Petróleo", "0982": "Acidentes Pessoais (coletivo)", "1061": "Habitacional: prestamista", "1391": "Vida (individual)", "0327": "Riscos Cibernéticos", "0520": "Acidentes Pessoais de Passageiros", "1130": "Benfeitorias e Produtos Agropecuários", "1417": "Operadores Portuários", "1601": "Microsseguros de Pessoas", "1065": "Habitacional: demais coberturas", "1381": "Acidentes Pessoais (individual)", "1162": "Penhor Rural", "1369": "Viagem", "1384": "Doenças Graves (individual)", "0112": "Assistência (bens em geral)", "0990": "Eventos Aleatórios (coletivo)", "0313": "RC Riscos Ambientais", "0929": "Funeral (coletivo)", "0173": "Global de Bancos", "1433": "Marítimos (cascos)", "1390": "Eventos Aleatórios (individual)", "1329": "Funeral (individual)", "0987": "Desemprego e Perda de Renda", "1537": "RC Hangar", "1602": "Microsseguros de Danos", "1111": "Agrícola", "0525": "Carta Verde", "0628": "RCTR-P Municipal e Intermunicipal", "1597": "RETA (transporte aéreo)", "0658": "RC do Operador de Transporte Multimodal", "0141": "Lucros Cessantes", "1535": "Aeronáuticos (cascos)", "0980": "Educacional", "0984": "Doenças Graves (coletivo)", "0195": "Garantia Estendida", "1528": "RC Facultativa de Aeronaves" };
+  const CC_LIMITE = 15;
+  // Nome do ramo como a SUSEP publica ("0111 - INCÊNDIO TRADICIONAL(RUN OFF)"): tira o código e ajusta as maiúsculas
+  function nomeRamoSusep(t) {
+    let s = String(t).replace(/^\d{4}\s*-\s*/, "").replace(/\s*\(/g, " (").trim();
+    if (s === s.toUpperCase()) {
+      const peq = new Set(["de", "da", "do", "das", "dos", "e", "em", "para", "por", "a", "o"]);
+      const low = s.toLowerCase();
+      s = low.replace(/(^|[\s(\/-])([a-zà-ú])/g, (m, p, c, i) => { const w = low.slice(i + p.length).split(/[\s)\/-]/)[0]; return peq.has(w) && i > 0 ? m : p + c.toUpperCase(); });
     }
+    return s;
+  }
+  let CC = null, ccPromessa = null, ccAgg = null;
+  // O arquivo com todos os ramos de todas as seguradoras só é baixado quando alguém abre esta página
+  function carregarConc() {
+    if (!ccPromessa) {
+      ccPromessa = fetch("data/conc.json", { cache: "no-cache" })
+        .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then((j) => { j.mapMes = j.meses.map((m) => D.meses.indexOf(m)); j.ciaIdx = new Map(j.cias.map((c, i) => [c[0], i])); CC = j; return j; })
+        .catch((e) => { ccPromessa = null; throw e; });
+    }
+    return ccPromessa;
+  }
+  function abrirConcorrente(k) {
+    ga("abrir_concorrente", { concorrente: nomeC(k) });
+    abrirDe("concorrente", () => { S.conc = k; S.fichaVis = "todos"; S.fichaTodos = false; });
+  }
+  // Soma do mercado por ramo e seguradora, no período atual (c) e no mesmo período do ano anterior (p)
+  function ccAgregar(P, temP) {
+    const chave = [P.a, P.b, temP ? P.pa : -1].join();
+    if (ccAgg && ccAgg.chave === chave) return ccAgg;
+    const nr = CC.ramos.length;
+    const c = Array.from({ length: nr }, () => new Map()), p = Array.from({ length: nr }, () => new Map());
+    const somar = (m, r) => {
+      let x = m.get(r[1]);
+      if (!x) { x = [0, 0, 0, 0, 0, 0, 0]; m.set(r[1], x); }
+      x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6];
+      if (r[7] != null) { x[4] += r[7]; x[5] += r[8] || 0; x[6] += r[4]; }
+    };
+    for (const r of CC.rows) {
+      const mi = CC.mapMes[r[0]];
+      if (mi >= P.a && mi <= P.b) somar(c[r[2]], r);
+      if (temP && mi >= P.pa && mi <= P.pb) somar(p[r[2]], r);
+    }
+    ccAgg = { chave, c, p };
+    return ccAgg;
+  }
+  function renderConcorrente() {
+    const el = $("#aba-concorrente");
+    const k = S.conc;
+    if (!k || !IDX.nome.has(k)) { el.innerHTML = '<p class="carregando">Concorrente não encontrado. Volte e escolha outra seguradora.</p>'; return; }
+    ligarAjuda();
+    const cab = `<header class="cn-cab"><p class="c2-fk">Concorrente</p><h2 class="c2-fn">${esc(nomeC(k))}</h2><p class="c2-fs">${esc(nomeEnt(k))}</p></header>`;
+    if (!CC) {
+      el.innerHTML = `${cab}<p class="carregando">Carregando os ramos…</p>`;
+      carregarConc().then(() => { if (S.aba === "concorrente" && S.conc === k) render(); })
+        .catch((e) => { el.innerHTML = `${cab}<p class="carregando">Não foi possível carregar os ramos (${esc(e.message)}). Tente recarregar a página.</p>`; });
+      return;
+    }
+    const P = periodo();
+    const iDesde = D.meses.indexOf(CC.desde);
+    if (P.a < iDesde) {
+      el.innerHTML = `${cab}<p class="carregando">Esta página tem dados a partir de ${mesLabel(iDesde, true)}. Escolha um período desse mês em diante no filtro acima.</p>`;
+      return;
+    }
+    const temP = P.pa != null && P.pa >= iDesde;
+    const perC = periodoLabel(P.a, P.b), perA = temP ? periodoLabel(P.pa, P.pb) : null;
+    const { c, p } = ccAgregar(P, temP);
+    const ki = CC.ciaIdx.get(k), ai = CC.ciaIdx.get(AKAD);
+    const sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "");
+    const ppT = (v) => (Math.abs(v) < 0.05 ? "0,0 p.p." : `${sg(v)}${nf1.format(Math.abs(v))} p.p.`);
+    const clsV = (v) => (v > 0.05 ? "up" : v < -0.05 ? "dn" : "zero");
+    const codAkad = new Set(D.ramos.map((r) => r[0]));
+    const linhaDe = new Map(); IDX.linhas.forEach((l) => l.ramos.forEach((cod) => linhaDe.set(cod, l)));
+    const rkDe2 = (m) => [...m.entries()].filter(([, x]) => x[0] > 0).sort((u, v) => v[1][0] - u[1][0]).map(([q]) => q);
+    // uma linha por ramo em que a seguradora tem prêmio no período
+    const todas = [];
+    let Gp = { todos: 0, akad: 0 };
+    CC.ramos.forEach(([cod, nomeS], ri) => {
+      const x = c[ri].get(ki), xp = p[ri].get(ki);
+      const gp = Math.max(0, (xp || [0])[0]);
+      const ac = codAkad.has(cod);
+      Gp.todos += gp; if (ac) Gp.akad += gp;
+      if (!x || x[0] <= 0) return;
+      let tc = 0, ti = 0, tp = 0;
+      for (const y of c[ri].values()) { tc += y[0]; ti += y[2]; }
+      for (const y of p[ri].values()) tp += y[0];
+      const rk = rkDe2(c[ri]), rkp = rkDe2(p[ri]);
+      const sh = tc > 0 ? (x[0] / tc) * 100 : null;
+      const shp = tp > 0 ? (gp / tp) * 100 : null;
+      const l = linhaDe.get(cod);
+      todas.push({ ri, cod, ac, l, nome: l ? l.nome : (NOMES_RAMO_OUT[cod] || nomeRamoSusep(nomeS)), g: x[0], gp, ganho: x[1], inc: x[2], desp: x[3],
+        pos: rk.indexOf(ki) + 1, posP: temP ? rkp.indexOf(ki) + 1 : 0, sh, dsh: temP && sh != null && shp != null && tp > 0 ? sh - shp : null,
+        cr: temP ? cresc(x[0], gp) : null, sin: (x[2] / x[0]) * 100, msin: tc > 0 ? (ti / tc) * 100 : null,
+        comis: x[6] > 0 ? (x[4] / x[6]) * 100 : null, outros: x[6] > 0 ? (x[5] / x[6]) * 100 : null, akPos: ai == null ? 0 : rk.indexOf(ai) + 1 });
+    });
+    if (!todas.length) { el.innerHTML = `${cab}<p class="carregando">${esc(nomeC(k))} não tem prêmio em ${perC}.</p>`; return; }
+    const doAkad = todas.filter((r) => r.ac);
+    const vis = S.fichaVis === "akad" ? doAkad : todas;
+    const soma = (l, f) => l.reduce((t, r) => t + (f(r) || 0), 0);
+    const G = soma(vis, (r) => r.g), INC = soma(vis, (r) => r.inc), GAN = soma(vis, (r) => r.ganho), DSP = soma(vis, (r) => r.desp);
+    const GpV = S.fichaVis === "akad" ? Gp.akad : Gp.todos;
+    const crG = temP ? cresc(G, GpV) : null;
+    const pesoAk = soma(doAkad, (r) => r.g) / soma(todas, (r) => r.g) * 100;
+    const nome = nomeC(k);
+    // ordenação: clique no título da coluna (de novo inverte)
+    if (!S.fichaOrd) S.fichaOrd = { col: "g", dir: -1 };
+    const COLS = [["nome", "Ramo", ""], ["g", "GWP", "n"], ["pos", "Posição", "n"], ["sh", "Share", "n"], ["dsh", "Var. share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade <small>(mercado)</small>", "n"], ["comis", "Comissão", "n"], ["outros", "Outros custos", "n"], ["akPos", "Akad", "n"]];
+    const valor = (r, col) => (col === "akPos" ? r.akPos || null : col === "pos" ? r.pos || null : r[col]);
+    const ordenar = (l) => {
+      const { col, dir } = S.fichaOrd;
+      return l.slice().sort((u, v) => {
+        const a = valor(u, col), b = valor(v, col);
+        if (a == null && b == null) return v.g - u.g;
+        if (a == null) return 1;
+        if (b == null) return -1;
+        return (typeof a === "string" ? a.localeCompare(b, "pt-BR") : a - b) * dir || v.g - u.g;
+      });
+    };
+    const th = () => COLS.map(([col, rot, cls]) => `<th class="ord ${cls}" data-col="${col}"${S.fichaOrd.col === col ? ` aria-sort="${S.fichaOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`).join("");
+    const sinCel = (r) => {
+      const cl = r.msin == null ? "" : r.sin > r.msin + 5 ? "dn" : r.sin < r.msin - 5 ? "up" : "";
+      return `<span class="${cl}">${nf0.format(r.sin)}%</span> <span class="c2-mm">${r.msin == null ? "" : nf0.format(r.msin) + "%"}</span>`;
+    };
+    const linha = (r) => {
+      const abre = r.ac && r.l;
+      return `<tr class="${abre ? "clic" : "fora"}"${abre ? ` data-abrir="${r.l.id}" tabindex="0"` : ""}><td class="c2-atn">${r.ac && S.fichaVis !== "akad" ? '<i class="c2-dot" aria-hidden="true"></i>' : ""}${esc(r.nome)}</td><td class="n">${reais(r.g)}</td><td class="n"><b>${r.pos}º</b> ${movHtml(r.pos, r.posP).replace(/ title="[^"]*"/, "")}</td><td class="n">${r.sh == null ? "–" : pctPart(r.sh)}</td>
+        <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppT(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? (temP ? "novo" : "–") : r.cr > 999 ? "> +999%" : sg(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
+        <td class="n">${sinCel(r)}</td><td class="n">${r.comis == null ? "–" : nf0.format(r.comis) + "%"}</td><td class="n">${r.outros == null ? "–" : nf0.format(r.outros) + "%"}</td><td class="n">${r.akPos ? r.akPos + "º" : '<span class="c2-mm">–</span>'}</td></tr>`;
+    };
+    const ord = ordenar(vis);
+    const corte = S.fichaVis === "akad" || S.fichaTodos ? ord.length : Math.min(CC_LIMITE, ord.length);
+    const ctx = S.fichaVis === "akad"
+      ? `Só os ramos em que a Akad atua, que são <b>${nf0.format(pesoAk)}%</b> do GWP da ${esc(nome)} no período.`
+      : `Os ramos da Akad são <b>${nf0.format(pesoAk)}%</b> do GWP da ${esc(nome)} no período.`;
+    el.innerHTML = `${cab}
+      <div class="c2-vis"><div class="seg-ctrl" role="group" aria-label="Ramos da ficha"><button type="button" data-vis="todos" aria-pressed="${S.fichaVis !== "akad"}"><b>Todos os ramos</b><span>${todas.length}</span></button><button type="button" data-vis="akad" aria-pressed="${S.fichaVis === "akad"}"><b>Ramos da Akad</b><span>${doAkad.length}</span></button></div></div>
+      <div class="c2-fm">
+        <div><span>GWP ${perC}</span><b>${reais(G)}</b></div>
+        <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sg(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
+        <div><span>Sinistralidade</span><b>${G > 0 ? nf0.format((INC / G) * 100) + "%" : "–"}</b></div>
+        <div><span>Comercialização</span><b>${GAN > 0 ? nf0.format((DSP / GAN) * 100) + "%" : "–"}</b></div>
+      </div>
+      <p class="c2-ctx">${doAkad.length ? ctx : `A ${esc(nome)} não tem prêmio em nenhum ramo da Akad no período.`}</p>
+      <div class="c2-tith"><p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>${S.fichaVis !== "akad" && doAkad.length ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Ramo da Akad</span>' : ""}</div>
+      <div class="tab-wrap"><table class="c2-at"><thead><tr>${th()}</tr></thead><tbody>${ord.slice(0, corte).map(linha).join("")}</tbody></table></div>
+      ${ord.length > CC_LIMITE && S.fichaVis !== "akad" ? `<button type="button" class="c2-mais2" id="cn-mais" aria-expanded="${S.fichaTodos ? "true" : "false"}">${S.fichaTodos ? `Mostrar só os ${CC_LIMITE} primeiros ↑` : `Ver os outros ${ord.length - CC_LIMITE} ramos ↓`}</button>` : ""}
+      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. ${S.fichaVis === "akad" ? "Clique num ramo para abrir a visão do ramo." : "Clique num ramo da Akad (com ponto rosa) para abrir a visão do ramo."} Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Posição e share são no ramo, entre todas as seguradoras.</p>`;
+    // eventos
+    el.querySelectorAll("[data-vis]").forEach((bt) => bt.addEventListener("click", () => {
+      if ((S.fichaVis || "todos") === bt.dataset.vis) return;
+      S.fichaVis = bt.dataset.vis; S.fichaTodos = false;
+      ga("filtro_ramos_concorrente", { visao: S.fichaVis === "akad" ? "Ramos da Akad" : "Todos os ramos", concorrente: nome });
+      render();
+      $("#aba-concorrente").querySelector(`[data-vis="${S.fichaVis}"]`)?.focus();
+    }));
+    el.querySelector("#cn-mais")?.addEventListener("click", () => { S.fichaTodos = !S.fichaTodos; render(); $("#aba-concorrente #cn-mais")?.focus(); });
+    const ligar = () => el.querySelectorAll("tr[data-abrir]").forEach((tr) => {
+      const ir = () => abrirLinha(tr.dataset.abrir);
+      tr.addEventListener("click", ir);
+      tr.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); ir(); } });
+    });
+    ligar();
+    el.querySelector("table.c2-at thead").addEventListener("click", (e) => {
+      const t = e.target.closest("th[data-col]");
+      if (!t) return;
+      const col = t.dataset.col;
+      // primeira ordem: nome e posição em ordem crescente; números do maior para o menor
+      S.fichaOrd = S.fichaOrd.col === col ? { col, dir: -S.fichaOrd.dir } : { col, dir: col === "nome" || col === "pos" || col === "akPos" ? 1 : -1 };
+      render();
+      el.querySelector(`table.c2-at th[data-col="${col}"] button`)?.focus();
+    });
   }
 
   /* ---------- Por estado ---------- */
@@ -2198,16 +2290,16 @@
   }
 
   /* ---------- Navegação e filtros ---------- */
-  const ABAS = ["geral", "linhas", "uf", "sinistros"];
+  const ABAS = ["geral", "linhas", "uf", "sinistros", "concorrente"];
   // Quais filtros cada página usa (o período vale para todas)
-  const FILTROS_ABA = { geral: [], linhas: ["linha"], uf: ["linha", "uf"], sinistros: [] };
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], uf: ["linha", "uf"], sinistros: [], concorrente: [] };
 
   function irPara(aba, manterVoltar) {
     if (!manterVoltar) S.pilha = [];
     S.aba = aba;
     document.body.dataset.aba = aba;
     document.querySelectorAll(".nav a").forEach((a) => {
-      if (a.dataset.aba === aba) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
+      if (a.dataset.aba === (aba === "concorrente" ? "geral" : aba)) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
     });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
     $("#aba-conc").hidden = aba !== "geral";
@@ -2224,14 +2316,19 @@
     if (S.periodo === "12m") q.set("periodo", "12m");
     else if (S.periodo === "ano" && S.ano) q.set("periodo", String(S.ano));
     else if (S.periodo === "custom" && S.de != null && S.ate != null) q.set("periodo", `${D.meses[Math.min(S.de, S.ate)]}-${D.meses[Math.max(S.de, S.ate)]}`);
+    if (S.aba === "concorrente" && S.conc) { q.set("c", S.conc); if (S.fichaVis === "akad") q.set("ramos", "akad"); }
     const qs = q.toString().replace(/%2C/g, ",").replace(/%3A/g, ":");
     return "#" + S.aba + (qs ? "?" + qs : "");
   }
   // Lê o link e aplica os filtros; devolve a aba (valores inválidos são ignorados)
   function lerHash(h) {
     const [abaH, qs] = String(h || "").replace(/^#/, "").split("?");
-    const aba = ABAS.includes(abaH) ? abaH : "geral";
+    let aba = ABAS.includes(abaH) ? abaH : "geral";
     const q = new URLSearchParams(qs || "");
+    if (aba === "concorrente") {
+      const cc = (q.get("c") || "").trim();
+      if (IDX.nome.has(cc) && cc !== AKAD) { S.conc = cc; S.fichaVis = q.get("ramos") === "akad" ? "akad" : "todos"; S.fichaTodos = false; } else aba = "geral";
+    }
     const ramo = q.get("ramo");
     if (ramo == null) S.linha = "todas";
     else if (ramo === "todas" || IDX.linhaPorId[ramo] || (ramo.startsWith("r:") && IDX.ramoIdx[ramo.slice(2)] != null)) S.linha = ramo;
@@ -2257,7 +2354,7 @@
     {
       const P = periodo();
       const tela = { aba: NOME_ABA[S.aba] || S.aba, ramo: S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha), estado: S.aba === "uf" && S.uf != null && S.uf !== "todos" ? D.ufs[+S.uf] : "", periodo: periodoLabel(P.a, P.b) };
-      const chave = `${tela.aba}|${tela.ramo}|${tela.estado}`;
+      const chave = `${tela.aba}|${tela.ramo}|${tela.estado}|${S.aba === "concorrente" ? S.conc : ""}`;
       if (chave !== gaTela) { gaTela = chave; ga("ver_tela", tela); }
     }
     atualizarFiltros();
@@ -2268,7 +2365,7 @@
     // o endereço acompanha os filtros, para o link poder ser compartilhado
     { const h = hashDoEstado(); if (location.hash !== h) { try { history.replaceState(null, "", h); } catch (e) { /* ignora */ } } }
     // os blocos de concorrentes ficam no fim da Visão geral
-    ({ geral: () => { renderGeral(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin })[S.aba]();
+    ({ geral: () => { renderGeral(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin, concorrente: renderConcorrente })[S.aba]();
   }
 
   // Busca sem diferenciar acento e maiúscula
