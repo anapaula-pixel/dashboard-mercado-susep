@@ -1802,3 +1802,4 @@ body { color: var(--ink); }
 
 /* Na página Por estado a barra de filtros já tem ramo e estado; o selo "Dados até" sai para o "Copiar link" não quebrar de linha */
 body[data-aba="uf"] #status { display: none; }
+body[data-aba="uf"] .lk-copiar { margin-left: auto; }
