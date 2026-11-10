@@ -1799,3 +1799,6 @@ body { color: var(--ink); }
 #mk-quem .mq-parecido { color: var(--cc-link); background: rgba(28, 65, 115, .1); }
 #mk-quem .mq-ganhando { color: var(--g-up); background: rgba(112, 194, 74, .15); }
 @media (max-width: 760px) { #mk-quem .mv-grade { grid-template-columns: minmax(0, 1fr); gap: 22px; } #mk-quem .mq-card { padding: 18px 16px 8px; } }
+
+/* Na página Por estado a barra de filtros já tem ramo e estado; o selo "Dados até" sai para o "Copiar link" não quebrar de linha */
+body[data-aba="uf"] #status { display: none; }
