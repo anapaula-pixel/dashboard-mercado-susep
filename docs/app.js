@@ -2270,7 +2270,7 @@
       return `<div class="sn-c4-it"><h3><span class="sn-sw" style="background:${k.cor}" aria-hidden="true"></span>${k.nome} ${ajuda(k.aj, k.nome.toLowerCase())}</h3>
         <b class="sn-c4-v">${reais(Aval[2 + j])}</b>
         <span class="sn-c4-s">${cA && cC ? `${ppTxt(cA.p[j] - cC.p[j])} vs ${esc(nomeCmp)}` : "–"}</span>
-        ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${reais(Cval[2 + j])}</span>` : ""}</div>`;
+        ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${Cval[2 + j] < 0 ? "−" + reais(-Cval[2 + j]) : reais(Cval[2 + j])}</span>` : ""}</div>`;
     };
     const corpo = !ab
       ? '<p class="vazio">A abertura do sinistro está sendo carregada da base da SUSEP. Ela aparece aqui na próxima atualização do painel.</p>'
