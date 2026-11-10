@@ -39,6 +39,11 @@ jobs:
           for d in (novo, antigo):
               if d: d.pop("gerado", None)
           mudou = novo != antigo
+          # ficha do concorrente (sem data de geração: basta comparar o arquivo)
+          try:
+              mudou = mudou or open("docs/data/conc.json", "rb").read() != subprocess.check_output(["git", "show", "HEAD:docs/data/conc.json"])
+          except Exception:
+              mudou = True
           print("Mudou:", mudou)
           open("mudou.txt", "w").write("1" if mudou else "0")
           EOF
@@ -46,12 +51,12 @@ jobs:
             ULTIMO=$(python -c "import json;print(json.load(open('docs/data/ses.json'))['meses'][-1])")
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add docs/data/ses.json
+            git add docs/data/ses.json docs/data/conc.json
             git commit -m "Dados SUSEP atualizados (até ${ULTIMO})"
             git pull --rebase origin main
             git push
           else
-            git checkout -- docs/data/ses.json 2>/dev/null || true
+            git checkout -- docs/data/ses.json docs/data/conc.json 2>/dev/null || true
             echo "Sem mudanças nos dados."
           fi
           rm -f mudou.txt
