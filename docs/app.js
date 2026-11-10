@@ -1680,7 +1680,7 @@
       const sh = tc > 0 ? (x[0] / tc) * 100 : null;
       const shp = tp > 0 ? (gp / tp) * 100 : null;
       const l = linhaDe.get(cod);
-      todas.push({ ri, cod, ac, l, nome: l ? l.nome : (NOMES_RAMO_OUT[cod] || nomeRamoSusep(nomeS)), g: x[0], gp, ganho: x[1], inc: x[2], desp: x[3],
+      todas.push({ ri, cod, ac, l, nome: l ? l.nome : (NOMES_RAMO_OUT[cod] || nomeRamoSusep(nomeS)), mi: ti, mg: tc, g: x[0], gp, ganho: x[1], inc: x[2], desp: x[3],
         pos: rk.indexOf(ki) + 1, posP: temP ? rkp.indexOf(ki) + 1 : 0, sh, dsh: temP && sh != null && shp != null && tp > 0 ? sh - shp : null,
         cr: temP ? cresc(x[0], gp) : null, sin: (x[2] / x[0]) * 100, msin: tc > 0 ? (ti / tc) * 100 : null,
         comis: x[6] > 0 ? (x[4] / x[6]) * 100 : null, outros: x[6] > 0 ? (x[5] / x[6]) * 100 : null, akPos: ai == null ? 0 : rk.indexOf(ai) + 1 });
@@ -1689,6 +1689,7 @@
     const doAkad = todas.filter((r) => r.ac);
     const vis = S.fichaVis === "akad" ? doAkad : todas;
     const soma = (l, f) => l.reduce((t, r) => t + (f(r) || 0), 0);
+    const MI = soma(vis, (r) => r.mi), MG = soma(vis, (r) => r.mg), GPV = soma(vis, (r) => r.gp);
     const G = soma(vis, (r) => r.g), INC = soma(vis, (r) => r.inc), GAN = soma(vis, (r) => r.ganho), DSP = soma(vis, (r) => r.desp);
     const GpV = S.fichaVis === "akad" ? Gp.akad : Gp.todos;
     const crG = temP ? cresc(G, GpV) : null;
@@ -1724,19 +1725,28 @@
     const ctx = S.fichaVis === "akad"
       ? `Só os ramos em que a Akad atua, que são <b>${nf0.format(pesoAk)}%</b> do GWP da ${esc(nome)} no período.`
       : `Os ramos da Akad são <b>${nf0.format(pesoAk)}%</b> do GWP da ${esc(nome)} no período.`;
+    const kpi = (rot, val, sub, cls) => `<div class="cn-kpi"><span class="cn-kl">${rot}</span><b class="cn-kv ${cls || ""}">${val}</b><span class="cn-ks">${sub}</span></div>`;
+    const crTxt = crG == null ? "–" : crG > 999 ? "> +999%" : sg(crG) + nf1.format(Math.abs(crG)) + "%";
     el.innerHTML = `${cab}
-      <div class="c2-vis"><div class="seg-ctrl" role="group" aria-label="Ramos da ficha"><button type="button" data-vis="todos" aria-pressed="${S.fichaVis !== "akad"}"><b>Todos os ramos</b><span>${todas.length}</span></button><button type="button" data-vis="akad" aria-pressed="${S.fichaVis === "akad"}"><b>Ramos da Akad</b><span>${doAkad.length}</span></button></div></div>
-      <div class="c2-fm">
-        <div><span>GWP ${perC}</span><b>${reais(G)}</b></div>
-        <div><span>Crescimento</span><b class="${crG == null ? "" : crG < 0 ? "dn" : "up"}">${crG == null ? "–" : crG > 999 ? "> +999%" : sg(crG) + nf1.format(Math.abs(crG)) + "%"}</b></div>
-        <div><span>Sinistralidade</span><b>${G > 0 ? nf0.format((INC / G) * 100) + "%" : "–"}</b></div>
-        <div><span>Comercialização</span><b>${GAN > 0 ? nf0.format((DSP / GAN) * 100) + "%" : "–"}</b></div>
+      <div class="cn-kpis">
+        ${kpi("GWP no período", reais(G), perC)}
+        ${kpi("Crescimento", crTxt, perA ? `contra ${reais(GpV)} em ${perA}` : "sem comparativo", crG == null ? "" : crG < 0 ? "dn" : "up")}
+        ${kpi("Sinistralidade", G > 0 ? nf0.format((INC / G) * 100) + "%" : "–", MG > 0 ? `mercado nesses ramos: ${nf0.format((MI / MG) * 100)}%` : "")}
+        ${kpi("Comercialização", GAN > 0 ? nf0.format((DSP / GAN) * 100) + "%" : "–", "sobre o prêmio ganho")}
       </div>
-      <p class="c2-ctx">${doAkad.length ? ctx : `A ${esc(nome)} não tem prêmio em nenhum ramo da Akad no período.`}</p>
-      <div class="c2-tith"><p class="c2-ft">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</p>${S.fichaVis !== "akad" && doAkad.length ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Ramo da Akad</span>' : ""}</div>
-      <div class="tab-wrap"><table class="c2-at"><thead><tr>${th()}</tr></thead><tbody>${ord.slice(0, corte).map(linha).join("")}</tbody></table></div>
-      ${ord.length > CC_LIMITE && S.fichaVis !== "akad" ? `<button type="button" class="c2-mais2" id="cn-mais" aria-expanded="${S.fichaTodos ? "true" : "false"}">${S.fichaTodos ? `Mostrar só os ${CC_LIMITE} primeiros ↑` : `Ver os outros ${ord.length - CC_LIMITE} ramos ↓`}</button>` : ""}
-      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. ${S.fichaVis === "akad" ? "Clique num ramo para abrir a visão do ramo." : "Clique num ramo da Akad (com ponto rosa) para abrir a visão do ramo."} Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima. Posição e share são no ramo, entre todas as seguradoras.</p>`;
+      <section class="cn-card" aria-label="Ramos da ${esc(nome)}">
+        <div class="cn-cab2">
+          <div><h3 class="cn-h">Por ramo ${ajuda("ccFicha", "tabela da ficha")}</h3>
+            <p class="cn-sub">${doAkad.length ? ctx : `A ${esc(nome)} não tem prêmio em nenhum ramo da Akad no período.`}</p></div>
+          <div class="seg-ctrl" role="group" aria-label="Ramos da ficha"><button type="button" data-vis="todos" aria-pressed="${S.fichaVis !== "akad"}"><b>Todos os ramos</b><span>${todas.length}</span></button><button type="button" data-vis="akad" aria-pressed="${S.fichaVis === "akad"}"><b>Ramos da Akad</b><span>${doAkad.length}</span></button></div>
+        </div>
+        <div class="tab-wrap"><table class="c2-at"><thead><tr>${th()}</tr></thead><tbody>${ord.slice(0, corte).map(linha).join("")}</tbody></table></div>
+        <div class="cn-pe">
+          ${ord.length > CC_LIMITE && S.fichaVis !== "akad" ? `<button type="button" class="c2-mais2" id="cn-mais" aria-expanded="${S.fichaTodos ? "true" : "false"}">${S.fichaTodos ? `Mostrar só os ${CC_LIMITE} primeiros ↑` : `Ver os outros ${ord.length - CC_LIMITE} ramos ↓`}</button>` : "<span></span>"}
+          ${S.fichaVis !== "akad" && doAkad.length ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Ramo da Akad (clique para abrir)</span>' : ""}
+        </div>
+      </section>
+      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Sinistralidade em verde quando está 5 p.p. ou mais abaixo da do mercado no ramo, e em vermelho quando está 5 p.p. ou mais acima; o número em cinza é a do mercado. Posição e share são no ramo, entre todas as seguradoras.</p>`;
     // eventos
     el.querySelectorAll("[data-vis]").forEach((bt) => bt.addEventListener("click", () => {
       if ((S.fichaVis || "todos") === bt.dataset.vis) return;
