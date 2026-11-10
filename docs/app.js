@@ -2328,40 +2328,90 @@
     window.scrollTo({ top: 0 });
   }
   // Endereço compartilhável: a aba e os filtros (ramo, estado e período) ficam no link.
-  // Ex.: #linhas?ramo=rcpro&periodo=12m · #uf?estado=SP · #geral?periodo=202501-202608
+  // Endereço legível: #visao-geral, #ramos/rc-profissional, #estados/sp, #sinistros, #concorrente/tokio-marine
+  // (os links no formato antigo, como #linhas?ramo=rcpro ou #geral?periodo=202601-202608, continuam funcionando)
+  const ABA_URL = { geral: "visao-geral", linhas: "ramos", uf: "estados", sinistros: "sinistros", concorrente: "concorrente" };
+  const URL_ABA = { "visao-geral": "geral", ramos: "linhas", estados: "uf", sinistros: "sinistros", concorrente: "concorrente", geral: "geral", linhas: "linhas", uf: "uf" };
+  const MES_URL = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
+  const slug = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  const abaDoHash = (h) => URL_ABA[String(h || "").replace(/^#/, "").split("?")[0].split("/")[0]] || "geral";
+  function slugRamo(sel) {
+    if (IDX.linhaPorId[sel]) return slug(IDX.linhaPorId[sel].nome);
+    if (sel.startsWith("r:")) return "ramo-" + sel.slice(2);
+    return null;
+  }
+  function ramoDoLink(v) {
+    if (!v) return null;
+    if (v === "todas" || IDX.linhaPorId[v]) return v;
+    const l = IDX.linhas.find((x) => slug(x.nome) === v);
+    if (l) return l.id;
+    const r = v.startsWith("ramo-") ? v.slice(5) : v.startsWith("r:") ? v.slice(2) : null;
+    if (r && IDX.ramoIdx[r] != null) return "r:" + r;
+    if (v.startsWith("m:") && idsDaSel(v).length) return selDeIds(idsDaSel(v));
+    return null;
+  }
+  let slugsConc = null;
+  function mapaConc() {
+    if (slugsConc) return slugsConc;
+    const porCod = new Map(), porSlug = new Map();
+    for (const [k, n] of IDX.nome) {
+      let sl = slug(nomeCurtoCia(n)) || k;
+      if (porSlug.has(sl)) sl += "-" + k;
+      porCod.set(k, sl); porSlug.set(sl, k);
+    }
+    return (slugsConc = { porCod, porSlug });
+  }
+  function periodoUrl(a, b) {
+    const ma = D.meses[Math.min(a, b)], mb = D.meses[Math.max(a, b)];
+    const m = (x) => MES_URL[+x.slice(4) - 1], y = (x) => x.slice(0, 4);
+    if (ma === mb) return `${m(ma)}-${y(ma)}`;
+    return y(ma) === y(mb) ? `${m(ma)}-${m(mb)}-${y(mb)}` : `${m(ma)}-${y(ma)}-a-${m(mb)}-${y(mb)}`;
+  }
+  function periodoDoLink(per) {
+    const mes = (t, y) => { const i = MES_URL.indexOf(t); return i < 0 ? null : y + String(i + 1).padStart(2, "0"); };
+    let m, a = null, b = null;
+    if ((m = per.match(/^(\d{6})-(\d{6})$/))) { a = m[1]; b = m[2]; }
+    else if ((m = per.match(/^([a-z]{3})-([a-z]{3})-(\d{4})$/))) { a = mes(m[1], m[3]); b = mes(m[2], m[3]); }
+    else if ((m = per.match(/^([a-z]{3})-(\d{4})-a-([a-z]{3})-(\d{4})$/))) { a = mes(m[1], m[2]); b = mes(m[3], m[4]); }
+    else if ((m = per.match(/^([a-z]{3})-(\d{4})$/))) { a = b = mes(m[1], m[2]); }
+    return a && b && D.meses.includes(a) && D.meses.includes(b) ? [D.meses.indexOf(a), D.meses.indexOf(b)] : null;
+  }
   function hashDoEstado() {
     const q = new URLSearchParams();
-    const usa = FILTROS_ABA[S.aba] || [];
-    if (usa.includes("linha") && S.linha && S.linha !== "todas") q.set("ramo", S.linha);
-    if (usa.includes("uf") && S.uf != null && S.uf !== "todos" && D.ufs[+S.uf]) q.set("estado", D.ufs[+S.uf]);
+    let seg = "";
+    const temRamo = S.linha && S.linha !== "todas";
+    if (S.aba === "linhas" && temRamo) { const sr = slugRamo(S.linha); if (sr) seg = sr; else q.set("ramo", S.linha); }
+    if (S.aba === "uf") {
+      if (S.uf != null && S.uf !== "todos" && D.ufs[+S.uf]) seg = D.ufs[+S.uf].toLowerCase();
+      if (temRamo) q.set("ramo", slugRamo(S.linha) || S.linha);
+    }
+    if (S.aba === "concorrente" && S.conc) { seg = mapaConc().porCod.get(S.conc) || S.conc; if (S.fichaVis === "akad") q.set("ramos", "akad"); }
     if (S.periodo === "12m") q.set("periodo", "12m");
     else if (S.periodo === "ano" && S.ano) q.set("periodo", String(S.ano));
-    else if (S.periodo === "custom" && S.de != null && S.ate != null) q.set("periodo", `${D.meses[Math.min(S.de, S.ate)]}-${D.meses[Math.max(S.de, S.ate)]}`);
-    if (S.aba === "concorrente" && S.conc) { q.set("c", S.conc); if (S.fichaVis === "akad") q.set("ramos", "akad"); }
+    else if (S.periodo === "custom" && S.de != null && S.ate != null) q.set("periodo", periodoUrl(S.de, S.ate));
     const qs = q.toString().replace(/%2C/g, ",").replace(/%3A/g, ":");
-    return "#" + S.aba + (qs ? "?" + qs : "");
+    return "#" + ABA_URL[S.aba] + (seg ? "/" + seg : "") + (qs ? "?" + qs : "");
   }
-  // Lê o link e aplica os filtros; devolve a aba (valores inválidos são ignorados)
+  // Lê o link (formato novo ou antigo) e aplica os filtros; devolve a aba (valores inválidos são ignorados)
   function lerHash(h) {
-    const [abaH, qs] = String(h || "").replace(/^#/, "").split("?");
-    let aba = ABAS.includes(abaH) ? abaH : "geral";
+    const [caminho, qs] = String(h || "").replace(/^#/, "").split("?");
+    const partes = caminho.split("/");
+    let aba = URL_ABA[partes[0]] || "geral";
+    const seg = decodeURIComponent(partes[1] || "").toLowerCase();
     const q = new URLSearchParams(qs || "");
     if (aba === "concorrente") {
-      const cc = (q.get("c") || "").trim();
+      const cc = seg ? (mapaConc().porSlug.get(seg) || seg) : (q.get("c") || "").trim();
       if (IDX.nome.has(cc) && cc !== AKAD) { S.conc = cc; S.fichaVis = q.get("ramos") === "akad" ? "akad" : "todos"; S.fichaTodos = false; } else aba = "geral";
     }
-    const ramo = q.get("ramo");
-    if (ramo == null) S.linha = "todas";
-    else if (ramo === "todas" || IDX.linhaPorId[ramo] || (ramo.startsWith("r:") && IDX.ramoIdx[ramo.slice(2)] != null)) S.linha = ramo;
-    else if (ramo.startsWith("m:") && idsDaSel(ramo).length) S.linha = selDeIds(idsDaSel(ramo));
-    const est = (q.get("estado") || "").toUpperCase();
+    S.linha = ramoDoLink(aba === "linhas" && seg ? seg : q.get("ramo")) || "todas";
+    const est = (aba === "uf" && seg ? seg : q.get("estado") || "").toUpperCase();
     S.uf = est && D.ufs.includes(est) ? String(D.ufs.indexOf(est)) : "todos";
-    const per = q.get("periodo") || "";
-    let m;
+    const per = (q.get("periodo") || "").toLowerCase();
+    let pr;
     if (!per || per === "ytd") S.periodo = "ytd";
     else if (per === "12m") S.periodo = "12m";
     else if (/^\d{4}$/.test(per) && D.meses.includes(per + "01")) { S.periodo = "ano"; S.ano = per; }
-    else if ((m = per.match(/^(\d{6})-(\d{6})$/)) && D.meses.includes(m[1]) && D.meses.includes(m[2])) { S.periodo = "custom"; S.de = D.meses.indexOf(m[1]); S.ate = D.meses.indexOf(m[2]); }
+    else if ((pr = periodoDoLink(per))) { S.periodo = "custom"; S.de = pr[0]; S.ate = pr[1]; }
     else S.periodo = "ytd";
     return aba;
   }
@@ -2372,11 +2422,27 @@
   let gaTela = "";
   function render() {
     esconderTip();
+    // nome da guia: o nome do painel só na Visão geral; nas outras páginas, o nome da página
+    try {
+      document.title = ({
+        geral: () => "Inteligência de Mercado",
+        linhas: () => (S.linha && S.linha !== "todas" ? nomeSel(S.linha) : "Ramos"),
+        uf: () => (S.uf != null && S.uf !== "todos" && D.ufs[+S.uf] ? `Por estado: ${D.ufs[+S.uf]}` : "Por estado"),
+        sinistros: () => "Sinistros",
+        concorrente: () => (S.conc ? nomeCurtoCia(nomeEnt(S.conc)) : "Concorrente"),
+      })[S.aba]();
+    } catch (e) { document.title = "Inteligência de Mercado"; }
     {
       const P = periodo();
       const tela = { aba: NOME_ABA[S.aba] || S.aba, ramo: S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha), estado: S.aba === "uf" && S.uf != null && S.uf !== "todos" ? D.ufs[+S.uf] : "", periodo: periodoLabel(P.a, P.b) };
       const chave = `${tela.aba}|${tela.ramo}|${tela.estado}|${S.aba === "concorrente" ? S.conc : ""}`;
-      if (chave !== gaTela) { gaTela = chave; ga("ver_tela", tela); }
+      if (chave !== gaTela) {
+        gaTela = chave;
+        ga("ver_tela", tela);
+        // visualização de página com endereço limpo (ex.: /dashboard-mercado-susep/ramos/rc-profissional), para o GA separar as telas
+        const caminho = hashDoEstado().slice(1).split("?")[0];
+        ga("page_view", { page_title: document.title, page_location: location.origin + location.pathname.replace(/index\.html$/, "").replace(/\/?$/, "/") + caminho });
+      }
     }
     atualizarFiltros();
     const vt = $("#voltar");
@@ -2707,10 +2773,10 @@
     }));
     // Voltar do navegador: desfaz o último "abrir detalhe"; senão, segue o endereço
     window.addEventListener("popstate", () => {
-      const h = location.hash.slice(1).split("?")[0];
+      const bruto = location.hash.slice(1).split("?")[0], h = abaDoHash(location.hash);
       const topo = S.pilha[S.pilha.length - 1];
       if (topo && topo.aba === h) voltar();
-      else if (h === "conc") irPara("geral");
+      else if (bruto === "conc") irPara("geral");
       else irPara(lerHash(location.hash));
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
