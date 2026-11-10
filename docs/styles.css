@@ -1595,7 +1595,7 @@ body { color: var(--ink); }
 #aba-sinistros .sn-comp-cab > div:first-child { flex: 1 1 320px; min-width: 0; }
 #aba-sinistros .sn-fil { display: flex; flex-wrap: wrap; gap: 12px; }
 #aba-sinistros .sn-fil .cb-in { width: 260px; height: 38px; font-size: .84rem; }
-#aba-sinistros .sn-cb { display: grid; grid-template-columns: minmax(64px, max-content) minmax(0, 1fr); align-items: center; gap: 8px 14px; margin-bottom: 18px; }
+#aba-sinistros .sn-cb { display: grid; grid-template-columns: minmax(96px, max-content) minmax(0, 1fr); align-items: center; gap: 8px 14px; margin-bottom: 18px; }
 #aba-sinistros .sn-cb-rot { font-size: .8rem; color: var(--g-label); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #aba-sinistros .sn-stk { display: flex; height: 28px; border-radius: 6px; overflow: hidden; background: var(--g-track); min-width: 0; }
 #aba-sinistros .sn-stk i { display: flex; align-items: center; justify-content: center; height: 100%; font-style: normal; font-size: .72rem; font-weight: 600; white-space: nowrap; overflow: hidden; font-variant-numeric: tabular-nums; }
@@ -1608,6 +1608,11 @@ body { color: var(--ink); }
 #aba-sinistros .sn-sw.vazado { border: 1.5px solid #9E9E9E; }
 #aba-sinistros .sn-c4-v { margin-top: 4px; font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
 #aba-sinistros .sn-c4-s { font-size: .76rem; color: var(--g-label); }
+#aba-sinistros .sn-cb-rot.cn-rt { display: flex; flex-direction: column; gap: 1px; line-height: 1.25; }
+#aba-sinistros .cn-rt b { color: var(--ink); font-weight: 600; font-size: .86rem; overflow: hidden; text-overflow: ellipsis; }
+#aba-sinistros .cn-rt small { font-size: .74rem; color: var(--g-label); }
+#aba-sinistros .sn-c4-c { margin-top: 4px; padding-top: 6px; border-top: 1px dashed var(--g-rule); }
+.cb-dica { padding: 8px 12px; font-size: .76rem; color: var(--muted); border-top: 1px solid var(--cc-rule, var(--line)); background: var(--bg); position: sticky; bottom: 0; }
 /* todos os ramos */
 #aba-sinistros .sn-tab-cab { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px; margin-bottom: 12px; }
 #aba-sinistros .sn-tab-cab .sn-leg { margin: 0; }
