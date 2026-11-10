@@ -554,7 +554,7 @@
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
-    mkRank: "Todas as seguradoras com prêmio nos ramos que a Akad acompanha, do maior para o menor GWP. Share sobre o GWP de todas as seguradoras nesses ramos e variação em p.p. contra o mesmo período do ano anterior, crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP), comercialização (despesa comercial ÷ prêmio ganho), em quantos dos ramos acompanhados a seguradora tem prêmio e quanto esses ramos pesam no GWP total dela.",
+    mkRank: "Todas as seguradoras com prêmio nos ramos que a Akad acompanha, do maior para o menor GWP. Share sobre o GWP de todas as seguradoras nesses ramos, crescimento do GWP contra o mesmo período do ano anterior, sinistralidade (sinistro incorrido ÷ GWP), em quantos dos ramos acompanhados a seguradora tem prêmio e quanto esses ramos pesam no GWP total dela.",
     ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
@@ -1659,7 +1659,7 @@
       : [kpi("Posição da Akad", "–", "sem prêmio no período"), kpi("Share da Akad", "–", "sem prêmio no período")];
     // ranking: ordenação pelo título da coluna, busca por nome e Akad sempre visível
     if (!S.mkOrd) S.mkOrd = { col: "g", dir: -1 };
-    const COLS = [["pos", "#", "n"], ["nome", "Seguradora", ""], ["g", "GWP", "n"], ["sh", "Share", "n"], ["dsh", "Var. share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade", "n"], ["com", "Comercialização", "n"], ["nr", "Ramos em comum", "n"], ["peso", "Peso na seguradora", "n"]];
+    const COLS = [["pos", "#", "n"], ["nome", "Seguradora", ""], ["g", "GWP", "n"], ["sh", "Share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade", "n"], ["nr", "Ramos em comum", "n"], ["peso", "Peso na seguradora", "n"]];
     const valor = (r, col) => (col === "peso" ? (pesos ? pesos.get(r.k) ?? null : null) : r[col]);
     const ordenar = (l) => {
       const { col, dir } = S.mkOrd;
@@ -1682,8 +1682,8 @@
     const linha = (r) => {
       const eAk = r.k === AKAD;
       return `<tr class="${eAk ? "mk-ak" : "clic"}"${eAk ? "" : ` data-ficha="${esc(r.k)}" tabindex="0"`}><td class="n mk-pos">${r.pos}º</td><td class="c2-atn">${esc(r.nome)}</td><td class="n">${reais(r.g)}</td><td class="n">${pctPart(r.sh)}</td>
-        <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppT(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? (temP ? "novo" : "–") : r.cr > 999 ? "> +999%" : Math.abs(r.cr) < 0.5 ? "0%" : sg(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
-        <td class="n">${nf0.format(r.sin)}%</td><td class="n">${r.com == null ? "–" : nf0.format(r.com) + "%"}</td><td class="n">${r.nr} de ${nL}</td><td class="n mk-peso">${pesoCel(r)}</td></tr>`;
+        <td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? (temP ? "novo" : "–") : r.cr > 999 ? "> +999%" : Math.abs(r.cr) < 0.5 ? "0%" : sg(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
+        <td class="n">${nf0.format(r.sin)}%</td><td class="n">${r.nr} de ${nL}</td><td class="n mk-peso">${pesoCel(r)}</td></tr>`;
     };
     const corpo = () => {
       const q = norm((S.mkBusca || "").trim());
@@ -1722,7 +1722,7 @@
         <div class="cn-pe" id="mk-pe">${rodape(cp)}</div>
       </section>
       ${temP ? `<div class="mk-2">${cardGP("Quem mais ganhou espaço", gan, "Nenhuma seguradora ganhou espaço relevante.")}${cardGP("Quem mais perdeu espaço", per, "Nenhuma seguradora perdeu espaço relevante.")}</div>` : ""}
-      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Share sobre o GWP de todas as seguradoras nos ${nL} ramos acompanhados. Sinistralidade é o sinistro incorrido sobre o GWP; comercialização é a despesa comercial sobre o prêmio ganho. Peso na seguradora: quanto esses ramos representam do GWP total dela${pesos === null && CC ? " (disponível para períodos a partir de " + mesLabel(D.meses.indexOf(CC.desde), true) + ")" : ""}.</p>`;
+      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Share sobre o GWP de todas as seguradoras nos ${nL} ramos acompanhados. Sinistralidade é o sinistro incorrido sobre o GWP. Peso na seguradora: quanto esses ramos representam do GWP total dela${pesos === null && CC ? " (disponível para períodos a partir de " + mesLabel(D.meses.indexOf(CC.desde), true) + ")" : ""}.</p>`;
     // eventos
     const ligarLinhas = () => el.querySelectorAll("[data-ficha]").forEach((n) => {
       if (n.dataset.lig) return; n.dataset.lig = "1";
