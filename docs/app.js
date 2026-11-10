@@ -1507,7 +1507,7 @@
       const v = todosL.map((m) => gw(m, k));
       const nv = Math.sqrt(v.reduce((s, y) => s + y * y, 0));
       const sim = nAk && nv ? v.reduce((s, y, i) => s + y * akVec[i], 0) / (nAk * nv) : 0;
-      return { k, ws, dws: ws - wsp, h2h, sim };
+      return { k, ws, dws: ws - wsp, h2h, sim, g: atua.reduce((s, x) => s + gw(x.c, k), 0) };
     });
     const minWs = umRamo ? 0.5 : 0.8;
     const usados = new Set();
@@ -1516,23 +1516,32 @@
     const ganhando = tomar(info.filter((x) => x.dws > 0.05).sort((p, q) => q.dws - p.dws), 4);
     // perfil parecido aceita seguradoras um pouco menores (share a partir de 0,5%)
     const parecido = tomar(info.filter((x) => x.sim >= 0.45).sort((p, q) => q.sim - p.sim), 4, 0.5);
-    const linC = (x) => `<div class="c2-rw"><button type="button" class="c2-nm" data-ficha="${esc(x.k)}">${esc(nomeC(x.k))}</button><span class="c2-v">${pctPart(x.ws)}</span><span class="c2-v ${clsV(x.dws)}">${ppTxt(x.dws)}</span></div>`;
+    // Quem disputa espaço com a Akad: mesmo desenho dos "Destaques do período" da Visão geral
     const ICO_C = {
       direto: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
       parecido: '<circle cx="9" cy="12" r="6"/><circle cx="15" cy="12" r="6"/>',
       ganhando: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     };
-    const colC = (tit, cor, crit, lst, vz, ico) => `<div class="c2-col"><p class="c2-ch"><span class="c2-ico" style="--c:${cor}" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span>${tit}</p><p class="c2-crit">${crit}</p>
-      ${lst.length ? `<div class="c2-rw c2-rh"><span></span><span class="c2-v">Share</span><span class="c2-v">Variação</span></div>${lst.map(linC).join("")}` : `<p class="c2-vz">${vz}</p>`}</div>`;
+    const itemQ = (x) => `
+      <li><button type="button" class="mv-item" data-ficha="${esc(x.k)}" aria-label="${esc(nomeC(x.k))}: share ${pctPart(x.ws)}, abrir a página da seguradora">
+        <span class="mv-nome">${esc(nomeC(x.k))}</span>
+        <span class="mv-val">${pctPart(x.ws - x.dws)} <span aria-hidden="true">→</span> <b>${pctPart(x.ws)}</b> de share</span>
+        <span class="mv-var mv-gwp">${reais(x.g)}</span>
+      </button></li>`;
+    const colQ = (tit, ico, crit, lst, vz) => `
+      <div class="mv-col">
+        <h3 title="${esc(crit)}"><span class="mq-ico mq-${ico}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span><span class="mv-tit">${tit}</span><span class="mv-col-rot" title="GWP da seguradora nos ramos da Akad em ${perC}">GWP</span></h3>
+        ${lst.length ? `<ul>${lst.map(itemQ).join("")}</ul>` : `<p class="mv-vazio">${vz}</p>`}
+      </div>`;
     const bQuem = `
-      <section class="c2-sec" aria-labelledby="h-c2a">
-        <h3 id="h-c2a" class="c2-tit">Concorrentes nos ramos da Akad ${ajuda("ccTipos", "tipos de concorrente")}</h3>
-        <p class="c2-sub">${umRamo ? `Market share em ${esc(linhasSel[0].nome)} e variação em 12 meses.` : `Market share de cada seguradora nos ${atua.length} ramos da Akad e variação contra ${perA}.`}</p>
-        <div class="c2-g3">
-          ${colC("Confronto direto", "var(--akad)", umRamo ? "As maiores do ramo junto com a Akad." : "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.", "direto")}
-          ${colC("Perfil parecido", "var(--cc-link)", "Carteiras com distribuição semelhante à da Akad.", parecido, "Nenhuma seguradora com carteira parecida.", "parecido")}
-          ${colC("Em expansão", "#C78800", umRamo ? "Maiores ganhos de participação no ramo." : "Maiores ganhos de participação nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.", "ganhando")}
-        </div>
+      <section class="mq-sec" aria-labelledby="h-c2a">
+        <h3 id="h-c2a" class="mq-tit">Quem disputa espaço com a Akad ${ajuda("ccTipos", "tipos de concorrente")}</h3>
+        <p class="mq-sub">Seguradoras em destaque pela disputa nos rankings, semelhança de carteira ou avanço de participação.</p>
+        <div class="mq-card"><div class="mv-grade">
+          ${colQ("Confronto direto", "direto", "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.")}
+          ${colQ("Perfil parecido", "parecido", "Carteiras com distribuição semelhante à da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
+          ${colQ("Em expansão", "ganhando", "Maiores ganhos de participação nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
+        </div></div>
       </section>`;
 
     // ----- quem ganhou e quem perdeu espaço
@@ -1659,7 +1668,7 @@
     const kpi = (rot, val, sub, cls) => `<div class="cn-kpi"><span class="cn-kl">${rot}</span><b class="cn-kv ${cls || ""}">${val}</b><span class="cn-ks">${sub}</span></div>`;
     const kAk = ak
       ? [kpi("Posição da Akad", `${ak.pos}ª`, `de ${N} por GWP${posP ? `; era ${posP}ª em ${perA}` : ""}`),
-         kpi("Share da Akad", pctPart(ak.sh), ak.dsh == null ? "sem comparativo" : `${ppT(ak.dsh)} contra ${perA}`, ak.dsh == null ? "" : clsV(ak.dsh) === "zero" ? "" : clsV(ak.dsh))]
+         kpi("Share da Akad", pct(ak.sh, 2), ak.dsh == null ? "sem comparativo" : `${ppT(ak.dsh)} contra ${perA}`, ak.dsh == null ? "" : clsV(ak.dsh) === "zero" ? "" : clsV(ak.dsh))]
       : [kpi("Posição da Akad", "–", "sem prêmio no período"), kpi("Share da Akad", "–", "sem prêmio no período")];
     // ranking: ordenação pelo título da coluna, busca por nome e Akad sempre visível
     if (!S.mkOrd) S.mkOrd = { col: "g", dir: -1 };
