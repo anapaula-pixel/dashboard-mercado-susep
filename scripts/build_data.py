@@ -93,8 +93,9 @@ def num(s):
 
 
 def mil(v):
-    """R$ -> R$ mil com 1 casa decimal (reduz o tamanho do arquivo)."""
-    return round(v / 1000, 1)
+    """R$ -> R$ mil com 1 casa decimal (reduz o tamanho do arquivo; valores inteiros saem sem o ".0")."""
+    r = round(v / 1000, 1)
+    return int(r) if r == int(r) else r
 
 
 def baixar(destino, tentativas=3, espera=300):
@@ -169,11 +170,19 @@ def processar(zip_path):
     # 1c) Sinistro incorrido no padrão da Akad (quadro 6 do FIP), lido no mesmo arquivo:
     #     indenizações avisadas (12182, já líquidas de cosseguro) + despesas com sinistros avisadas (12196)
     #     - salvados e ressarcidos avisados (12207). Bruto de resseguro, sem IBNR e sem IBNER.
+    # 1d) Abertura do sinistro incorrido, para a página Sinistros (mesmo quadro 6):
+    #     12183 = indenizações avisadas administrativas, 12187 = indenizações avisadas judiciais
+    #     (as duas somam o 12182), 12196 = despesas com sinistros, 12207 = salvados e ressarcidos,
+    #     12216 - (12226 + 12227 + 12228) = recuperação de resseguro sobre os sinistros avisados
+    #     (receita com resseguro menos a parte ligada a IBNR e IBNER).
     t0 = time.time()
     CAMPOS_AQ = {"12479": 0, "12486": 1}
     CAMPOS_SIN = {"12182": 1.0, "12196": 1.0, "12207": -1.0}
+    CAMPOS_COMP = {"12183": (0, 1.0), "12187": (1, 1.0), "12196": (2, 1.0), "12207": (3, 1.0),
+                   "12216": (4, 1.0), "12226": (4, -1.0), "12227": (4, -1.0), "12228": (4, -1.0)}
     aq = {}
     inc = {}
+    comp = {}  # (mes, cia, ramo) -> [ind. administrativa, ind. judicial, despesas, salvados, recuperação de resseguro]
     try:
         alvo = next(n for n in zf.namelist() if n.lower().replace(" ", "") == "ses_valoresmovramos.csv")
         with zf.open(alvo) as raw:
@@ -187,7 +196,8 @@ def processar(zip_path):
                 cmp = c[i_c].strip()
                 j = CAMPOS_AQ.get(cmp)
                 sinal = CAMPOS_SIN.get(cmp)
-                if j is None and sinal is None:
+                jc = CAMPOS_COMP.get(cmp)
+                if j is None and sinal is None and jc is None:
                     continue
                 mes = c[i_m].strip()
                 if mes < DESDE:
@@ -196,18 +206,19 @@ def processar(zip_path):
                 if ramo not in RAMOS:
                     continue
                 k = (mes, c[i_e].strip(), ramo)
+                val = num(c[i_v])
+                if jc is not None:
+                    comp.setdefault(k, [0.0] * 5)[jc[0]] += jc[1] * val
                 if sinal is not None:
-                    inc[k] = inc.get(k, 0.0) + sinal * num(c[i_v])
-                    continue
-                if k not in seg:
-                    continue
-                aq.setdefault(k, [0.0, 0.0])[j] += num(c[i_v])
+                    inc[k] = inc.get(k, 0.0) + sinal * val
+                if j is not None and k in seg:
+                    aq.setdefault(k, [0.0, 0.0])[j] += val
     except (StopIteration, ValueError) as e:
         print(f"  Abertura de comissão indisponível nesta base ({e}); segue sem ela.", flush=True)
-    print(f"Custos de aquisição: {len(aq)} combinações; sinistro incorrido: {len(inc)} ({time.time()-t0:.0f}s)", flush=True)
-    # seguradora com sinistro incorrido no mês mas sem linha de prêmio: entra com prêmio zero (só meses que já existem)
+    print(f"Custos de aquisição: {len(aq)} combinações; sinistro incorrido: {len(inc)}; abertura do sinistro: {len(comp)} ({time.time()-t0:.0f}s)", flush=True)
+    # seguradora com sinistro no mês mas sem linha de prêmio: entra com prêmio zero (só meses que já existem)
     meses_seg = {k[0] for k in seg}
-    for k in inc:
+    for k in list(inc) + [k for k, x in comp.items() if any(x)]:
         if k not in seg and k[0] in meses_seg:
             seg[k] = [0.0] * 6
 
@@ -270,10 +281,13 @@ def processar(zip_path):
     seg_rows = []
     for (m, c, r), a in seg.items():
         v = [mil(x) for x in a]
-        if any(v) or inc.get((m, c, r)):
+        x = [mil(z) for z in comp.get((m, c, r), [0.0] * 5)]
+        if any(v) or inc.get((m, c, r)) or any(x):
             q = aq.get((m, c, r))
-            # comissão e outros custos de aquisição (null quando a SUSEP não abriu) e sinistro incorrido no fim da linha
-            seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None]) + [mil(inc.get((m, c, r), 0.0))])
+            # comissão e outros custos de aquisição (null quando a SUSEP não abriu), sinistro incorrido
+            # e a abertura do sinistro no fim da linha
+            seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None])
+                            + [mil(inc.get((m, c, r), 0.0))] + x)
 
     ufm_rows = []
     for (m, r, u), a in ufm.items():
@@ -310,7 +324,9 @@ def processar(zip_path):
         "cols": {
             "seg": ["mes", "cia", "ramo", "premio_emitido", "premio_ganho", "sinistro_ocorrido",
                     "despesa_comercial", "despesa_resseguro", "receita_resseguro",
-                    "comissao", "outros_custos_aquisicao", "sinistro_incorrido"],
+                    "comissao", "outros_custos_aquisicao", "sinistro_incorrido",
+                    "indenizacao_administrativa", "indenizacao_judicial", "despesa_sinistro",
+                    "salvados_ressarcidos", "recuperacao_resseguro"],
             "ufm": ["mes", "ramo", "uf", "premio_mercado", "premio_akad", "sinistro_mercado", "sinistro_akad"],
             "ufa": ["ano", "ramo", "uf", "cia", "premio"],
         },
@@ -337,6 +353,14 @@ def checar(d):
     if lin:
         dc, cm, ou = sum(r[6] for r in lin), sum(r[9] for r in lin), sum(r[10] for r in lin)
         print(f"Checagem comissão RC Profissional Akad: comissão {cm/1000:.1f} mi + outros {ou/1000:.1f} mi = {(cm+ou)/1000:.1f} mi; despesa comercial {dc/1000:.1f} mi")
+    # abertura do sinistro: indenizações + despesas - salvados deve bater com o sinistro incorrido
+    if "202601" in mi:
+        lin = [r for r in d["seg"] if r[1] == ci[AKAD] and mi["202601"] <= r[0] <= mi["202608"] and len(r) > 16]
+        inc_t = sum(r[11] for r in lin)
+        ab = sum(r[12] + r[13] + r[14] - r[15] for r in lin)
+        rs = sum(r[16] for r in lin)
+        print(f"Checagem sinistro Akad jan-ago/2026: incorrido {inc_t/1000:.1f} mi; abertura {ab/1000:.1f} mi (esperado ~313,8); "
+              f"recuperação de resseguro {rs/1000:.1f} mi (esperado ~86,7)")
 
 
 def main():
