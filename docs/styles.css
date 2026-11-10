@@ -1750,3 +1750,22 @@ body { color: var(--ink); }
 @media (max-width: 760px) { .mk-busca { min-width: 0; width: 100%; } .mk-2 { grid-template-columns: minmax(0, 1fr); } }
 #mk-quem .c2-sec { margin: 8px 0 8px; }
 #mk-quem:empty { display: none; }
+
+/* ===== Menu com ícones: texto escuro em negrito; a página ativa fica magenta com barra embaixo ===== */
+.nav a { gap: 8px; color: #1C1C1C; font-weight: 600; font-size: .97rem; padding: 0 16px; }
+.nav a svg { width: 18px; height: 18px; flex: none; color: #6B7280; }
+.nav a:hover { background: transparent; color: var(--magenta); }
+.nav a:hover svg, .nav a[aria-current="page"] svg { color: var(--magenta); }
+.nav a[aria-current="page"] { color: var(--magenta); }
+.nav a::after { height: 3px; left: 12px; right: 12px; }
+.nav a[aria-current="page"]::after { background: var(--magenta); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .nav a { color: #E0E0E0; }
+  :root:not([data-theme="light"]) .nav a svg { color: #9E9E9E; }
+  :root:not([data-theme="light"]) .nav a:hover, :root:not([data-theme="light"]) .nav a[aria-current="page"] { background: transparent; color: #FF5C93; }
+  :root:not([data-theme="light"]) .nav a:hover svg, :root:not([data-theme="light"]) .nav a[aria-current="page"] svg { color: #FF5C93; }
+}
+:root[data-theme="dark"] .nav a { color: #E0E0E0; }
+:root[data-theme="dark"] .nav a svg { color: #9E9E9E; }
+:root[data-theme="dark"] .nav a:hover, :root[data-theme="dark"] .nav a[aria-current="page"], :root[data-theme="dark"] .nav a:hover svg, :root[data-theme="dark"] .nav a[aria-current="page"] svg { color: #FF5C93; }
+@media (max-width: 760px) { .nav a { padding: 0 10px; font-size: .88rem; gap: 6px; } .nav a svg { width: 16px; height: 16px; } .nav a::after { left: 8px; right: 8px; } }
