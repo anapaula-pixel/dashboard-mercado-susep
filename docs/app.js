@@ -1511,10 +1511,11 @@
     });
     const minWs = umRamo ? 0.5 : 0.8;
     const usados = new Set();
-    const tomar = (lst, n) => { const r = lst.filter((x) => !usados.has(x.k) && x.ws >= minWs).slice(0, n); r.forEach((x) => usados.add(x.k)); return r; };
+    const tomar = (lst, n, min = minWs) => { const r = lst.filter((x) => !usados.has(x.k) && x.ws >= min).slice(0, n); r.forEach((x) => usados.add(x.k)); return r; };
     const direto = tomar([...info].sort((p, q) => (q.h2h - p.h2h) || (q.ws - p.ws)), 4);
     const ganhando = tomar(info.filter((x) => x.dws > 0.05).sort((p, q) => q.dws - p.dws), 4);
-    const parecido = tomar(info.filter((x) => x.sim >= 0.45).sort((p, q) => q.sim - p.sim), 4);
+    // perfil parecido aceita seguradoras um pouco menores (share a partir de 0,5%)
+    const parecido = tomar(info.filter((x) => x.sim >= 0.45).sort((p, q) => q.sim - p.sim), 4, 0.5);
     const linC = (x) => `<div class="c2-rw"><button type="button" class="c2-nm" data-ficha="${esc(x.k)}">${esc(nomeC(x.k))}</button><span class="c2-v">${pctPart(x.ws)}</span><span class="c2-v ${clsV(x.dws)}">${ppTxt(x.dws)}</span></div>`;
     const ICO_C = {
       direto: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
