@@ -1529,7 +1529,7 @@
       </button></li>`;
     const colQ = (tit, ico, crit, lst, vz) => `
       <div class="mv-col">
-        <h3 title="${esc(crit)}"><span class="mq-ico mq-${ico}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span><span class="mv-tit">${tit}</span><span class="mv-col-rot" title="GWP da seguradora nos ramos da Akad em ${perC}">GWP</span></h3>
+        <h3><span class="mq-ico mq-${ico}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span><span class="mv-tit">${tit}<small class="mq-crit">${crit}</small></span><span class="mv-col-rot" title="GWP da seguradora nos ramos da Akad em ${perC}">GWP</span></h3>
         ${lst.length ? `<ul>${lst.map(itemQ).join("")}</ul>` : `<p class="mv-vazio">${vz}</p>`}
       </div>`;
     const bQuem = `
@@ -1539,7 +1539,7 @@
         <div class="mq-card"><div class="mv-grade">
           ${colQ("Confronto direto", "direto", "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.")}
           ${colQ("Perfil parecido", "parecido", "Carteiras com distribuição semelhante à da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
-          ${colQ("Em expansão", "ganhando", "Maiores ganhos de participação nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
+          ${colQ("Em expansão", "ganhando", "Mais ganharam share nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
         </div></div>
       </section>`;
 
