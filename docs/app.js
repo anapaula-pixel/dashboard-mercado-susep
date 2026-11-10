@@ -1575,17 +1575,20 @@
         <div class="c2-card">${corpoGP}</div>
       </section>`;
 
-    el.innerHTML = `
-      ${bQuem}${bGP}`;
+    // "Concorrentes nos ramos da Akad" fica na página Concorrentes, logo abaixo dos cards;
+    // "Variação de market share da Akad por ramo" fica no fim da Visão geral
+    const slotQ = $("#mk-quem");
+    const raiz = S.aba === "concorrentes" && slotQ ? slotQ : el;
+    if (raiz === slotQ) { slotQ.innerHTML = bQuem; el.innerHTML = ""; } else el.innerHTML = bGP;
 
-    el.querySelectorAll("[data-tip]").forEach((g) => {
+    raiz.querySelectorAll("[data-tip]").forEach((g) => {
       g.addEventListener("mouseenter", (ev) => mostrarTip(g.dataset.tip, ev));
       g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev));
       g.addEventListener("mouseleave", () => esconderTip());
     });
-    el.querySelectorAll(".c2-lk").forEach((bt) => bt.addEventListener("click", () => abrirLinha(bt.dataset.abrir)));
-    el.querySelectorAll("[data-ficha]").forEach((bt) => bt.addEventListener("click", () => abrirConcorrente(bt.dataset.ficha)));
-    el.querySelector("#c2-mais")?.addEventListener("click", () => { S.ccTodos = !S.ccTodos; renderConc(); el.querySelector("#c2-mais")?.focus(); });
+    raiz.querySelectorAll(".c2-lk").forEach((bt) => bt.addEventListener("click", () => abrirLinha(bt.dataset.abrir)));
+    raiz.querySelectorAll("[data-ficha]").forEach((bt) => bt.addEventListener("click", () => abrirConcorrente(bt.dataset.ficha)));
+    raiz.querySelector("#c2-mais")?.addEventListener("click", () => { S.ccTodos = !S.ccTodos; renderConc(); el.querySelector("#c2-mais")?.focus(); });
   }
 
   /* ---------- Página Concorrentes: ranking das seguradoras nos ramos da Akad ---------- */
@@ -1644,7 +1647,7 @@
     const { rows, posP } = mkDados(P);
     const cab = `<header class="cn-cab"><p class="c2-fk">Visão do mercado</p><h2 class="c2-fn">Concorrentes</h2><p class="c2-fs">Quem disputa com a Akad nos ramos que ela acompanha, em ${perC}${perA ? ` contra ${perA}` : ""}.</p></header>`;
     if (!rows.length) { el.innerHTML = `${cab}<p class="carregando">Sem prêmio nos ramos acompanhados em ${perC}.</p>`; return; }
-    if (!CC) carregarConc().then(() => { if (S.aba === "concorrentes") renderConcorrentes(); }).catch(() => { /* a coluna de peso fica sem valor */ });
+    if (!CC) carregarConc().then(() => { if (S.aba === "concorrentes") { renderConcorrentes(); renderConc(); } }).catch(() => { /* a coluna de peso fica sem valor */ });
     const pesos = CC ? mkPesos(P) : null;
     const N = rows.length;
     const ak = rows.find((r) => r.k === AKAD);
@@ -1712,6 +1715,7 @@
         ${kAk.join("")}
         ${kpi("As 5 maiores juntas", pctPart(top5), "do GWP dos ramos da Akad")}
       </div>
+      <div id="mk-quem"></div>
       <section class="cn-card" aria-labelledby="h-mk">
         <div class="cn-cab2">
           <div><h3 class="cn-h" id="h-mk">Ranking de seguradoras ${ajuda("mkRank", "ranking de seguradoras")}</h3>
@@ -1747,7 +1751,7 @@
       const col = thEl.dataset.col;
       S.mkOrd = { col, dir: S.mkOrd.col === col ? -S.mkOrd.dir : col === "nome" || col === "pos" ? 1 : -1 };
       if (col === "pos") S.mkOrd = { col: "g", dir: S.mkOrd.dir === 1 ? -1 : 1 };
-      renderConcorrentes();
+      renderConcorrentes(); renderConc();
       el.querySelector(`.mk-t th[data-col="${col}"] button`)?.focus();
     }));
     ligarMais(); ligarLinhas();
@@ -2489,7 +2493,7 @@
       if (a.dataset.aba === (aba === "concorrente" ? "concorrentes" : aba)) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
     });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
-    $("#aba-conc").hidden = aba !== "concorrentes";
+    $("#aba-conc").hidden = aba !== "geral";
     render();
     window.scrollTo({ top: 0 });
   }
@@ -2619,7 +2623,7 @@
     // o endereço acompanha os filtros, para o link poder ser compartilhado
     { const h = hashDoEstado(); if (location.hash !== h) { try { history.replaceState(null, "", h); } catch (e) { /* ignora */ } } }
     // os blocos de concorrentes ficam no fim da Visão geral
-    ({ geral: renderGeral, concorrentes: () => { renderConcorrentes(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin, concorrente: renderConcorrente })[S.aba]();
+    ({ geral: () => { renderGeral(); renderConc(); }, concorrentes: () => { renderConcorrentes(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin, concorrente: renderConcorrente })[S.aba]();
   }
 
   // Busca sem diferenciar acento e maiúscula
