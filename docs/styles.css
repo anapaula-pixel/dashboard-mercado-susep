@@ -1789,8 +1789,12 @@ body { color: var(--ink); }
 #mk-quem .mv-tit { flex: 1; }
 #mk-quem .mv-col-rot { font-size: 11px; font-weight: 600; color: var(--g-label); letter-spacing: .04em; padding-right: 8px; }
 #mk-quem .mv-vazio { margin: 0; padding: 12px 0; font-size: .86rem; color: var(--g-label); border-top: 1px solid var(--g-rule); }
-#mk-quem .mq-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; flex: none; }
-#mk-quem .mq-ico svg { width: 12px; height: 12px; }
+#mk-quem .mq-ico { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; flex: none; align-self: flex-start; }
+#mk-quem .mq-ico svg { width: 18px; height: 18px; }
+#mk-quem .mv-col h3 { gap: 10px; margin-bottom: 10px; }
+#mk-quem .mv-tit { display: flex; flex-direction: column; gap: 2px; }
+#mk-quem .mq-crit { font-size: .8rem; font-weight: 400; color: var(--g-label); line-height: 1.35; }
+#mk-quem .mv-col-rot { align-self: flex-end; }
 #mk-quem .mq-direto { color: var(--magenta); background: rgba(218, 10, 91, .1); }
 #mk-quem .mq-parecido { color: var(--cc-link); background: rgba(28, 65, 115, .1); }
 #mk-quem .mq-ganhando { color: var(--g-up); background: rgba(112, 194, 74, .15); }
