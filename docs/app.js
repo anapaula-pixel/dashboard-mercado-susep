@@ -554,6 +554,7 @@
     ccTop5: "Em quantos dos 22 ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou o market share no ramo.",
+    mkRank: "Todas as seguradoras com prêmio nos ramos que a Akad acompanha, do maior para o menor GWP. Share sobre o GWP de todas as seguradoras nesses ramos e variação em p.p. contra o mesmo período do ano anterior, crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP), comercialização (despesa comercial ÷ prêmio ganho), em quantos dos ramos acompanhados a seguradora tem prêmio e quanto esses ramos pesam no GWP total dela.",
     ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
@@ -683,7 +684,7 @@
     abrirDe("linhas", () => { S.linha = id; });
   }
   // Navegação de detalhe: lembra de onde veio para mostrar "Voltar"
-  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", uf: "Por estado", sinistros: "Sinistros", concorrente: "Concorrente" };
+  const NOME_ABA = { geral: "Visão geral", linhas: "Ramos", uf: "Por estado", concorrentes: "Concorrentes", sinistros: "Sinistros", concorrente: "Concorrente" };
   function abrirDe(destino, antes) {
     S.pilha.push({ aba: S.aba, linha: S.linha, y: window.scrollY, rotulo: S.aba === "linhas" ? (S.linha === "todas" ? "Todos os ramos" : nomeSel(S.linha)) : S.aba === "concorrente" ? nomeC(S.conc) : NOME_ABA[S.aba], conc: S.conc });
     if (antes) antes();
@@ -1587,6 +1588,171 @@
     el.querySelector("#c2-mais")?.addEventListener("click", () => { S.ccTodos = !S.ccTodos; renderConc(); el.querySelector("#c2-mais")?.focus(); });
   }
 
+  /* ---------- Página Concorrentes: ranking das seguradoras nos ramos da Akad ---------- */
+  const MK_LIMITE = 15;
+  let mkCache = null, mkPeso = null;
+  function mkDados(P) {
+    const temP = P.pa != null;
+    const chave = [P.a, P.b, temP ? P.pa : -1].join();
+    if (mkCache && mkCache.chave === chave) return mkCache;
+    const ramosI = D.ramos.map((_, i) => i);
+    const c = agg5(ramosI, P.a, P.b), p = temP ? agg5(ramosI, P.pa, P.pb) : new Map();
+    // em quantos dos ramos acompanhados cada seguradora tem prêmio
+    const presenca = new Map();
+    for (const l of IDX.linhas) for (const [k, x] of agg5(l.idx, P.a, P.b)) if (x[0] > 0) presenca.set(k, (presenca.get(k) || 0) + 1);
+    let T = 0, Tp = 0;
+    for (const x of c.values()) T += Math.max(0, x[0]);
+    for (const x of p.values()) Tp += Math.max(0, x[0]);
+    const rows = [...c.entries()].filter(([, x]) => x[0] > 0).map(([k, x]) => {
+      const gp = Math.max(0, (p.get(k) || [0])[0]);
+      const sh = T > 0 ? (x[0] / T) * 100 : 0, shp = temP && Tp > 0 ? (gp / Tp) * 100 : null;
+      return { k, nome: nomeC(k), busca: norm(nomeC(k) + " " + nomeEnt(k)), g: x[0], sh, dsh: shp == null ? null : sh - shp, cr: temP ? cresc(x[0], gp) : null,
+        sin: (x[2] / x[0]) * 100, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, nr: presenca.get(k) || 0 };
+    }).sort((u, v) => v.g - u.g);
+    rows.forEach((r, i) => { r.pos = i + 1; });
+    const rkP = temP ? [...p.entries()].filter(([, x]) => x[0] > 0).sort((u, v) => v[1][0] - u[1][0]).map(([k]) => k) : [];
+    mkCache = { chave, rows, T, posP: rkP.indexOf(AKAD) + 1, nP: rkP.length };
+    return mkCache;
+  }
+  // Peso dos ramos da Akad no GWP total de cada seguradora (precisa do arquivo com todos os ramos)
+  function mkPesos(P) {
+    const iDesde = D.meses.indexOf(CC.desde);
+    if (P.a < iDesde) return null;
+    const chave = [P.a, P.b].join();
+    if (mkPeso && mkPeso.chave === chave) return mkPeso.m;
+    const codAkad = new Set(D.ramos.map((r) => r[0]));
+    const nos = CC.ramos.map(([cod]) => codAkad.has(cod));
+    const tot = new Map(), ak = new Map();
+    for (const r of CC.rows) {
+      const mi = CC.mapMes[r[0]];
+      if (mi < P.a || mi > P.b) continue;
+      const k = CC.cias[r[1]][0];
+      tot.set(k, (tot.get(k) || 0) + r[3]);
+      if (nos[r[2]]) ak.set(k, (ak.get(k) || 0) + r[3]);
+    }
+    const m = new Map();
+    for (const [k, t] of tot) if (t > 0) m.set(k, Math.min(100, Math.max(0, ((ak.get(k) || 0) / t) * 100)));
+    mkPeso = { chave, m };
+    return m;
+  }
+  function renderConcorrentes() {
+    ligarAjuda();
+    const el = $("#aba-concorrentes");
+    const P = periodo();
+    const temP = P.pa != null;
+    const perC = periodoLabel(P.a, P.b), perA = temP ? periodoLabel(P.pa, P.pb) : null;
+    const { rows, posP } = mkDados(P);
+    const cab = `<header class="cn-cab"><p class="c2-fk">Visão do mercado</p><h2 class="c2-fn">Concorrentes</h2><p class="c2-fs">Quem disputa com a Akad nos ramos que ela acompanha, em ${perC}${perA ? ` contra ${perA}` : ""}.</p></header>`;
+    if (!rows.length) { el.innerHTML = `${cab}<p class="carregando">Sem prêmio nos ramos acompanhados em ${perC}.</p>`; return; }
+    if (!CC) carregarConc().then(() => { if (S.aba === "concorrentes") renderConcorrentes(); }).catch(() => { /* a coluna de peso fica sem valor */ });
+    const pesos = CC ? mkPesos(P) : null;
+    const N = rows.length;
+    const ak = rows.find((r) => r.k === AKAD);
+    const top5 = rows.slice(0, 5).reduce((s, r) => s + r.sh, 0);
+    const sg = (v) => (v > 0 ? "+" : v < 0 ? "−" : "");
+    const ppT = (v) => (Math.abs(v) < 0.05 ? "0,0 p.p." : `${sg(v)}${nf1.format(Math.abs(v))} p.p.`);
+    const clsV = (v) => (v > 0.05 ? "up" : v < -0.05 ? "dn" : "zero");
+    const kpi = (rot, val, sub, cls) => `<div class="cn-kpi"><span class="cn-kl">${rot}</span><b class="cn-kv ${cls || ""}">${val}</b><span class="cn-ks">${sub}</span></div>`;
+    const kAk = ak
+      ? [kpi("Posição da Akad", `${ak.pos}ª`, `de ${N} por GWP${posP ? `; era ${posP}ª em ${perA}` : ""}`),
+         kpi("Share da Akad", pctPart(ak.sh), ak.dsh == null ? "sem comparativo" : `${ppT(ak.dsh)} contra ${perA}`, ak.dsh == null ? "" : clsV(ak.dsh) === "zero" ? "" : clsV(ak.dsh))]
+      : [kpi("Posição da Akad", "–", "sem prêmio no período"), kpi("Share da Akad", "–", "sem prêmio no período")];
+    // ranking: ordenação pelo título da coluna, busca por nome e Akad sempre visível
+    if (!S.mkOrd) S.mkOrd = { col: "g", dir: -1 };
+    const COLS = [["pos", "#", "n"], ["nome", "Seguradora", ""], ["g", "GWP", "n"], ["sh", "Share", "n"], ["dsh", "Var. share", "n"], ["cr", "Cresc.", "n"], ["sin", "Sinistralidade", "n"], ["com", "Comercialização", "n"], ["nr", "Ramos em comum", "n"], ["peso", "Peso na seguradora", "n"]];
+    const valor = (r, col) => (col === "peso" ? (pesos ? pesos.get(r.k) ?? null : null) : r[col]);
+    const ordenar = (l) => {
+      const { col, dir } = S.mkOrd;
+      return l.slice().sort((u, v) => {
+        const a = valor(u, col), b = valor(v, col);
+        if (a == null && b == null) return v.g - u.g;
+        if (a == null) return 1;
+        if (b == null) return -1;
+        return (typeof a === "string" ? a.localeCompare(b, "pt-BR") : a - b) * dir || v.g - u.g;
+      });
+    };
+    const th = () => COLS.map(([col, rot, cls]) => `<th class="ord ${cls}" data-col="${col}"${S.mkOrd.col === col ? ` aria-sort="${S.mkOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`).join("");
+    const nL = IDX.linhas.length;
+    const pesoCel = (r) => {
+      if (!pesos) return `<span class="c2-mm">${CC ? "–" : "…"}</span>`;
+      const v = pesos.get(r.k);
+      if (v == null) return '<span class="c2-mm">–</span>';
+      return `${nf0.format(v)}%<span class="mk-bar" aria-hidden="true"><i style="width:${v}%"></i></span>`;
+    };
+    const linha = (r) => {
+      const eAk = r.k === AKAD;
+      return `<tr class="${eAk ? "mk-ak" : "clic"}"${eAk ? "" : ` data-ficha="${esc(r.k)}" tabindex="0"`}><td class="n mk-pos">${r.pos}º</td><td class="c2-atn">${esc(r.nome)}</td><td class="n">${reais(r.g)}</td><td class="n">${pctPart(r.sh)}</td>
+        <td class="n ${r.dsh == null ? "" : clsV(r.dsh)}">${r.dsh == null ? "–" : ppT(r.dsh)}</td><td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? (temP ? "novo" : "–") : r.cr > 999 ? "> +999%" : Math.abs(r.cr) < 0.5 ? "0%" : sg(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
+        <td class="n">${nf0.format(r.sin)}%</td><td class="n">${r.com == null ? "–" : nf0.format(r.com) + "%"}</td><td class="n">${r.nr} de ${nL}</td><td class="n mk-peso">${pesoCel(r)}</td></tr>`;
+    };
+    const corpo = () => {
+      const q = norm((S.mkBusca || "").trim());
+      const ord = ordenar(rows);
+      if (q) {
+        const ach = ord.filter((r) => r.busca.includes(q));
+        return { html: ach.length ? ach.map(linha).join("") : `<tr><td colspan="${COLS.length}" class="mk-vz">Nenhuma seguradora encontrada para “${esc(S.mkBusca.trim())}”.</td></tr>`, resto: 0 };
+      }
+      if (S.mkTodos) return { html: ord.map(linha).join(""), resto: 0, todos: true };
+      const vis = ord.slice(0, MK_LIMITE);
+      const fora = ak && !vis.includes(ak);
+      return { html: vis.map(linha).join("") + (fora ? `<tr class="mk-gap" aria-hidden="true"><td colspan="${COLS.length}">⋯</td></tr>${linha(ak)}` : ""), resto: N - vis.length - (fora ? 1 : 0) };
+    };
+    const rodape = (cp) => `${cp.todos ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="true">Mostrar só as ${MK_LIMITE} primeiras ↑</button>` : cp.resto > 0 ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="false">Ver as outras ${cp.resto} seguradoras ↓</button>` : "<span></span>"}
+      ${ak ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Akad em destaque, sempre visível</span>' : ""}`;
+    // quem ganhou e quem perdeu espaço
+    const comV = rows.filter((r) => r.k !== AKAD && r.dsh != null);
+    const gan = comV.filter((r) => r.dsh >= 0.05).sort((u, v) => v.dsh - u.dsh).slice(0, 5);
+    const per = comV.filter((r) => r.dsh <= -0.05).sort((u, v) => u.dsh - v.dsh).slice(0, 5);
+    const itemGP = (r) => `<div class="mk-li"><button type="button" class="mk-nm" data-ficha="${esc(r.k)}">${esc(r.nome)}</button><small>${reais(r.g)}</small><b class="${clsV(r.dsh)}">${ppT(r.dsh)}</b></div>`;
+    const cardGP = (tit, lst, vz) => `<section class="cn-card"><h3 class="cn-h">${tit}</h3><p class="cn-sub mk-sub">Variação de share nos ramos da Akad${perA ? `, contra ${perA}` : ""}.</p>${lst.length ? lst.map(itemGP).join("") : `<p class="c2-vz">${vz}</p>`}</section>`;
+    const cp = corpo();
+    el.innerHTML = `${cab}
+      <div class="cn-kpis">
+        ${kpi("Seguradoras nos ramos da Akad", nf0.format(N), "com prêmio no período")}
+        ${kAk.join("")}
+        ${kpi("As 5 maiores juntas", pctPart(top5), "do GWP dos ramos da Akad")}
+      </div>
+      <section class="cn-card" aria-labelledby="h-mk">
+        <div class="cn-cab2">
+          <div><h3 class="cn-h" id="h-mk">Ranking de seguradoras ${ajuda("mkRank", "ranking de seguradoras")}</h3>
+            <p class="cn-sub">GWP nos ramos que a Akad acompanha. Clique numa seguradora para ver todos os ramos dela.</p></div>
+          <label class="mk-busca"><span class="sr">Buscar seguradora</span><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7" cy="7" r="5"/><path d="M11 11l3.5 3.5"/></svg><input type="search" id="mk-busca" placeholder="Buscar entre as ${N} seguradoras" value="${esc(S.mkBusca || "")}" autocomplete="off"></label>
+        </div>
+        <div class="tab-wrap"><table class="c2-at mk-t"><thead><tr>${th()}</tr></thead><tbody id="mk-tb">${cp.html}</tbody></table></div>
+        <div class="cn-pe" id="mk-pe">${rodape(cp)}</div>
+      </section>
+      ${temP ? `<div class="mk-2">${cardGP("Quem mais ganhou espaço", gan, "Nenhuma seguradora ganhou espaço relevante.")}${cardGP("Quem mais perdeu espaço", per, "Nenhuma seguradora perdeu espaço relevante.")}</div>` : ""}
+      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Share sobre o GWP de todas as seguradoras nos ${nL} ramos acompanhados. Sinistralidade é o sinistro incorrido sobre o GWP; comercialização é a despesa comercial sobre o prêmio ganho. Peso na seguradora: quanto esses ramos representam do GWP total dela${pesos === null && CC ? " (disponível para períodos a partir de " + mesLabel(D.meses.indexOf(CC.desde), true) + ")" : ""}.</p>`;
+    // eventos
+    const ligarLinhas = () => el.querySelectorAll("[data-ficha]").forEach((n) => {
+      if (n.dataset.lig) return; n.dataset.lig = "1";
+      n.addEventListener("click", () => abrirConcorrente(n.dataset.ficha));
+      if (n.tagName === "TR") n.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); abrirConcorrente(n.dataset.ficha); } });
+    });
+    const redesenhar = () => {
+      const c2 = corpo();
+      $("#mk-tb").innerHTML = c2.html;
+      $("#mk-pe").innerHTML = rodape(c2);
+      ligarMais(); ligarLinhas();
+    };
+    const ligarMais = () => el.querySelector("#mk-mais")?.addEventListener("click", () => { S.mkTodos = !S.mkTodos; redesenhar(); $("#mk-mais")?.focus(); });
+    let tBusca = null;
+    $("#mk-busca").addEventListener("input", (e) => {
+      S.mkBusca = e.target.value;
+      redesenhar();
+      clearTimeout(tBusca);
+      tBusca = setTimeout(() => { if ((S.mkBusca || "").trim()) gaUmaVez("buscar_concorrente", S.mkBusca.trim(), { termo: S.mkBusca.trim() }); }, 1200);
+    });
+    el.querySelectorAll(".mk-t th.ord").forEach((thEl) => thEl.querySelector("button").addEventListener("click", () => {
+      const col = thEl.dataset.col;
+      S.mkOrd = { col, dir: S.mkOrd.col === col ? -S.mkOrd.dir : col === "nome" || col === "pos" ? 1 : -1 };
+      if (col === "pos") S.mkOrd = { col: "g", dir: S.mkOrd.dir === 1 ? -1 : 1 };
+      renderConcorrentes();
+      el.querySelector(`.mk-t th[data-col="${col}"] button`)?.focus();
+    }));
+    ligarMais(); ligarLinhas();
+  }
+
   /* ---------- Página do concorrente (todos os ramos) ---------- */
   // Nomes amigáveis dos ramos que a Akad não acompanha (os da Akad usam o nome do painel)
   const NOMES_RAMO_OUT = { "0531": "Automóvel (casco)", "0553": "RC Facultativa de Veículos", "0542": "Assistência e outras coberturas de auto", "0114": "Residencial", "0116": "Condomínio", "0993": "Vida em Grupo", "1734": "Riscos de Petróleo", "0982": "Acidentes Pessoais (coletivo)", "1061": "Habitacional: prestamista", "1391": "Vida (individual)", "0327": "Riscos Cibernéticos", "0520": "Acidentes Pessoais de Passageiros", "1130": "Benfeitorias e Produtos Agropecuários", "1417": "Operadores Portuários", "1601": "Microsseguros de Pessoas", "1065": "Habitacional: demais coberturas", "1381": "Acidentes Pessoais (individual)", "1162": "Penhor Rural", "1369": "Viagem", "1384": "Doenças Graves (individual)", "0112": "Assistência (bens em geral)", "0990": "Eventos Aleatórios (coletivo)", "0313": "RC Riscos Ambientais", "0929": "Funeral (coletivo)", "0173": "Global de Bancos", "1433": "Marítimos (cascos)", "1390": "Eventos Aleatórios (individual)", "1329": "Funeral (individual)", "0987": "Desemprego e Perda de Renda", "1537": "RC Hangar", "1602": "Microsseguros de Danos", "1111": "Agrícola", "0525": "Carta Verde", "0628": "RCTR-P Municipal e Intermunicipal", "1597": "RETA (transporte aéreo)", "0658": "RC do Operador de Transporte Multimodal", "0141": "Lucros Cessantes", "1535": "Aeronáuticos (cascos)", "0980": "Educacional", "0984": "Doenças Graves (coletivo)", "0195": "Garantia Estendida", "1528": "RC Facultativa de Aeronaves" };
@@ -2311,27 +2477,27 @@
   }
 
   /* ---------- Navegação e filtros ---------- */
-  const ABAS = ["geral", "linhas", "uf", "sinistros", "concorrente"];
+  const ABAS = ["geral", "linhas", "uf", "concorrentes", "sinistros", "concorrente"];
   // Quais filtros cada página usa (o período vale para todas)
-  const FILTROS_ABA = { geral: [], linhas: ["linha"], uf: ["linha", "uf"], sinistros: [], concorrente: [] };
+  const FILTROS_ABA = { geral: [], linhas: ["linha"], uf: ["linha", "uf"], sinistros: [], concorrentes: [], concorrente: [] };
 
   function irPara(aba, manterVoltar) {
     if (!manterVoltar) S.pilha = [];
     S.aba = aba;
     document.body.dataset.aba = aba;
     document.querySelectorAll(".nav a").forEach((a) => {
-      if (a.dataset.aba === (aba === "concorrente" ? "geral" : aba)) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
+      if (a.dataset.aba === (aba === "concorrente" ? "concorrentes" : aba)) { a.setAttribute("aria-current", "page"); const n = a.parentElement; if (n.scrollWidth > n.clientWidth) n.scrollLeft = a.offsetLeft - (n.clientWidth - a.offsetWidth) / 2; } else a.removeAttribute("aria-current");
     });
     document.querySelectorAll(".aba").forEach((s) => { s.hidden = s.id !== "aba-" + aba; });
-    $("#aba-conc").hidden = aba !== "geral";
+    $("#aba-conc").hidden = aba !== "concorrentes";
     render();
     window.scrollTo({ top: 0 });
   }
   // Endereço compartilhável: a aba e os filtros (ramo, estado e período) ficam no link.
   // Endereço legível: #visao-geral, #ramos/rc-profissional, #estados/sp, #sinistros, #concorrente/tokio-marine
   // (os links no formato antigo, como #linhas?ramo=rcpro ou #geral?periodo=202601-202608, continuam funcionando)
-  const ABA_URL = { geral: "visao-geral", linhas: "ramos", uf: "estados", sinistros: "sinistros", concorrente: "concorrente" };
-  const URL_ABA = { "visao-geral": "geral", ramos: "linhas", estados: "uf", sinistros: "sinistros", concorrente: "concorrente", geral: "geral", linhas: "linhas", uf: "uf" };
+  const ABA_URL = { geral: "visao-geral", linhas: "ramos", uf: "estados", concorrentes: "concorrentes", sinistros: "sinistros", concorrente: "concorrente" };
+  const URL_ABA = { "visao-geral": "geral", ramos: "linhas", estados: "uf", concorrentes: "concorrentes", conc: "concorrentes", sinistros: "sinistros", concorrente: "concorrente", geral: "geral", linhas: "linhas", uf: "uf" };
   const MES_URL = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
   const slug = (t) => String(t).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/&/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   const abaDoHash = (h) => URL_ABA[String(h || "").replace(/^#/, "").split("?")[0].split("/")[0]] || "geral";
@@ -2428,6 +2594,7 @@
         geral: () => "Inteligência de Mercado",
         linhas: () => (S.linha && S.linha !== "todas" ? nomeSel(S.linha) : "Ramos"),
         uf: () => (S.uf != null && S.uf !== "todos" && D.ufs[+S.uf] ? `Por estado: ${D.ufs[+S.uf]}` : "Por estado"),
+        concorrentes: () => "Concorrentes",
         sinistros: () => "Sinistros",
         concorrente: () => (S.conc ? nomeCurtoCia(nomeEnt(S.conc)) : "Concorrente"),
       })[S.aba]();
@@ -2452,7 +2619,7 @@
     // o endereço acompanha os filtros, para o link poder ser compartilhado
     { const h = hashDoEstado(); if (location.hash !== h) { try { history.replaceState(null, "", h); } catch (e) { /* ignora */ } } }
     // os blocos de concorrentes ficam no fim da Visão geral
-    ({ geral: () => { renderGeral(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin, concorrente: renderConcorrente })[S.aba]();
+    ({ geral: renderGeral, concorrentes: () => { renderConcorrentes(); renderConc(); }, linhas: renderLinhas, uf: renderUF, sinistros: renderSin, concorrente: renderConcorrente })[S.aba]();
   }
 
   // Busca sem diferenciar acento e maiúscula
@@ -2776,7 +2943,7 @@
       const bruto = location.hash.slice(1).split("?")[0], h = abaDoHash(location.hash);
       const topo = S.pilha[S.pilha.length - 1];
       if (topo && topo.aba === h) voltar();
-      else if (bruto === "conc") irPara("geral");
+      else if (bruto === "conc") irPara("concorrentes");
       else irPara(lerHash(location.hash));
     });
     $("#voltar").addEventListener("click", (e) => { e.preventDefault(); voltar(); });
@@ -2799,7 +2966,7 @@
     $(".rodape").innerHTML = `
       <div class="rod-in">
         <div class="rod-marca">
-          <b>Inteligência de Mercado SUSEP</b>
+          <b>Inteligência de Mercado</b>
           <span>Painel da Akad Seguros com dados públicos do mercado de seguros.</span>
         </div>
         <div class="rod-col">
