@@ -1848,3 +1848,18 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 .tip .tt-eo th, .tip .tt-eo td { border: 0; background: none; text-transform: none; letter-spacing: 0; font-size: .8rem; }
 .tip .tt-eo th { color: #fff; }
 .tip .tt-eo tr.tt-sep td { border-top: 1px solid rgba(255, 255, 255, .25); }
+/* Ramos: template enxuto (legenda por ano, subtítulos curtos, ações indicadas nos nomes e cabeçalhos) */
+#aba-linhas .pr-leg .eo-leg-g { display: inline-flex; align-items: center; gap: 12px; }
+#aba-linhas .pr-leg .eo-leg-g b { font-weight: 600; color: var(--ink); }
+#aba-linhas .pr-leg .eo-leg-sep { color: var(--muted); }
+#aba-linhas #g-prod-nota .ajuda, #aba-linhas .sn-sub .ajuda { vertical-align: 1px; }
+#aba-linhas .sn-sub b { font-weight: 700; }
+#aba-linhas .sn-sub b.ruim { color: var(--ruim); } #aba-linhas .sn-sub b.bom { color: var(--bom); }
+#aba-linhas .merc-pe { margin: 4px 0 0; font-size: .76rem; }
+#aba-linhas .rk-tab tr.clic .nome-in > span:first-child { color: var(--navy); text-decoration: underline; text-decoration-color: rgba(28, 65, 115, .3); text-underline-offset: 3px; }
+#aba-linhas .rk-tab tr.clic:hover .nome-in > span:first-child { text-decoration-color: currentColor; }
+#aba-linhas .rk-tab th.ord:not([aria-sort])::after, #aba-linhas .rk-tab .th-pos-btn:not([aria-sort])::after { content: " ↕"; opacity: .45; }
+#aba-linhas button.gp-li .gp-nm { color: var(--navy); text-decoration: underline; text-decoration-color: rgba(28, 65, 115, .3); text-underline-offset: 3px; }
+#aba-linhas button.gp-li:hover .gp-nm { text-decoration-color: currentColor; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-linhas .rk-tab tr.clic .nome-in > span:first-child, :root:not([data-theme="light"]) #aba-linhas button.gp-li .gp-nm { color: #9DB4D1; text-decoration-color: rgba(157, 180, 209, .35); } }
+:root[data-theme="dark"] #aba-linhas .rk-tab tr.clic .nome-in > span:first-child, :root[data-theme="dark"] #aba-linhas button.gp-li .gp-nm { color: #9DB4D1; text-decoration-color: rgba(157, 180, 209, .35); }
