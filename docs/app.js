@@ -519,7 +519,10 @@
     const larg = (t) => { const c = larg.c || (larg.c = document.createElement("canvas").getContext("2d")); c.font = `600 11px ${getComputedStyle(el).fontFamily}`; return c.measureText(t).width; };
     const wCol = (() => { const n = itens.length, bwx = (W - m.l - m.r) / Math.max(1, n), w0 = bwx * (vis !== "mes" ? 0.6 : par ? 0.74 : 0.7); return par ? (w0 - Math.min(4, w0 * 0.06)) / 2 : w0; })();
     const maiorRot = miCurto(Math.max(1, ...itens.map((x) => Math.max(x.tot || 0, x.totP || 0, x.a || 0, x.vp || 0))));
-    const fmtRot = peq ? null : larg(maiorRot) + 8 <= wCol ? miCurto : larg(maiorRot.replace(/ (mi|bi|mil)$/, "")) + 6 <= wCol ? (v) => miCurto(v).replace(/ (mi|bi|mil)$/, "") : null;
+    const semUn = (v) => miCurto(v).replace(/ (mi|bi|mil)$/, ""), wSem = larg(semUn(Math.max(1, ...itens.map((x) => Math.max(x.tot || 0, x.totP || 0, x.a || 0, x.vp || 0)))));
+    // última tentativa antes de esconder: número sem "mi" em fonte 10px
+    const rotMini = !peq && larg(maiorRot) + 8 > wCol && wSem + 6 > wCol && wSem * (10 / 11) + 2 <= wCol;
+    const fmtRot = peq ? null : larg(maiorRot) + 8 <= wCol ? miCurto : wSem + 6 <= wCol || rotMini ? semUn : null;
     // coluna empilhada: E&O embaixo, RCPM em cima (hachurado quando calculado); valores em R$ dentro de cada parte
     const pilha = (x0, wb, base, eo, cE, cR, cls) => {
       const yE = Y(eo), yT = Y(base);
@@ -576,6 +579,7 @@
     });
     g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : vis === "tri" ? "por trimestre" : "por ano"}">${g}</svg>`;
+    if (rotMini) el.querySelectorAll(".eo-in, .eo-tot, .pr-val").forEach((t) => t.classList.add("eo-mini"));
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
     // tooltip de RC Profissional: tabela com uma coluna por período (o atual e, na visão por mês, o mesmo mês do ano anterior)
     const tipEO = (cols, rodape) => {
