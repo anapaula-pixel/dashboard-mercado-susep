@@ -1098,7 +1098,7 @@
             ${vgTodos ? grupoTab("Sem prêmio da Akad no período", semA, "sem") : ""}
           </tbody>
         </table></div>
-        ${vgOcultos > 0 || vgTodos && comAkad.length + semA.length > VG_LIM ? `<button type="button" class="c2-mais2 vg-mais" id="vg-mais" aria-expanded="${vgTodos}">${vgTodos ? "Mostrar só os 10 maiores ↑" : `Ver os outros ${vgOcultos} ramos ↓`}</button>` : ""}`;
+        ${vgOcultos > 0 || vgTodos && comAkad.length + semA.length > VG_LIM ? `<button type="button" class="c2-mais2 vg-mais" id="vg-mais" aria-expanded="${vgTodos}">${vgTodos ? "Mostrar menos ↑" : `Ver os outros ${vgOcultos} ramos ↓`}</button>` : ""}`;
 
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
@@ -1438,7 +1438,7 @@
               </tr>`).join("")}
             </tbody>
           </table></div>
-          ${linhasTab.length > RK_LIM + 1 ? `<button type="button" class="c2-mais2 rk-mais" id="rk-mais" aria-expanded="${rkTodas}">${rkTodas ? "Mostrar só as 10 maiores ↑" : `Ver as outras ${linhasTab.length - visTab.length} seguradoras ↓`}</button>` : ""}
+          ${linhasTab.length > RK_LIM + 1 ? `<button type="button" class="c2-mais2 rk-mais" id="rk-mais" aria-expanded="${rkTodas}">${rkTodas ? "Mostrar menos ↑" : `Ver as outras ${linhasTab.length - visTab.length} seguradoras ↓`}</button>` : ""}
         </div>
         <div class="bloco c12">
           <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
@@ -1747,7 +1747,7 @@
       corpoGP = `<div class="c2-dvt" role="table" aria-label="Variação da participação da Akad por ramo">
         <div class="c2-dv c2-dvh" role="row"><span role="columnheader">Ramo</span><span role="columnheader" class="r">Peso na carteira ${ajuda("tPeso", "peso na carteira")}</span><span role="columnheader" class="c">perdeu ← Akad → ganhou</span><span role="columnheader" class="r">Akad</span><span role="columnheader">Maior ganho de participação</span></div>
         ${vis.map(lin).join("")}</div>
-        ${atua.length > N_VIS ? `<button type="button" class="c2-mais" id="c2-mais" aria-expanded="${S.ccTodos ? "true" : "false"}">${S.ccTodos ? "Mostrar só os 10 maiores ↑" : `Ver todos os ${atua.length} ramos ↓`}</button>` : ""}`;
+        ${atua.length > N_VIS ? `<button type="button" class="c2-mais2" id="c2-mais" aria-expanded="${S.ccTodos ? "true" : "false"}">${S.ccTodos ? "Mostrar menos ↑" : `Ver os outros ${atua.length - N_VIS} ramos ↓`}</button>` : ""}`;
     }
     const bGP = `
       <section class="c2-sec" aria-labelledby="h-c2b">
@@ -1880,7 +1880,7 @@
       const fora = ak && !vis.includes(ak);
       return { html: vis.map(linha).join("") + (fora ? `<tr class="mk-gap" aria-hidden="true"><td colspan="${COLS.length}">⋯</td></tr>${linha(ak)}` : ""), resto: N - vis.length - (fora ? 1 : 0) };
     };
-    const rodape = (cp) => `${cp.todos ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="true">Mostrar só as ${MK_LIMITE} primeiras ↑</button>` : cp.resto > 0 ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="false">Ver as outras ${cp.resto} seguradoras ↓</button>` : "<span></span>"}
+    const rodape = (cp) => `${cp.todos ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="true">Mostrar menos ↑</button>` : cp.resto > 0 ? `<button type="button" class="c2-mais2" id="mk-mais" aria-expanded="false">Ver as outras ${cp.resto} seguradoras ↓</button>` : "<span></span>"}
       ${ak ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Akad em destaque, sempre visível</span>' : ""}`;
     // quem ganhou e quem perdeu espaço
     const comV = rows.filter((r) => r.k !== AKAD && r.dsh != null);
@@ -2111,7 +2111,7 @@
         </div>
         <div class="tab-wrap"><table class="c2-at"><thead><tr>${th()}</tr></thead><tbody>${ord.slice(0, corte).map(linha).join("")}</tbody></table></div>
         <div class="cn-pe">
-          ${ord.length > CC_LIMITE && S.fichaVis !== "akad" ? `<button type="button" class="c2-mais2" id="cn-mais" aria-expanded="${S.fichaTodos ? "true" : "false"}">${S.fichaTodos ? `Mostrar só os ${CC_LIMITE} primeiros ↑` : `Ver os outros ${ord.length - CC_LIMITE} ramos ↓`}</button>` : "<span></span>"}
+          ${ord.length > CC_LIMITE && S.fichaVis !== "akad" ? `<button type="button" class="c2-mais2" id="cn-mais" aria-expanded="${S.fichaTodos ? "true" : "false"}">${S.fichaTodos ? "Mostrar menos ↑" : `Ver os outros ${ord.length - CC_LIMITE} ramos ↓`}</button>` : "<span></span>"}
           ${S.fichaVis !== "akad" && doAkad.length ? '<span class="c2-leg"><i class="c2-dot" aria-hidden="true"></i>Ramo da Akad (clique para abrir)</span>' : ""}
         </div>
       </section>
@@ -2287,7 +2287,7 @@
               <td class="n"><span class="uf-x ${xCls(x.vsMed)}">${x.akad > 0 ? xMed(x.vsMed) : "–"}</span></td>
               ${S.linha === "todas" ? `<td>${x.topRamo ? esc(x.topRamo) : "–"}</td>` : ""}<td>${nomeLider(x.lider)}</td></tr>`).join("")}</tbody>
           </table></div>
-          ${tabela.length > 10 ? `<button type="button" class="uf-mais" id="uf-mais">${verTodos ? "Mostrar só os 10 maiores" : `Ver todos os ${tabela.length} estados`}</button>` : ""}
+          ${tabela.length > 10 ? `<button type="button" class="c2-mais2" id="uf-mais" aria-expanded="${verTodos}">${verTodos ? "Mostrar menos ↑" : `Ver os outros ${tabela.length - 10} estados ↓`}</button>` : ""}
         </section>`;
 
       const mapa = $("#mapa");
@@ -2545,7 +2545,7 @@
             ${S.sinTodos ? menores.map(linhaT).join("") : ""}
           </tbody>
         </table></div>
-        ${menores.length ? `<button type="button" class="sn-mais" aria-expanded="${!!S.sinTodos}">${S.sinTodos ? "Mostrar só os ramos com 1% ou mais da carteira" : `Ver ramos com menos de 1% da carteira (${menores.length})`}</button>` : ""}
+        ${menores.length ? `<button type="button" class="c2-mais2 sn-mais" aria-expanded="${!!S.sinTodos}" title="Ramos com menos de 1% da carteira da Akad">${S.sinTodos ? "Mostrar menos ↑" : `Ver os outros ${menores.length} ramos ↓`}</button>` : ""}
       </section>`;
 
     el.innerHTML = cab + cards + melhorPior + composicao + tabela;
