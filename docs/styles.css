@@ -1683,7 +1683,7 @@ body { color: var(--ink); }
 .cn-cab2 .seg-ctrl button { padding: 8px 14px; font-size: .86rem; }
 .cn-cab2 .seg-ctrl button b { font-weight: 600; }
 .cn-cab2 .seg-ctrl button span { color: var(--muted); font-weight: 400; margin-left: 6px; }
-.cn-cab2 .seg-ctrl button[aria-pressed="true"] span { color: rgba(255, 255, 255, .8); }
+.cn-cab2 .seg-ctrl button[aria-pressed="true"] span { color: inherit; opacity: .7; }
 #aba-concorrente .tab-wrap { margin: 0 -8px; padding: 0 8px; }
 #aba-concorrente .c2-at { font-size: .9rem; }
 #aba-concorrente .c2-at th { font-size: .68rem; padding: 10px 12px; background: var(--bg); border-bottom: 1px solid var(--cc-rule); color: var(--cc-label); white-space: nowrap; }
