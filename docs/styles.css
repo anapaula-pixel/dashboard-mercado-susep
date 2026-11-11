@@ -1909,3 +1909,4 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 #aba-linhas .rk-tab thead th[rowspan] { vertical-align: bottom; }
 #aba-linhas .rk-tab .rk-g1 { border-left: 1px solid var(--line); }
 #aba-linhas .rk-tab th.rk-g + th.rk-g { border-left: 12px solid transparent; background-clip: padding-box; }
+#aba-geral .vg-mais { margin-top: 10px; }
