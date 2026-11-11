@@ -1803,3 +1803,11 @@ body { color: var(--ink); }
 /* Na página Por estado a barra de filtros já tem ramo e estado; o selo "Dados até" sai para o "Copiar link" não quebrar de linha */
 body[data-aba="uf"] #status { display: none; }
 body[data-aba="uf"] .lk-copiar { margin-left: auto; }
+
+/* Ramos > Sinistralidade: Akad no mesmo período do ano anterior (rosa tracejado) e linha de 100% com rótulo */
+#b-sin { --sn-ant: #EE7EA5; }
+#g-sin .sn-ant { stroke: var(--sn-ant); stroke-dasharray: 6 4; stroke-linecap: butt; }
+#g-sin .sn-ant-p { fill: var(--sn-ant); }
+#g-sin .sn-lim { stroke: var(--ruim); stroke-width: 1; opacity: .45; }
+#g-sin .sn-lim-t { font-size: 11px; fill: var(--ruim); opacity: .8; }
+#b-sin .pr-leg i.sn-ant-l { width: 16px; height: 0; border-radius: 0; border-top: 2.5px dashed var(--sn-ant); vertical-align: 3px; }
