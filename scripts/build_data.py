@@ -30,7 +30,8 @@ DESDE = "201901"
 CONC_DESDE = "202201"
 
 # Ramos fixos do painel. Além destes, o script inclui sozinho todo ramo em que a Akad tem prêmio
-# na base com soma de prêmio positiva desde DESDE (ver incluir_ramos_da_akad), em toda atualização.
+# na base com prêmio somado de pelo menos R$ 100 mil desde DESDE (ver incluir_ramos_da_akad), em toda atualização.
+MIN_AKAD = 100_000  # R$
 RAMOS = {
     "0378": "R.C. Profissional",
     "0310": "R.C. Administradores e Diretores (D&O)",
@@ -179,12 +180,13 @@ def nomes_ramos(zf):
 
 
 def incluir_ramos_da_akad(zf, seg):
-    """Acrescenta a RAMOS e LINHAS todo ramo em que a Akad tem prêmio emitido (soma positiva desde DESDE)."""
+    """Acrescenta a RAMOS e LINHAS todo ramo em que a Akad tem prêmio emitido somado de pelo menos
+    MIN_AKAD desde DESDE (corta ramos com produção residual, que só trariam o mercado inteiro do ramo)."""
     tot = {}
     for (m, c, r), a in seg.items():
         if c == AKAD:
             tot[r] = tot.get(r, 0.0) + a[0]
-    novos = sorted(r for r, v in tot.items() if v > 0 and r not in RAMOS)
+    novos = sorted(r for r, v in tot.items() if v >= MIN_AKAD and r not in RAMOS)
     if not novos:
         return
     nr = nomes_ramos(zf)
