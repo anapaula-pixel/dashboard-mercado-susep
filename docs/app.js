@@ -47,6 +47,13 @@
     if (a >= 1e3) return "R$ " + nf1.format(vMil / 1e3) + " mi";
     return "R$ " + nf0.format(vMil) + " mil";
   }
+  // valor curto com uma casa decimal, para rótulos dentro das colunas (ex.: 12,2 mi)
+  function miCurto(vMil) {
+    const a = Math.abs(vMil);
+    if (a >= 1e6) return nf1.format(vMil / 1e6) + " bi";
+    if (a >= 1e3) return nf1.format(vMil / 1e3) + " mi";
+    return nf0.format(vMil) + " mil";
+  }
   function reaisCurto(vMil) {
     const a = Math.abs(vMil);
     if (a >= 1e6) return nf1.format(vMil / 1e6) + " bi";
@@ -409,7 +416,10 @@
     // por mês, com até 12 meses no filtro: cada mês ao lado do mesmo mês do ano anterior
     const par = vis === "mes" && P.b - P.a + 1 <= 12 && P.a - 12 >= 0;
     const parAno = par && D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4); // tudo no mesmo ano: o ano sai do eixo e vai para a legenda
-    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : par && !peq ? 30 : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
+    // RC Profissional, por mês: cada coluna dividida entre E&O e RCPM (proporção dos dados internos da Akad aplicada ao GWP da SUSEP)
+    const frEO = par && S.linha === EO_LINHA && EO ? (i) => EO.fr.get(i) : null;
+    const eoM = !!frEO && (() => { for (let i = P.a; i <= P.b; i++) if (frEO(i) != null || frEO(i - 12) != null) return true; return false; })();
+    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : eoM && !peq ? 48 : par && !peq ? 30 : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
     const fim = P.b;
     // início do gráfico: no acumulado do ano, mostra também o ano anterior inteiro para comparar; nos outros filtros, o período exato
     const ini0 = S.periodo === "ytd" ? Math.max(0, D.meses.indexOf(`${+D.meses[fim].slice(0, 4) - 1}01`)) : P.a;
@@ -483,9 +493,33 @@
       const barra = (x0, wb, yy, cor) => { const hh = H - m.b - yy, rr = Math.min(3, wb / 2); return hh > 0 ? `<path d="M${x0} ${H - m.b}V${yy + Math.min(rr, hh)}q0 -${rr} ${rr} -${rr}h${wb - 2 * rr}q${rr} 0 ${rr} ${rr}V${H - m.b}Z" fill="${cor}"/>` : ""; };
       if (par) {
         const gap = Math.min(4, w * 0.06), wb = (w - gap) / 2, yp = Y(x.vp || 0);
-        g += barra(bx, wb, yp, x.corP) + barra(bx + wb + gap, wb, y, x.cor);
+        let yt = Math.min(y, yp);
+        if (eoM) {
+          // valor de cada produto dentro da coluna; passando o mouse, troca pela % do total
+          const iA = D.meses.indexOf(x.ym), fA = frEO(iA), fP = frEO(iA - 12);
+          if (fA != null) { x.eo = x.a * fA; x.rc = x.a - x.eo; }
+          if (fP != null) { x.eoP = x.vp * fP; x.rcP = x.vp - x.eoP; }
+          const pilha = (x0, base, eo, cE, cR, cls) => {
+            const yE = Y(eo), yT = Y(base);
+            let o = `<rect x="${x0}" y="${yE}" width="${wb}" height="${Math.max(0, H - m.b - yE)}" fill="${cE}"/><rect x="${x0}" y="${yT}" width="${wb}" height="${Math.max(0, yE - yT)}" fill="${cR}"/>`;
+            if (!peq && wb >= 34 && base > 0) {
+              const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}"><tspan class="eo-v">${miCurto(v)}</tspan><tspan class="eo-p">${nf0.format((v / base) * 100)}%</tspan></text>`;
+              if (H - m.b - yE > 18) o += rot((yE + H - m.b) / 2, eo);
+              if (yE - yT > 18) o += rot((yT + yE) / 2, base - eo);
+            }
+            return o;
+          };
+          g += `<g class="eo-mes">`;
+          g += fP != null ? pilha(bx, x.vp, x.eoP, "var(--eo-e-p)", "var(--eo-r-p)", "eo-in eo-in-p") : barra(bx, wb, yp, x.corP);
+          g += fA != null ? pilha(bx + wb + gap, x.a, x.eo, "var(--eo-e)", "var(--eo-r)", "eo-in") : barra(bx + wb + gap, wb, y, x.cor);
+          if (!peq && bw >= 56) {
+            if (x.vp > 0) g += `<text x="${bx + wb / 2}" y="${yp - 6}" text-anchor="middle" class="eo-tot eo-tot-p">${miCurto(x.vp)}</text>`;
+            if (x.a > 0) g += `<text x="${bx + wb + gap + wb / 2}" y="${y - 6}" text-anchor="middle" class="eo-tot">${miCurto(x.a)}</text>`;
+            yt -= 16;
+          }
+        } else g += barra(bx, wb, yp, x.corP) + barra(bx + wb + gap, wb, y, x.cor);
         if (!peq && bw >= 56 && x.cr != null && isFinite(x.cr)) {
-          const d = x.cr, txt = d > 999 ? "> +999%" : (d >= 0 ? "+" : "−") + nf0.format(Math.abs(d)) + "%", pw = txt.length * 6.4 + 12, yt = Math.min(y, yp);
+          const d = x.cr, txt = d > 999 ? "> +999%" : (d >= 0 ? "+" : "−") + nf0.format(Math.abs(d)) + "%", pw = txt.length * 6.4 + 12;
           g += `<rect x="${bx + w / 2 - pw / 2}" y="${yt - 22}" width="${pw}" height="16" rx="8" class="${d >= 0 ? "pr-up" : "pr-dn"}"/><text x="${bx + w / 2}" y="${yt - 10.5}" text-anchor="middle" class="pr-pill ${d >= 0 ? "pr-up" : "pr-dn"}">${txt}</text>`;
         }
       } else if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
@@ -500,18 +534,27 @@
           g += `<rect x="${bx + w / 2 - pw / 2}" y="${y - 22}" width="${pw}" height="16" rx="8" class="${d >= 0 ? "pr-up" : "pr-dn"}"/><text x="${bx + w / 2}" y="${y - 10.5}" text-anchor="middle" class="pr-pill ${d >= 0 ? "pr-up" : "pr-dn"}">${txt}</text>`;
         }
       }
-      g += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hitb"/>`;
+      g += `<rect x="${m.l + i * bw}" y="${m.t}" width="${bw}" height="${H - m.t - m.b}" fill="transparent" data-i="${i}" class="hitb"/>${eoM && par ? "</g>" : ""}`;
     });
     g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : vis === "tri" ? "por trimestre" : "por ano"}">${g}</svg>`;
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
     el.querySelectorAll(".hitb").forEach((r) => {
       const x = itens[+r.dataset.i];
-      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div>${par && x.refP ? `<div>Em ${esc(x.refP)}: ${reais(x.vp)}</div>` : ""}<div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
+      const pc = (v, t) => nf0.format((v / t) * 100) + "%";
+      const html = eoM
+        ? `<b>${esc(x.tit)}</b><div>Total: ${reais(x.a)}</div>${x.eo != null ? `<div>E&amp;O: ${reais(x.eo)} (${pc(x.eo, x.a)})</div><div>RCPM: ${reais(x.rc)} (${pc(x.rc, x.a)})</div>` : `<div class="tip-sub">Sem divisão entre E&amp;O e RCPM neste mês</div>`}`
+          + `<div style="margin-top:6px"><b>${esc(x.refP)}</b></div><div>Total: ${reais(x.vp)}</div>${x.eoP != null ? `<div>E&amp;O: ${reais(x.eoP)} (${pc(x.eoP, x.vp)}) · RCPM: ${reais(x.rcP)} (${pc(x.rcP, x.vp)})</div>` : ""}`
+          + `<div style="margin-top:6px">Variação do total: ${x.cr != null ? sinal(x.cr, "%") : "–"}</div>`
+        : `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div>${par && x.refP ? `<div>Em ${esc(x.refP)}: ${reais(x.vp)}</div>` : ""}<div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
       r.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
       r.addEventListener("mouseleave", esconderTip);
     });
-    itens.par = par;
+    itens.par = par; itens.eoM = eoM;
+    if (eoM) {
+      const com = itens.filter((x) => x.eo != null);
+      itens.eoRes = com.length ? { sT: com.reduce((t, x) => t + x.a, 0), sE: com.reduce((t, x) => t + x.eo, 0), parcial: com.length < itens.length, de: D.meses.indexOf(com[0].ym), ate: D.meses.indexOf(com[com.length - 1].ym) } : null;
+    }
     if (par) { itens.rotA = parAno ? D.meses[P.b].slice(0, 4) : periodoLabel(P.a, P.b); itens.rotP = parAno ? D.meses[P.b - 12].slice(0, 4) : periodoLabel(P.a - 12, P.b - 12); }
     return itens;
   }
@@ -1224,6 +1267,7 @@
   }
 
   function renderLinhas() {
+    if (S.linha === EO_LINHA && !EO) carregarEO();
     const P = periodo();
     const el = $("#aba-linhas");
     if (S.linha === "todas") return renderCatalogo(el, P);
@@ -1296,7 +1340,9 @@
             </div>
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
+          <p class="eo-resumo" id="g-prod-eo" hidden></p>
           <div class="graf" id="g-prod"></div>
+          <p class="eo-aviso" id="g-prod-aviso" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span>A SUSEP não separa E&amp;O e RCPM. Os totais são o GWP da SUSEP, como no resto da página. A divisão entre os dois produtos usa a proporção dos dados internos da Akad (Power BI). <span class="eo-aviso-ate"></span></span></p>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
@@ -1432,6 +1478,19 @@
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
+      const ae = $("#g-prod-eo"), av = $("#g-prod-aviso");
+      ae.hidden = av.hidden = !itens.eoM;
+      if (itens.eoM) {
+        const r = itens.eoRes, pc = (v) => nf0.format((v / r.sT) * 100) + "%";
+        ae.innerHTML = !r ? `Ainda não há divisão entre E&amp;O e RCPM para este período.`
+          : `${r.parcial ? `De ${periodoLabel(r.de, r.ate)}` : "No período"}: total <b>${reais(r.sT)}</b> · E&amp;O <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM <b>${reais(r.sT - r.sE)}</b> (${pc(r.sT - r.sE)})`;
+        av.querySelector(".eo-aviso-ate").textContent = `Dados internos disponíveis de ${mesLabel(EO.de, true)} a ${mesLabel(EO.ate, true)}.`;
+        const it = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
+        const temA = itens.some((x) => x.eo != null), temP = itens.some((x) => x.eoP != null);
+        $("#g-prod-leg").innerHTML = (temA ? it("var(--eo-e)", `E&amp;O ${itens.rotA}`) + it("var(--eo-r)", `RCPM ${itens.rotA}`) : it(itens[0].cor, `Total ${itens.rotA}`))
+          + (temP ? it("var(--eo-e-p)", `E&amp;O ${itens.rotP}`) + it("var(--eo-r-p)", `RCPM ${itens.rotP}`) : it(itens[0].corP, `Total ${itens.rotP}`))
+          + `<span class="eo-leg-t">Passe o mouse para ver a % de cada produto</span>`;
+      } else
       $("#g-prod-leg").innerHTML = vis === "mes" && itens.par
         ? `<span><i style="background:${itens[0].cor}"></i>${itens.rotA}</span><span><i style="background:${itens[0].corP}"></i>${itens.rotP}</span>`
         : anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
@@ -1804,6 +1863,24 @@
       s = low.replace(/(^|[\s(\/-])([a-zà-ú])/g, (m, p, c, i) => { const w = low.slice(i + p.length).split(/[\s)\/-]/)[0]; return peq.has(w) && i > 0 ? m : p + c.toUpperCase(); });
     }
     return s;
+  }
+  // Divisão de RC Profissional entre E&O e RCPM: dados internos da Akad (Power BI), atualizados à mão em data/eo.json
+  const EO_LINHA = "rcpro";
+  let EO = null, eoPromessa = null;
+  function carregarEO() {
+    if (!eoPromessa) {
+      eoPromessa = fetch("data/eo.json", { cache: "no-cache" })
+        .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+        .then((j) => {
+          const fr = new Map();
+          for (const [ym, [e, r]] of Object.entries(j.meses)) { const i = D.meses.indexOf(ym); if (i >= 0 && e + r > 0) fr.set(i, e / (e + r)); }
+          const idx = [...fr.keys()].sort((a, b) => a - b);
+          EO = { fr, de: idx[0], ate: idx[idx.length - 1] };
+          if (S.aba === "linhas" && S.linha === EO_LINHA) renderLinhas();
+        })
+        .catch(() => {});
+    }
+    return eoPromessa;
   }
   let CC = null, ccPromessa = null, ccAgg = null;
   // O arquivo com todos os ramos de todas as seguradoras só é baixado quando alguém abre esta página
