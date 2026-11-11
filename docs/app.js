@@ -1429,7 +1429,7 @@
       const sA = (totA[1] / totA[0]) * 100, sM = totM[0] > 0 ? (totM[1] / totM[0]) * 100 : null;
       const W = Math.max(280, host.clientWidth - 40 || 600), peq = W < 560, H = peq ? 220 : 260, m = { t: 18, r: 12, b: 36, l: 40 };
       const temAnt = qs.some((x) => x.sap != null);
-      const totAP = qs.reduce((t, x) => [t[0] + x.ap[0], t[1] + x.ap[1]], [0, 0]), sAP = totAP[0] > 0 ? (totAP[1] / totAP[0]) * 100 : null;
+      const totAP = qs.reduce((t, x) => [t[0] + x.ap[0], t[1] + x.ap[1]], [0, 0]), sAP = P.a - 12 >= 0 && totAP[0] > 0 ? (totAP[1] / totAP[0]) * 100 : null; // sem o ano anterior completo, não compara o período
       const umAno = anoC(P.a) === anoC(P.b), rotAnt = umAno ? `Akad ${+anoC(P.a) - 1}` : "Akad, 12 meses antes";
       const vals = qs.flatMap((x) => [x.sa, x.sap]).filter((v) => v != null);
       const vMax = Math.max(100, ...vals.map((v) => Math.min(v, 250))) * 1.08, vMin = Math.min(0, ...vals);
