@@ -1204,7 +1204,6 @@
       <div class="cab-aba">
         <div>
           <h2>Posicionamento por ramo</h2>
-          <p>Veja onde a Akad está mais bem posicionada e quais mercados apresentam oportunidades de crescimento.</p>
         </div>
       </div>
       <section class="tr-card tr-bcg" aria-label="Matriz de posicionamento dos ramos">
