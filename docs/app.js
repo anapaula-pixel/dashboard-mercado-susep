@@ -1364,9 +1364,7 @@
     const top = R.rk.filter((k) => k !== AKAD).slice(0, 4);
 
     // tabela de ranking
-    const lista = R.rk.slice(0, 15);
-    if (!lista.includes(AKAD) && R.cur.has(AKAD)) lista.push(AKAD);
-    const linhasTab = lista.map((k) => ({ k, ...infoEnt(R, k) }));
+    const linhasTab = R.rk.map((k) => ({ k, ...infoEnt(R, k) }));
     const o = S.rankOrd;
     const perR = P.pa != null ? periodoLabel(P.pa, P.pb) : "período anterior";
     // quem ganhou e quem perdeu participação no ramo (período do filtro contra o mesmo período do ano anterior)
@@ -1400,6 +1398,12 @@
       if (vb == null) return -1;
       return (va - vb) * o.dir;
     });
+    // mostra 10 seguradoras; se a Akad estiver abaixo, ela entra como última linha antes do "ver todas"
+    const RK_LIM = 10, rkTodas = !!S.rankTodas || linhasTab.length <= RK_LIM + 1;
+    const visTab = rkTodas ? linhasTab : linhasTab.slice(0, RK_LIM);
+    const akFora = !rkTodas && !visTab.some((x) => x.k === AKAD) ? linhasTab.find((x) => x.k === AKAD) : null;
+    if (akFora) visTab.push(akFora);
+    const perA = periodoLabel(P.a, P.b);
 
     el.innerHTML = `
       <div class="cab-aba">
@@ -1410,6 +1414,31 @@
       </div>
       <div class="kn-grid kpis-ramo" style="--n:4">${kpisRamo(ak, R.rk.length, sinM)}</div>
       <div class="grade">
+        <div class="bloco c12">
+          <div class="bloco-cab"><h2>Ranking de seguradoras</h2></div>
+          <div class="tab-wrap"><table class="rk-tab">
+            <thead><tr>
+              <th class="rk-seg" rowspan="2"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
+              <th class="rk-g" colspan="3">GWP</th><th class="rk-g" colspan="2">Participação</th><th class="rk-g" colspan="2" title="Sinistralidade: sinistro incorrido ÷ GWP. Comissão: sobre o prêmio ganho.">Índices</th>
+            </tr>
+            <tr class="rk-sub"><th class="n ord rk-g1" data-col="pe">${perA}</th><th class="n ord rk-ant" data-col="peP">${perR}</th><th class="n ord" data-col="cresc" title="Crescimento do GWP contra o mesmo período do ano anterior">Variação</th>
+              <th class="n ord rk-g1" data-col="share">Atual</th><th class="n ord" data-col="dShare" title="Variação da participação contra o mesmo período do ano anterior">Variação</th>
+              <th class="n ord rk-g1" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
+            <tbody>${visTab.map((x) => `
+              <tr class="${x.k === AKAD ? "akad" : "clic"}${x === akFora ? " rk-fora" : ""}" data-ent="${esc(x.k)}">
+                <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
+                <td class="n rk-g1">${reais(x.pe)}</td>
+                <td class="n rk-ant">${x.peP > 0 ? reais(x.peP) : "–"}</td>
+                <td class="n">${varHtml(x.cresc)}</td>
+                <td class="n rk-g1">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
+                <td class="n">${ppHtml(x.dShare)}</td>
+                <td class="n rk-g1">${pct(x.sin)}</td>
+                <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table></div>
+          ${linhasTab.length > RK_LIM + 1 ? `<button type="button" class="c2-mais2 rk-mais" id="rk-mais" aria-expanded="${rkTodas}">${rkTodas ? "Mostrar só as 10 maiores ↑" : `Ver as outras ${linhasTab.length - visTab.length} seguradoras ↓`}</button>` : ""}
+        </div>
         <div class="bloco c12">
           <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
             <div class="pr-btns">
@@ -1426,32 +1455,10 @@
           <div class="graf" id="g-merc"></div>
           <p class="nota merc-pe" id="g-merc-pe" hidden></p>
         </div>
-        <div class="bloco c12">
-          <div class="bloco-cab"><h2>Ranking de seguradoras</h2></div>
-          <div class="tab-wrap"><table class="rk-tab">
-            <thead><tr>
-              <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
-              <th class="n ord" data-col="pe">GWP</th><th class="n ord" data-col="share">Participação</th>
-              <th class="n ord" data-col="dShare">Variação da participação</th><th class="n ord" data-col="cresc">Crescimento</th>
-              <th class="n ord" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th><th class="n ord" data-col="outros" title="Outros custos de aquisição (pró-labore, bônus, campanhas e similares), sobre o prêmio ganho">Outros custos</th>
-            </tr></thead>
-            <tbody>${linhasTab.map((x) => `
-              <tr class="${x.k === AKAD ? "akad" : "clic"}" data-ent="${esc(x.k)}">
-                <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
-                <td class="n">${reais(x.pe)}</td>
-                <td class="n">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
-                <td class="n">${ppHtml(x.dShare)}</td>
-                <td class="n">${varHtml(x.cresc)}</td>
-                <td class="n">${pct(x.sin)}</td>
-                <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
-                <td class="n">${x.outros == null ? '<span class="sub-i">–</span>' : pct(x.outros)}</td>
-              </tr>`).join("")}
-            </tbody>
-          </table></div>
-        </div>
         ${gpHtml}
       </div>`;
 
+    $("#rk-mais")?.addEventListener("click", () => { S.rankTodas = !S.rankTodas; renderLinhas(); });
     el.querySelectorAll(".rk-tab .pos-grp").forEach((g) => {
       g.addEventListener("mousemove", (ev) => mostrarTip(g.dataset.tip, ev));
       g.addEventListener("mouseleave", esconderTip);
