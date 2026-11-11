@@ -886,7 +886,7 @@
       <div class="cab-aba cab-geral">
         <div>
           <h2>Visão geral</h2>
-          <p>Desempenho da Akad nos ${nL} ramos em que atua. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Período: ${per}${perP ? `, comparado com ${perP}` : ""}.|Ramos: os ${nL} códigos SUSEP em que a Akad atua. Os indicadores somam todos eles.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada uma vez por dia.`)}" aria-label="Sobre os dados">?</button></p>
+          <p>Desempenho da Akad nos ${nL} ramos em que atua. <button type="button" class="ajuda" data-ajuda="universo" data-lista="${esc(`Ramos: todo código SUSEP em que a Akad soma pelo menos R$ 100 mil de prêmio desde 2019 (hoje ${nL}). Ramo novo entra sozinho quando passa desse valor.|Os indicadores somam todos esses ramos.|Fonte: Sistema de Estatísticas (SES) da SUSEP, base completa, consultada uma vez por dia.`)}" aria-label="Sobre os dados">?</button></p>
         </div>
       </div>`;
 
@@ -1057,6 +1057,9 @@
       const tipH = `<b>${x.a.pos}º de ${x.n}</b><div>${x.n === 1 ? "Única seguradora com prêmio no ramo" : `${x.n} seguradoras com prêmio no ramo`}</div><div>${sub}</div>`;
       return `<span class="pos-grp" data-tip="${esc(tipH)}">${seloPos(x.a.pos)}${movHtml(x.a.pos, x.a.posP).replace(/ title="[^"]*"/, "")}</span>`;
     };
+    // mostra os 10 primeiros ramos com prêmio da Akad (na ordem escolhida); "ver os outros" abre o resto e os ramos sem prêmio
+    const VG_LIM = 10, vgTodos = !!S.geralTodos;
+    const vgOcultos = vgTodos ? 0 : Math.max(0, comAkad.length - VG_LIM) + semA.length;
     const linhaTab = (x, grupo) => `
             <tr data-linha="${x.l.id}" class="${grupo}${S.geralSel === x.l.id ? " sel" : ""}${x.temAkad ? "" : " semak"}">
               <td class="nome"><div class="nome-in"><div><button type="button" class="lk" data-abrir="${x.l.id}">${esc(x.l.nome)}</button><span class="sub">${x.l.ramos.join(", ")}</span></div>${posGrp(x)}</div></td>
@@ -1091,10 +1094,11 @@
             </tr>
           </thead>
           <tbody>
-            ${comAkad.map((x) => linhaTab(x, x.n === 1 ? "suave" : "")).join("")}
-            ${grupoTab("Sem prêmio da Akad no período", semA, "sem")}
+            ${(vgTodos ? comAkad : comAkad.slice(0, VG_LIM)).map((x) => linhaTab(x, x.n === 1 ? "suave" : "")).join("")}
+            ${vgTodos ? grupoTab("Sem prêmio da Akad no período", semA, "sem") : ""}
           </tbody>
-        </table></div>`;
+        </table></div>
+        ${vgOcultos > 0 || vgTodos && comAkad.length + semA.length > VG_LIM ? `<button type="button" class="c2-mais2 vg-mais" id="vg-mais" aria-expanded="${vgTodos}">${vgTodos ? "Mostrar só os 10 maiores ↑" : `Ver os outros ${vgOcultos} ramos ↓`}</button>` : ""}`;
 
     const modoBtn = (k, rot) => `<button type="button" data-modo="${k}" aria-pressed="${modo === k}">${rot}</button>`;
     const participacao = `
@@ -1129,6 +1133,7 @@
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
       n.addEventListener("focusout", () => hl(n.dataset.linha, false));
     });
+    el.querySelector("#vg-mais")?.addEventListener("click", () => { S.geralTodos = !S.geralTodos; renderGeral(); el.querySelector("#vg-mais")?.focus(); });
     el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
     const porColuna = (c, foco) => {
       const padrao = c === "pos" || c === "nome" ? 1 : -1;
