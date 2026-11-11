@@ -1386,7 +1386,6 @@
             </div>
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
-          <p class="eo-resumo" id="g-prod-eo" hidden></p>
           <div class="graf" id="g-prod"></div>
         </div>
         <div class="bloco c12" id="b-sin"></div>
@@ -1526,18 +1525,9 @@
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
-      const ae = $("#g-prod-eo");
-      ae.hidden = !itens.eoM;
       if (itens.eoM) {
-        const r = itens.eoRes, pc = (v) => nf0.format((v / r.sT) * 100) + "%";
         const mesExt = (k) => `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+D.meses[k].slice(4) - 1]} de ${D.meses[k].slice(0, 4)}`;
-        const d = r ? r.sS - r.sT : 0;
-        ae.innerHTML = !r ? `Ainda não há divisão entre E&amp;O e RCPM para este período.`
-          : `${r.parcial ? `De ${periodoLabel(r.de, r.ate)}` : "No período"}, na SUSEP: <b>${reais(r.sS)}</b>. `
-            + (r.calc
-              ? `E&amp;O (Power BI): <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM: <b>${reais(r.sR)}</b> (${pc(r.sR)}), calculado em parte.`
-              : `No Power BI: E&amp;O <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM <b>${reais(r.sR)}</b> (${pc(r.sR)}) · total <b>${reais(r.sT)}</b>${Math.abs(d) < 0.5 ? ", igual à SUSEP." : ` (${reais(Math.abs(d))} a ${d > 0 ? "menos" : "mais"}, ${nf1.format(Math.abs((d / r.sS) * 100))}%).`}`);
-        AJUDA.eoCalc = `**E&O e RCPM** vêm do Power BI da Akad, porque a SUSEP não separa os dois produtos.\n• **E&O:** disponível desde ${mesExt(EO.de)}.\n• **RCPM:** disponível desde ${mesExt(EO.deR != null ? EO.deR : EO.de)}.${EO.deR != null && EO.deR > EO.de ? " Antes disso, é calculado como o total da SUSEP menos o E&O (barras hachuradas)." : ""}\n• **Total:** a coluna soma os valores do Power BI. O total da SUSEP e a diferença aparecem no resumo e no detalhe de cada mês.`;
+        AJUDA.eoCalc = `**E&O e RCPM** vêm do Power BI da Akad, porque a SUSEP não separa os dois produtos.\n• **E&O:** disponível desde ${mesExt(EO.de)}.\n• **RCPM:** disponível desde ${mesExt(EO.deR != null ? EO.deR : EO.de)}.${EO.deR != null && EO.deR > EO.de ? " Antes disso, é calculado como o total da SUSEP menos o E&O (barras hachuradas)." : ""}\n• **Total:** a coluna soma os valores do Power BI. O total da SUSEP e a diferença aparecem no detalhe de cada coluna.`;
         const it = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
         const hach = `<span><i class="eo-leg-hach"></i>RCPM calculado</span>`;
         const temA = itens.some((x) => x.eo != null), temP = itens.some((x) => x.eoP != null), semD = itens.find((x) => x.eo == null);
