@@ -492,12 +492,14 @@
       itens.forEach((x) => {
         let c = null, p = null;
         if (vis === "mes" && eoM) { const i = D.meses.indexOf(x.ym); c = somaEO(i, i); p = somaEO(i - 12, i - 12); }
+        else if (vis === "mes" && !par) { const i = D.meses.indexOf(x.ym); c = somaEO(i, i); }
         else if (vis !== "mes" && x.ii && x.ii[0] >= 0 && x.ii[1] >= 0) c = somaEO(x.ii[0], x.ii[1]);
         if (c) { x.eo = c.e; x.rc = c.r; x.tot = c.tot; x.calc = c.calc; }
         if (p) { x.eoP = p.e; x.rcP = p.r; x.totP = p.tot; x.calcP = p.calc; }
       });
     }
-    const eoT = vis !== "mes" && itens.some((x) => x.eo != null);
+    // eoT: colunas únicas divididas entre E&O e RCPM (trimestre, ano ou mês a mês em períodos de mais de 12 meses)
+    const eoT = (vis !== "mes" || !par) && itens.some((x) => x.eo != null);
     const vals = itens.flatMap((x) => [x.v || 0, x.vp || 0, x.tot || 0, x.totP || 0]);
     const vMax = Math.max(met === "gwp" ? 1 : 0.5, ...vals) * 1.05;
     const passo = niceMax(vMax / 4);
@@ -599,7 +601,7 @@
       const com = itens.filter((x) => x.eo != null);
       const soma = (f) => com.reduce((t, x) => t + f(x), 0);
       itens.eoRes = com.length ? { sE: soma((x) => x.eo), sR: soma((x) => x.rc), sT: soma((x) => x.tot), sS: soma((x) => x.a), calc: com.some((x) => x.calc), parcial: com.length < itens.length,
-        de: eoT ? com[0].ii[0] : D.meses.indexOf(com[0].ym), ate: eoT ? com[com.length - 1].ii[1] : D.meses.indexOf(com[com.length - 1].ym) } : null;
+        de: com[0].ii ? com[0].ii[0] : D.meses.indexOf(com[0].ym), ate: com[com.length - 1].ii ? com[com.length - 1].ii[1] : D.meses.indexOf(com[com.length - 1].ym) } : null;
       itens.temCalc = itens.some((x) => x.calc || x.calcP);
     }
     if (par) { itens.rotA = parAno ? D.meses[P.b].slice(0, 4) : periodoLabel(P.a, P.b); itens.rotP = parAno ? D.meses[P.b - 12].slice(0, 4) : periodoLabel(P.a - 12, P.b - 12); }
@@ -661,7 +663,7 @@
     ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, market share e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
-    sinTri: "**Sinistralidade** = sinistro incorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nA linha magenta é a Akad e a cinza é o mercado inteiro do ramo. A linha tracejada marca 100%: acima dela, os sinistros superam o prêmio. Mês a mês o índice oscila mais, e em ramos pequenos um sinistro grande mexe muito no número.",
+    sinTri: "**Sinistralidade** = sinistro incorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nA linha contínua é o período do filtro e a tracejada, o mesmo período do ano anterior. A linha de 100% marca o ponto em que os sinistros igualam o prêmio. Mês a mês o índice oscila mais, e em ramos pequenos um sinistro grande mexe muito no número.",
     trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
     sinInc: "**Sinistro incorrido**\nSinistros já comunicados à seguradora no período.[[Indenizações + despesas com sinistros − salvados e ressarcimentos]]• Só a parte da Akad (líquido de cosseguro)\n• Sem desconto do que o resseguro devolve\n• Sem IBNR (sinistros ocorridos e ainda não comunicados) nem IBNER (ajuste das reservas dos já comunicados)",
@@ -1349,11 +1351,10 @@
       const lin = (y) => y.k === AKAD ? `<div class="gp-li ak"><span class="gp-nm">Akad</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></div>` : `<button type="button" class="gp-li" data-ent="${esc(y.k)}"><span class="gp-nm">${esc(nomeCurtoCia(nomeEnt(y.k)))}</span><span class="gp-bar"><i class="${y.d > 0 ? "pos" : "neg"}" style="width:${(Math.abs(y.d) / mx) * 100}%"></i></span><b class="${y.d > 0 ? "bom" : "ruim"}">${pp(y.d)}</b></button>`;
       gpHtml = `
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Variação de market share</h2><p class="nota">Variação do market share em ${periodoLabel(P.a, P.b)} contra ${perR}. Clique numa seguradora para abrir a ficha dela.</p></div>
-          <p class="gp-ak">Akad: <b class="${!dAk ? "" : dAk.d > 0 ? "bom" : "ruim"}">${dAk ? pp(dAk.d) : "sem variação"}</b> no período</p>
+          <div class="bloco-cab"><div><h2>Quem ganhou e perdeu participação</h2><p class="nota">${periodoLabel(P.a, P.b)} vs. ${perR}</p></div></div>
           <div class="gp-g2">
-            <div><p class="gp-lt">Maiores ganhos de participação</p>${gan.map(lin).join("") || '<p class="nota">Ninguém ganhou espaço.</p>'}</div>
-            <div><p class="gp-lt">Maiores perdas de participação</p>${per.map(lin).join("") || '<p class="nota">Ninguém perdeu espaço.</p>'}</div>
+            <div><p class="gp-lt">Maiores ganhos</p>${gan.map(lin).join("") || '<p class="nota">Ninguém ganhou espaço.</p>'}</div>
+            <div><p class="gp-lt">Maiores perdas</p>${per.map(lin).join("") || '<p class="nota">Ninguém perdeu espaço.</p>'}</div>
           </div>
         </div>`;
     }
@@ -1368,7 +1369,7 @@
       <div class="cab-aba">
         <div>
           <h2>${esc(nomeTitulo(S.linha))}</h2>
-          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? `Valores somados de ${ramos.length} ramos. Códigos SUSEP: ` : "Código SUSEP: ") + ramos.map((i) => esc(D.ramos[i][0] + " " + D.ramos[i][1])).join(" · ")}</p>
+          <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP " : "Código SUSEP ") + ramos.map((i) => esc(D.ramos[i][0])).join(", ")}</p>
         </div>
       </div>
       <div class="kpis">
@@ -1377,11 +1378,10 @@
         <div class="kpi"><span class="rot">GWP Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Mercado</span><span class="val">${reais(R.tc[0])}</span><span class="det">${varHtml(cresc(R.tc[0], R.tp[0]))} contra o ano anterior</span></div>
         <div class="kpi"><span class="rot">Sinistralidade</span><span class="val">${pct(ak.sin)}</span><span class="det">Mercado: ${pct(sinM)}</span></div>
-        <div class="kpi"><span class="rot">Despesa comercial</span><span class="val">${pct(ak.com)}</span><span class="det">Mercado: ${pct(comM)} (÷ prêmio ganho)</span></div>
       </div>
       <div class="grade">
         <div class="bloco c12">
-          <div class="bloco-cab pr-cab"><div><h2>Produção da Akad em ${esc(nomeSel(S.linha))}</h2><p class="nota" id="g-prod-nota"></p></div>
+          <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
             <div class="pr-btns">
               <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
             </div>
@@ -1389,15 +1389,15 @@
           <div class="pr-leg" id="g-prod-leg"></div>
           <p class="eo-resumo" id="g-prod-eo" hidden></p>
           <div class="graf" id="g-prod"></div>
-          <p class="eo-aviso" id="g-prod-aviso" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span>A divisão entre E&amp;O e RCPM vem do Power BI da Akad, porque a SUSEP não separa os dois produtos. <span class="eo-aviso-ate"></span></span></p>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Tamanho do mercado por ano</h2><p class="nota">GWP de todas as seguradoras no ramo. * ano parcial</p></div>
+          <div class="bloco-cab"><div><h2>Tamanho do mercado por ano</h2><p class="nota">GWP de todas as seguradoras do ramo</p></div></div>
           <div class="graf" id="g-merc"></div>
+          <p class="nota merc-pe" id="g-merc-pe" hidden></p>
         </div>
         <div class="bloco c12">
-          <div class="bloco-cab"><h2>Ranking do período</h2><p class="nota">Clique num concorrente para ver o detalhe. Clique no título da coluna para ordenar.</p></div>
+          <div class="bloco-cab"><h2>Ranking de seguradoras</h2></div>
           <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
               <th class="rk-seg"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
@@ -1487,7 +1487,7 @@
       const comVal = !peq && bw >= 36;
       let g = "";
       for (let v = min; v <= max + 0.001; v += passo) g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v)}%</text>`;
-      if (max >= 100) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(100)}" y2="${Y(100)}" class="sn-lim"/><text x="${W - m.r}" y="${Y(100) - 6}" text-anchor="end" class="sn-lim-t">Acima de 100%, o sinistro supera o prêmio</text>`;
+      if (max >= 100) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(100)}" y2="${Y(100)}" class="sn-lim"/><text x="${W - m.r}" y="${Y(100) - 6}" text-anchor="end" class="sn-lim-t">100% · sinistros = prêmios</text>`;
       const linha = (key, cor, w) => { let d = "", on = false; qs.forEach((x, i) => { const v = x[key]; if (v == null) { on = false; return; } d += `${on ? "L" : "M"}${X(i)} ${Y(v)}`; on = true; }); return `<path d="${d}" fill="none" stroke="${cor}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`; };
       g += linha("sap", "var(--akad)", 2.5).replace("<path ", '<path class="sn-ant" ') + linha("sa", "var(--akad)", 2.5);
       qs.forEach((x, i) => {
@@ -1499,11 +1499,10 @@
       });
       const nomeVis = vis === "mes" ? "mês" : vis === "bim" ? "bimestre" : "trimestre";
       host.innerHTML = `
-        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro incorrido ÷ GWP da Akad por ${nomeVis}, em ${periodoLabel(P.a, P.b)}${temAnt ? ", comparado com o mesmo período do ano anterior" : ""}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
+        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade da Akad ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota sn-sub"><b class="${sAP != null && sA > sAP + 0.5 ? "ruim" : "bom"}">${nf1.format(sA)}%</b> no período${sAP != null ? ` · ${nf1.format(sAP)}% no mesmo período ${umAno ? `de ${+anoC(P.a) - 1}` : "do ano anterior"}` : ""}${qs.some((x) => x.parc) ? ` · * ${nomeVis} incompleto` : ""}</p></div>
           <div class="pr-btns"><div class="seg-ctrl" role="group" aria-label="Agrupar por">${[["mes", "Mês"], ["bim", "Bimestre"], ["tri", "Trimestre"]].map(([k, r]) => `<button type="button" data-svis="${k}" aria-pressed="${vis === k}">${r}</button>`).join("")}</div></div>
         </div>
-        <p class="sn-resumo">Sinistralidade da Akad: <b class="${sAP != null && sA > sAP + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b> em ${periodoLabel(P.a, P.b)}${sAP != null ? `, contra <b>${nf0.format(sAP)}%</b> em ${periodoLabel(P.a - 12, P.b - 12)}` : ""}.</p>
-        <div class="pr-leg"><span><i style="background:var(--akad)"></i>Akad${umAno ? " " + anoC(P.a) : ""}</span>${temAnt ? `<span><i class="sn-ant-l"></i>${rotAnt}</span>` : ""}</div>
+        <div class="pr-leg"><span><i style="background:var(--akad)"></i>${umAno ? anoC(P.a) : periodoLabel(P.a, P.b)}</span>${temAnt ? `<span><i class="sn-ant-l"></i>${umAno ? +anoC(P.a) - 1 : "Ano anterior"}</span>` : ""}</div>
         <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad por ${nomeVis}, comparada com o ano anterior">${g}</svg></div>`;
       host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
       host.querySelectorAll(".hits").forEach((rc) => {
@@ -1519,7 +1518,7 @@
       const vis = S.prodVis || "mes", met = "gwp";
       const fimLab = mesLabel(P.b, true);
       // RC Profissional com E&O e RCPM: sem subtítulo (só a nota de período parcial no trimestre/ano), para limpar o bloco
-      $("#g-prod-nota").textContent = itens.eoM && !itens.eoT ? ""
+      $("#g-prod-nota").innerHTML = itens.eoM ? `GWP por produto ${ajuda("eoCalc", "divisão entre E&O e RCPM")}${itens.eoT && itens.some((x) => x.parc) ? ` · * ${vis === "tri" ? "trimestre" : "ano"} parcial` : ""}`
         : vis === "mes" && itens.par
         ? `GWP da Akad por mês, de ${itens[0].tit} a ${fimLab}, ao lado dos mesmos meses do ano anterior.`
         : vis === "mes"
@@ -1528,8 +1527,8 @@
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
-      const ae = $("#g-prod-eo"), av = $("#g-prod-aviso");
-      ae.hidden = av.hidden = !itens.eoM;
+      const ae = $("#g-prod-eo");
+      ae.hidden = !itens.eoM;
       if (itens.eoM) {
         const r = itens.eoRes, pc = (v) => nf0.format((v / r.sT) * 100) + "%";
         const mesExt = (k) => `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+D.meses[k].slice(4) - 1]} de ${D.meses[k].slice(0, 4)}`;
@@ -1539,17 +1538,14 @@
             + (r.calc
               ? `E&amp;O (Power BI): <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM: <b>${reais(r.sR)}</b> (${pc(r.sR)}), calculado em parte.`
               : `No Power BI: E&amp;O <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM <b>${reais(r.sR)}</b> (${pc(r.sR)}) · total <b>${reais(r.sT)}</b>${Math.abs(d) < 0.5 ? ", igual à SUSEP." : ` (${reais(Math.abs(d))} a ${d > 0 ? "menos" : "mais"}, ${nf1.format(Math.abs((d / r.sS) * 100))}%).`}`);
-        av.querySelector(".eo-aviso-ate").textContent = EO.deR != null && EO.deR > EO.de
-          ? `E&O disponível desde ${mesExt(EO.de)} e RCPM desde ${mesExt(EO.deR)}. Antes disso, o RCPM é calculado como o total da SUSEP menos o E&O (barras hachuradas).`
-          : `Disponível desde ${mesExt(EO.de)}.`;
+        AJUDA.eoCalc = `**E&O e RCPM** vêm do Power BI da Akad, porque a SUSEP não separa os dois produtos.\n• **E&O:** disponível desde ${mesExt(EO.de)}.\n• **RCPM:** disponível desde ${mesExt(EO.deR != null ? EO.deR : EO.de)}.${EO.deR != null && EO.deR > EO.de ? " Antes disso, é calculado como o total da SUSEP menos o E&O (barras hachuradas)." : ""}\n• **Total:** a coluna soma os valores do Power BI. O total da SUSEP e a diferença aparecem no resumo e no detalhe de cada mês.`;
         const it = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
-        const hach = (p) => `<span><i class="eo-leg-hach${p ? " p" : ""}"></i>RCPM calculado</span>`;
-        const dica = `<span class="eo-leg-t">Passe o mouse para ver os detalhes e o total da SUSEP</span>`;
+        const hach = `<span><i class="eo-leg-hach"></i>RCPM calculado</span>`;
         const temA = itens.some((x) => x.eo != null), temP = itens.some((x) => x.eoP != null), semD = itens.find((x) => x.eo == null);
-        if (itens.eoT) $("#g-prod-leg").innerHTML = it("var(--eo-e)", "E&amp;O") + it("var(--eo-r)", "RCPM") + (itens.temCalc ? hach(false) : "") + (semD ? it(semD.cor, "Total, sem divisão") : "") + dica;
-        else $("#g-prod-leg").innerHTML = (temA ? it("var(--eo-e)", `E&amp;O ${itens.rotA}`) + it("var(--eo-r)", `RCPM ${itens.rotA}`) : it(itens[0].cor, `Total ${itens.rotA}`))
-          + (temP ? it("var(--eo-e-p)", `E&amp;O ${itens.rotP}`) + it("var(--eo-r-p)", `RCPM ${itens.rotP}`) : it(itens[0].corP, `Total ${itens.rotP}`))
-          + (itens.temCalc ? hach(false) : "") + dica;
+        // legenda agrupada por ano: 2026 ■ E&O ■ RCPM · 2025 ■ E&O ■ RCPM
+        const grupo = (ano, cE, cR, tem, cT) => `<span class="eo-leg-g"><b>${ano}</b>${tem ? it(cE, "E&amp;O") + it(cR, "RCPM") : it(cT, "Total")}</span>`;
+        if (itens.eoT) $("#g-prod-leg").innerHTML = it("var(--eo-e)", "E&amp;O") + it("var(--eo-r)", "RCPM") + (itens.temCalc ? hach : "") + (semD ? it(semD.cor, "Total, sem divisão") : "");
+        else $("#g-prod-leg").innerHTML = grupo(itens.rotA, "var(--eo-e)", "var(--eo-r)", temA, itens[0].cor) + `<span class="eo-leg-sep">·</span>` + grupo(itens.rotP, "var(--eo-e-p)", "var(--eo-r-p)", temP, itens[0].corP) + (itens.temCalc ? hach : "");
       } else
       $("#g-prod-leg").innerHTML = vis === "mes" && itens.par
         ? `<span><i style="background:${itens[0].cor}"></i>${itens.rotA}</span><span><i style="background:${itens[0].corP}"></i>${itens.rotP}</span>`
@@ -1567,6 +1563,8 @@
     const ultMes = D.meses[D.meses.length - 1];
     const parcial = rot.map((y) => (y === ultMes.slice(0, 4) && !ultMes.endsWith("12") ? `até ${MESES_PT[+ultMes.slice(4) - 1]}` : null));
     barras($("#g-merc"), { rotulos: rot, valores: rot.map((y) => anosM.get(y)), cor: css("--mercado"), fmt: reais, fmtCurto: reaisCurto, parcial, rotulo: "Mercado por ano" });
+    const iParc = parcial.findIndex((x) => x);
+    if (iParc >= 0) { const pe = $("#g-merc-pe"); pe.hidden = false; pe.textContent = `* ${rot[iParc]} até ${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+ultMes.slice(4) - 1]}`; }
   }
 
   /* ---------- Concorrentes ---------- */
