@@ -29,7 +29,8 @@ DESDE = "201901"
 # Ficha do concorrente (todos os ramos): arquivo separado, só desde este mês, para não pesar o painel
 CONC_DESDE = "202201"
 
-# Ramos acompanhados (definidos com o time de produto)
+# Ramos fixos do painel. Além destes, o script inclui sozinho todo ramo em que a Akad tem prêmio
+# na base com soma de prêmio positiva desde DESDE (ver incluir_ramos_da_akad), em toda atualização.
 RAMOS = {
     "0378": "R.C. Profissional",
     "0310": "R.C. Administradores e Diretores (D&O)",
@@ -80,6 +81,27 @@ LINHAS = [
     {"id": "prestcol", "nome": "Prestamista Coletivo", "ramos": ["0977"], "desc": "Quita a dívida de um financiamento em caso de morte ou invalidez, contratado em grupo."},
     {"id": "prestind", "nome": "Prestamista Individual", "ramos": ["1377"], "desc": "Quita a dívida de um financiamento em caso de morte ou invalidez, contratado individualmente."},
 ]
+
+# Ramos que entram por terem produção da Akad: nome curto e descrição para o painel.
+# Ramo novo que não estiver aqui entra com o nome da SUSEP.
+LINHAS_EXTRA = {
+    "0313": ("rcamb", "RC Riscos Ambientais", "Danos ambientais causados pelas atividades da empresa, incluindo limpeza e terceiros."),
+    "0327": ("cyber", "Riscos Cibernéticos", "Ataques e vazamentos de dados: custos de resposta, prejuízos próprios e reclamações de terceiros."),
+    "0553": ("rcfv", "RC Facultativa de Veículos", "Danos que o veículo segurado causa a terceiros, além do seguro obrigatório."),
+    "0531": ("autocasco", "Automóvel (casco)", "Danos ao próprio veículo, como colisão, incêndio e roubo."),
+    "1528": ("rcfa", "RC Facultativa de Aeronaves", "Danos que a aeronave causa a terceiros, além do seguro obrigatório."),
+    "1535": ("aerocasco", "Aeronáuticos (cascos)", "Danos à própria aeronave."),
+    "1597": ("reta", "RETA", "Seguro obrigatório do explorador ou transportador aéreo: danos a pessoas e bens."),
+    "0141": ("lucros", "Lucros Cessantes", "Perda de receita quando a empresa para por causa de um sinistro coberto."),
+    "1130": ("agro", "Benfeitorias e Produtos Agropecuários", "Construções, máquinas e produção rural contra danos."),
+    "1162": ("penhor", "Penhor Rural", "Bens dados em garantia em financiamentos rurais."),
+    "0982": ("apcol", "Acidentes Pessoais (coletivo)", "Morte ou invalidez por acidente, contratado em grupo."),
+    "1381": ("apind", "Acidentes Pessoais (individual)", "Morte ou invalidez por acidente, contratado individualmente."),
+    "0993": ("vg", "Vida em Grupo", "Morte e invalidez para um grupo de pessoas, como funcionários de uma empresa."),
+    "1198": ("vidarural", "Vida do Produtor Rural", "Seguro de vida ligado ao crédito ou à atividade do produtor rural."),
+    "0929": ("funeral", "Funeral", "Despesas com funeral do segurado ou de familiares."),
+    "0984": ("doencas", "Doenças Graves", "Pagamento em caso de diagnóstico de doença grave ou terminal."),
+}
 
 UFS = "AC,AL,AM,AP,BA,CE,DF,ES,GO,MA,MG,MS,MT,PA,PB,PE,PI,PR,RJ,RN,RO,RR,RS,SC,SE,SP,TO".split(",")
 
@@ -140,6 +162,39 @@ def linhas_csv(zf, nome):
             yield linha
 
 
+def nomes_ramos(zf):
+    """Código -> nome do ramo, do Ses_ramos.csv (sem o código repetido na frente)."""
+    nr = {}
+    try:
+        for c in linhas_csv(zf, "Ses_ramos.csv"):
+            if len(c) > 1 and c[0].strip():
+                cod = c[0].strip().zfill(4)
+                nome = c[1].strip()
+                if nome.startswith(cod):
+                    nome = nome[len(cod):].lstrip(" -–").strip()
+                nr[cod] = nome
+    except StopIteration:
+        pass
+    return nr
+
+
+def incluir_ramos_da_akad(zf, seg):
+    """Acrescenta a RAMOS e LINHAS todo ramo em que a Akad tem prêmio emitido (soma positiva desde DESDE)."""
+    tot = {}
+    for (m, c, r), a in seg.items():
+        if c == AKAD:
+            tot[r] = tot.get(r, 0.0) + a[0]
+    novos = sorted(r for r, v in tot.items() if v > 0 and r not in RAMOS)
+    if not novos:
+        return
+    nr = nomes_ramos(zf)
+    for r in novos:
+        RAMOS[r] = nr.get(r, r)
+        lid, nome, desc = LINHAS_EXTRA.get(r, ("r" + r, nr.get(r, r), ""))
+        LINHAS.append({"id": lid, "nome": nome, "ramos": [r], "desc": desc})
+    print(f"Ramos com produção da Akad fora da lista fixa: {', '.join(f'{r} {RAMOS[r]}' for r in novos)}", flush=True)
+
+
 def processar(zip_path):
     zf = zipfile.ZipFile(zip_path)
 
@@ -157,8 +212,6 @@ def processar(zip_path):
         if mes >= CONC_DESDE:
             xc = segc.setdefault((mes, c[1].strip(), ramo), [0.0] * 4)
             xc[0] += num(c[11]); xc[1] += num(c[7]); xc[2] += num(c[14]); xc[3] += num(c[10])
-        if ramo not in RAMOS:
-            continue
         k = (mes, c[1].strip(), ramo)
         a = seg.setdefault(k, [0.0] * 6)
         a[0] += num(c[11])  # prêmio emitido
@@ -167,7 +220,9 @@ def processar(zip_path):
         a[3] += num(c[10])  # despesa comercial
         a[4] += num(c[13])  # despesa com resseguro
         a[5] += num(c[15])  # receita com resseguro
-    print(f"Ses_seguros: {len(seg)} combinações ({time.time()-t0:.0f}s)", flush=True)
+    incluir_ramos_da_akad(zf, seg)
+    seg = {k: v for k, v in seg.items() if k[2] in RAMOS}
+    print(f"Ses_seguros: {len(seg)} combinações em {len(RAMOS)} ramos ({time.time()-t0:.0f}s)", flush=True)
 
     # 1b) Abertura do custo de comercialização (mapas de custos de aquisição, quadro 8 do FIP)
     #     12479 = custos ligados à vigência do risco (na prática, comissão de corretagem e agenciamento)
