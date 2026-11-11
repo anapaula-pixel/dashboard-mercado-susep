@@ -514,12 +514,18 @@
     for (let k = 0; k <= nT; k++) { const v = passo * k, y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${fmtE(v)}</text>`; }
     const bw = (W - m.l - m.r) / itens.length;
     const cada = vis === "mes" ? [1, 2, 3, 4, 6, 12].find((c) => c * bw >= 30) || 12 : 1;
+    // rótulos que cabem na largura da coluna: "12,3 mi"; se não couber, só "12,3"; se nem isso couber, sem rótulo (o tooltip mostra tudo).
+    // A decisão vale para o gráfico inteiro, para todos os rótulos ficarem no mesmo formato.
+    const larg = (t) => { const c = larg.c || (larg.c = document.createElement("canvas").getContext("2d")); c.font = `600 11px ${getComputedStyle(el).fontFamily}`; return c.measureText(t).width; };
+    const wCol = (() => { const n = itens.length, bwx = (W - m.l - m.r) / Math.max(1, n), w0 = bwx * (vis !== "mes" ? 0.6 : par ? 0.74 : 0.7); return par ? (w0 - Math.min(4, w0 * 0.06)) / 2 : w0; })();
+    const maiorRot = miCurto(Math.max(1, ...itens.map((x) => Math.max(x.tot || 0, x.totP || 0, x.a || 0, x.vp || 0))));
+    const fmtRot = peq ? null : larg(maiorRot) + 8 <= wCol ? miCurto : larg(maiorRot.replace(/ (mi|bi|mil)$/, "")) + 6 <= wCol ? (v) => miCurto(v).replace(/ (mi|bi|mil)$/, "") : null;
     // coluna empilhada: E&O embaixo, RCPM em cima (hachurado quando calculado); valores em R$ dentro de cada parte
     const pilha = (x0, wb, base, eo, cE, cR, cls) => {
       const yE = Y(eo), yT = Y(base);
       let o = `<rect x="${x0}" y="${yE}" width="${wb}" height="${Math.max(0, H - m.b - yE)}" fill="${cE}"/><rect x="${x0}" y="${yT}" width="${wb}" height="${Math.max(0, yE - yT)}" fill="${cR}"/>`;
-      if (!peq && wb >= 34 && base > 0) {
-        const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}">${miCurto(v)}</text>`;
+      if (fmtRot && base > 0) {
+        const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}">${fmtRot(v)}</text>`;
         if (H - m.b - yE > 18) o += rot((yE + H - m.b) / 2, eo);
         if (yE - yT > 18) o += rot((yT + yE) / 2, base - eo);
       }
@@ -539,9 +545,9 @@
           g += `<g class="eo-mes">`;
           g += x.totP != null ? pilha(bx, wb, x.totP, x.eoP, "var(--eo-e-p)", x.calcP ? "url(#eo-hach-p)" : "var(--eo-r-p)", "eo-in eo-in-p") : barra(bx, wb, yp, x.corP);
           g += x.tot != null ? pilha(bx + wb + gap, wb, x.tot, x.eo, "var(--eo-e)", x.calc ? "url(#eo-hach)" : "var(--eo-r)", "eo-in") : barra(bx + wb + gap, wb, yA, x.cor);
-          if (!peq && bw >= 56) {
-            if (tP > 0) g += `<text x="${bx + wb / 2}" y="${yp - 6}" text-anchor="middle" class="eo-tot eo-tot-p">${miCurto(tP)}</text>`;
-            if (tA > 0) g += `<text x="${bx + wb + gap + wb / 2}" y="${yA - 6}" text-anchor="middle" class="eo-tot">${miCurto(tA)}</text>`;
+          if (fmtRot) {
+            if (tP > 0) g += `<text x="${bx + wb / 2}" y="${yp - 6}" text-anchor="middle" class="eo-tot eo-tot-p">${fmtRot(tP)}</text>`;
+            if (tA > 0) g += `<text x="${bx + wb + gap + wb / 2}" y="${yA - 6}" text-anchor="middle" class="eo-tot">${fmtRot(tA)}</text>`;
           }
         } else g += barra(bx, wb, yp, x.corP) + barra(bx + wb + gap, wb, y, x.cor);
         if (!eoM && !peq && bw >= 56 && x.cr != null && isFinite(x.cr)) {
@@ -556,7 +562,7 @@
       if (vis !== "mes" && eoT) {
         // RC Profissional com divisão: só o total no topo, sem o selo de crescimento
         const tT = x.tot != null ? x.tot : x.v;
-        if (!peq && tT != null) g += `<text x="${bx + w / 2}" y="${Y(tT) - 6}" text-anchor="middle" class="pr-val">${miCurto(tT)}</text>`;
+        if (fmtRot && tT != null) g += `<text x="${bx + w / 2}" y="${Y(tT) - 6}" text-anchor="middle" class="pr-val">${fmtRot(tT)}</text>`;
       } else if (vis !== "mes") {
         const d = met === "gwp" ? x.cr : x.dsh;
         if (!peq) g += `<text x="${bx + w / 2}" y="${y - (d != null ? 28 : 6)}" text-anchor="middle" class="pr-val">${x.v == null ? "–" : met === "gwp" ? reaisCurto(x.v) : pct(x.v)}</text>`;
@@ -1387,6 +1393,7 @@
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
           <div class="graf" id="g-prod"></div>
+          <p class="eo-aviso" id="g-prod-aviso" role="note" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span>A divisão entre E&amp;O e RCPM vem do Power BI interno da Akad, porque a SUSEP não divulga os dois produtos separados.</span></p>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
@@ -1525,6 +1532,7 @@
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
+      $("#g-prod-aviso").hidden = !itens.eoM;
       if (itens.eoM) {
         const mesExt = (k) => `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+D.meses[k].slice(4) - 1]} de ${D.meses[k].slice(0, 4)}`;
         AJUDA.eoCalc = `**E&O e RCPM** vêm do Power BI da Akad, porque a SUSEP não separa os dois produtos.\n• **E&O:** disponível desde ${mesExt(EO.de)}.\n• **RCPM:** disponível desde ${mesExt(EO.deR != null ? EO.deR : EO.de)}.${EO.deR != null && EO.deR > EO.de ? " Antes disso, é calculado como o total da SUSEP menos o E&O (barras hachuradas)." : ""}\n• **Total:** a coluna soma os valores do Power BI. O total da SUSEP e a diferença aparecem no detalhe de cada coluna.`;
