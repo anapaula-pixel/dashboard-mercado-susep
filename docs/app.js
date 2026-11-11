@@ -495,7 +495,7 @@
         const gap = Math.min(4, w * 0.06), wb = (w - gap) / 2, yp = Y(x.vp || 0);
         let yt = Math.min(y, yp);
         if (eoM) {
-          // valor de cada produto dentro da coluna; passando o mouse, troca pela % do total
+          // valor de cada produto dentro da coluna (a % fica no tooltip)
           const iA = D.meses.indexOf(x.ym), fA = frEO(iA), fP = frEO(iA - 12);
           if (fA != null) { x.eo = x.a * fA; x.rc = x.a - x.eo; }
           if (fP != null) { x.eoP = x.vp * fP; x.rcP = x.vp - x.eoP; }
@@ -503,7 +503,7 @@
             const yE = Y(eo), yT = Y(base);
             let o = `<rect x="${x0}" y="${yE}" width="${wb}" height="${Math.max(0, H - m.b - yE)}" fill="${cE}"/><rect x="${x0}" y="${yT}" width="${wb}" height="${Math.max(0, yE - yT)}" fill="${cR}"/>`;
             if (!peq && wb >= 34 && base > 0) {
-              const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}"><tspan class="eo-v">${miCurto(v)}</tspan><tspan class="eo-p">${nf0.format((v / base) * 100)}%</tspan></text>`;
+              const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}">${miCurto(v)}</text>`;
               if (H - m.b - yE > 18) o += rot((yE + H - m.b) / 2, eo);
               if (yE - yT > 18) o += rot((yT + yE) / 2, base - eo);
             }
