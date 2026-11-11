@@ -621,6 +621,31 @@
     return itens;
   }
 
+  // Cards do topo do detalhe do ramo: título, ícone à direita e variação ao lado do número (o texto completo fica no title)
+  const ICO_KPI = {
+    pos: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
+    gwp: '<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
+    share: '<path d="M21 12A9 9 0 1 1 12 3v9z"/>',
+    sin: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>',
+  };
+  function kpisRamo(ak, nSeg, sinM) {
+    const num = (x, d = 1) => Math.abs(x).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+    const seta = (x, suf, tit, inv) => {
+      if (x == null || !isFinite(x) || Math.abs(x) < 0.05) return "";
+      const bom = inv ? x < 0 : x > 0, txt = suf === "%" && x > 999 ? "> 999%" : num(x) + suf;
+      return `<span class="kv-d ${bom ? "up" : "down"}" title="${tit}">${x > 0 ? "▲" : "▼"} ${txt}</span>`;
+    };
+    const card = (k, rot, corpo, cls = "") => `<div class="kpi ${cls}"><div class="kr"><span class="rot">${rot}</span><svg class="kic" viewBox="0 0 24 24" aria-hidden="true">${ICO_KPI[k]}</svg></div><div class="kv">${corpo}</div></div>`;
+    const mov = ak.pos && ak.posP ? ak.posP - ak.pos : 0;
+    const movTxt = mov ? `<span class="kv-d ${mov > 0 ? "up" : "down"}" title="${mov > 0 ? "Subiu" : "Caiu"} ${Math.abs(mov)} ${Math.abs(mov) > 1 ? "posições" : "posição"} contra o ano anterior (era ${ak.posP}º)">${mov > 0 ? "▲" : "▼"} ${Math.abs(mov)}</span>` : "";
+    const posT = ak.pos ? `${seloPosicao(ak.pos)}<b>${ak.pos}º</b><small>de ${nSeg}</small>${movTxt}` : `<b>–</b><small>sem prêmio no período</small>`;
+    const dSin = ak.sin != null && sinM != null ? ak.sin - sinM : null;
+    return card("pos", "Posição da Akad", posT, "destaque")
+      + card("gwp", "GWP Akad", `<b>${reais(ak.pe)}</b>${seta(ak.cresc, "%", "Contra o mesmo período do ano anterior")}`)
+      + card("share", "Participação", `<b>${pct(ak.share)}</b>${seta(ak.dShare, " p.p.", ak.dShare != null ? `Contra o mesmo período do ano anterior (era ${pct(ak.share - ak.dShare)})` : "")}`)
+      + card("sin", "Sinistralidade", `<b>${pct(ak.sin)}</b>${dSin != null && Math.abs(dSin) >= 0.05 ? `<span class="kv-d ${dSin > 0 ? "down" : "up"}" title="${dSin > 0 ? "Acima" : "Abaixo"} do mercado, que teve ${pct(sinM)}">${dSin > 0 ? "+" : "−"}${num(dSin)} p.p.</span>` : ""}`);
+  }
+
   // Selo da posição da Akad ao lado do nome: medalha para 1º, 2º e 3º; número simples nos demais
   const MED_POS = { 1: ["#F5C542", "#C78800", "ouro"], 2: ["#E0E0E0", "#757575", "prata"], 3: ["#E8A87C", "#9C5A2E", "bronze"] };
   function seloPosicao(pos) {
@@ -1384,13 +1409,7 @@
           <p>${S.linha === "todas" ? `Soma dos ${IDX.linhas.length} ramos acompanhados. Escolha um ramo no filtro para ver o detalhe.` : (ramos.length > 1 ? "Códigos SUSEP " : "Código SUSEP ") + ramos.map((i) => esc(D.ramos[i][0])).join(", ")}</p>
         </div>
       </div>
-      <div class="kpis">
-        <div class="kpi destaque"><span class="rot">Posição da Akad</span><span class="val">${ak.pos ? ak.pos + "º" : "–"} <small style="font-size:.9rem;color:var(--muted)">de ${R.rk.length}</small></span><span class="det">${ak.posP ? `No ano anterior: ${ak.posP}º` : "Sem prêmio no ano anterior"}</span></div>
-        <div class="kpi"><span class="rot">Participação Akad</span><span class="val">${pct(ak.share)}</span><span class="det">${ppHtml(ak.dShare)} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">GWP Akad</span><span class="val">${reais(ak.pe)}</span><span class="det">${varHtml(ak.cresc)} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Mercado</span><span class="val">${reais(R.tc[0])}</span><span class="det">${varHtml(cresc(R.tc[0], R.tp[0]))} contra o ano anterior</span></div>
-        <div class="kpi"><span class="rot">Sinistralidade</span><span class="val">${pct(ak.sin)}</span><span class="det">Mercado: ${pct(sinM)}</span></div>
-      </div>
+      <div class="kpis kpis-ramo">${kpisRamo(ak, R.rk.length, sinM)}</div>
       <div class="grade">
         <div class="bloco c12">
           <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
