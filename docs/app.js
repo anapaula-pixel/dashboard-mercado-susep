@@ -1409,7 +1409,7 @@
         <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro incorrido ÷ GWP da Akad por ${nomeVis}, em ${periodoLabel(P.a, P.b)}${temAnt ? ", comparado com o mesmo período do ano anterior" : ""}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
           <div class="pr-btns"><div class="seg-ctrl" role="group" aria-label="Agrupar por">${[["mes", "Mês"], ["bim", "Bimestre"], ["tri", "Trimestre"]].map(([k, r]) => `<button type="button" data-svis="${k}" aria-pressed="${vis === k}">${r}</button>`).join("")}</div></div>
         </div>
-        <p class="sn-resumo">No período: Akad <b class="${sAP != null && sA > sAP + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>${sAP != null ? `, contra <b>${nf0.format(sAP)}%</b> em ${periodoLabel(P.a - 12, P.b - 12)}` : ""}.</p>
+        <p class="sn-resumo">Sinistralidade da Akad: <b class="${sAP != null && sA > sAP + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b> em ${periodoLabel(P.a, P.b)}${sAP != null ? `, contra <b>${nf0.format(sAP)}%</b> em ${periodoLabel(P.a - 12, P.b - 12)}` : ""}.</p>
         <div class="pr-leg"><span><i style="background:var(--akad)"></i>Akad${umAno ? " " + anoC(P.a) : ""}</span>${temAnt ? `<span><i class="sn-ant-l"></i>${rotAnt}</span>` : ""}</div>
         <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad por ${nomeVis}, comparada com o ano anterior">${g}</svg></div>`;
       host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
