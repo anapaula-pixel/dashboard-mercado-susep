@@ -1811,3 +1811,22 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 #g-sin .sn-lim { stroke: var(--ruim); stroke-width: 1; opacity: .45; }
 #g-sin .sn-lim-t { font-size: 11px; fill: var(--ruim); opacity: .8; }
 #b-sin .pr-leg i.sn-ant-l { width: 16px; height: 0; border-radius: 0; border-top: 2.5px dashed var(--sn-ant); vertical-align: 3px; }
+
+/* Ramos > RC Profissional: produção dividida entre E&O e RCPM (dados internos da Akad) */
+#aba-linhas { --eo-e: #E3175E; --eo-r: #1C4173; --eo-e-p: #F5B3CA; --eo-r-p: #C5D3E6; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-linhas { --eo-r: #7C97B8; } }
+:root[data-theme="dark"] #aba-linhas { --eo-r: #7C97B8; }
+#aba-linhas #g-prod-leg { flex-wrap: wrap; }
+#aba-linhas .eo-leg-t { margin-left: auto; color: var(--muted); }
+#aba-linhas .eo-resumo { margin: 0 0 6px; font-size: .86rem; color: var(--ink-2); }
+#aba-linhas .eo-resumo b { color: var(--ink); font-weight: 600; }
+#aba-linhas .eo-in { font-size: 11px; font-weight: 600; fill: #fff; }
+#aba-linhas .eo-in-p { fill: #212121; }
+#aba-linhas .eo-tot { font-size: 11px; font-weight: 600; fill: var(--ink); }
+#aba-linhas .eo-tot-p { fill: var(--muted); font-weight: 500; }
+#aba-linhas .eo-mes .eo-p { display: none; }
+#aba-linhas .eo-mes:hover .eo-v { display: none; }
+#aba-linhas .eo-mes:hover .eo-p { display: inline; }
+#aba-linhas .eo-aviso { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
+#aba-linhas .eo-aviso-i { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; font-style: italic; margin-top: 1px; }
+@media (max-width: 760px) { #aba-linhas .eo-leg-t { display: none; } }
