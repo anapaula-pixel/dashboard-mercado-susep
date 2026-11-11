@@ -621,8 +621,7 @@
     return itens;
   }
 
-  // Cards de indicador (todas as telas): título com ícone à direita, número com a variação ao lado
-  // e o texto de apoio num tooltip (data-kt) que aparece ao passar o mouse no card.
+  // Cards de indicador (todas as telas): título com ícone e "?" de ajuda (o que é e como calcula), número com a variação ao lado
   const ICO_KPI = {
     pos: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/>',
     gwp: '<path d="M3 17l6-6 4 4 8-8M15 7h6v6"/>',
@@ -636,7 +635,7 @@
     umb: '<path d="M3 12a9 9 0 0 1 18 0zM12 12v7a2 2 0 0 0 4 0"/>',
   };
   const kCard = ({ ic, rot, help = "", corpo, tip = "", destaque = false }) =>
-    `<div class="kn${destaque ? " destaque" : ""}"${tip ? ` data-kt="${esc(tip)}"` : ""}><div class="kr"><span class="rot">${rot}${help ? " " + help : ""}</span><svg class="kic" viewBox="0 0 24 24" aria-hidden="true">${ICO_KPI[ic]}</svg></div><div class="kv">${corpo}</div>${tip ? `<span class="sr-only">${esc(tip.replace(/<[^>]+>/g, ""))}</span>` : ""}</div>`;
+    `<div class="kn${destaque ? " destaque" : ""}"><div class="kr"><span class="rot">${rot}${help ? " " + help : ""}</span><svg class="kic" viewBox="0 0 24 24" aria-hidden="true">${ICO_KPI[ic]}</svg></div><div class="kv">${corpo}</div></div>`;
   // variação ao lado do número: ▲/▼, verde quando é bom, vermelho quando é ruim, cinza quando é neutro
   function kVar(x, suf, o = {}) {
     if (x == null || !isFinite(x) || Math.abs(x) < 0.05) return "";
@@ -650,19 +649,12 @@
     return `${seloPosicao(pos)}<b>${pos}º</b><small>de ${n}</small>${mov ? `<span class="kv-d ${mov > 0 ? "up" : "down"}">${mov > 0 ? "▲" : "▼"} ${Math.abs(mov)}</span>` : ""}`;
   };
   const kPosTip = (pos, posP, quando) => (!pos ? "" : !posP ? `Sem prêmio ${quando}.` : posP === pos ? `Mesma posição ${quando}.` : `${posP > pos ? "Subiu" : "Caiu"} ${Math.abs(posP - pos)} ${Math.abs(posP - pos) > 1 ? "posições" : "posição"}: era ${posP}º ${quando}.`);
-  // tooltip dos cards (um listener para o site inteiro)
-  document.addEventListener("mousemove", (ev) => {
-    const c = ev.target.closest && ev.target.closest(".kn[data-kt]");
-    if (c && !ev.target.closest(".ajuda")) { mostrarTip(c.dataset.kt, ev); c.__kt = 1; }
-    else if (document.__ktAtivo && (!c || ev.target.closest(".ajuda"))) esconderTip();
-    document.__ktAtivo = !!(c && !ev.target.closest(".ajuda"));
-  });
   function kpisRamo(ak, nSeg, sinM) {
     const quando = "no mesmo período do ano anterior";
-    return kCard({ ic: "pos", rot: "Posição da Akad", destaque: true, corpo: kPos(ak.pos, ak.posP, nSeg), tip: kPosTip(ak.pos, ak.posP, quando) })
-      + kCard({ ic: "gwp", rot: "GWP Akad", corpo: `<b>${reais(ak.pe)}</b>${kVar(ak.cresc, "%")}`, tip: ak.peP > 0 ? `${reais(ak.peP)} ${quando}.` : `Sem prêmio ${quando}.` })
-      + kCard({ ic: "share", rot: "Participação", corpo: `<b>${pct(ak.share)}</b>${kVar(ak.dShare, " p.p.")}`, tip: ak.shareP != null ? `${pct(ak.shareP)} ${quando}.` : `Sem participação ${quando}.` })
-      + kCard({ ic: "sin", rot: "Sinistralidade", corpo: `<b>${pct(ak.sin)}</b>${ak.sin != null && sinM != null ? kVar(ak.sin - sinM, " p.p.", { ruimSeSobe: true, sinal: true }) : ""}`, tip: sinM != null ? `Mercado no mesmo período: ${pct(sinM)}. A variação ao lado compara a Akad com o mercado.` : "" });
+    return kCard({ ic: "pos", rot: "Posição da Akad", help: ajuda("pos", "posição"), destaque: true, corpo: kPos(ak.pos, ak.posP, nSeg) })
+      + kCard({ ic: "gwp", rot: "GWP Akad", help: ajuda("premio", "GWP"), corpo: `<b>${reais(ak.pe)}</b>${kVar(ak.cresc, "%")}` })
+      + kCard({ ic: "share", rot: "Participação", help: ajuda("tShare", "participação"), corpo: `<b>${pct(ak.share)}</b>${kVar(ak.dShare, " p.p.")}` })
+      + kCard({ ic: "sin", rot: "Sinistralidade", help: ajuda("sinRamo", "sinistralidade"), corpo: `<b>${pct(ak.sin)}</b>${ak.sin != null && sinM != null ? kVar(ak.sin - sinM, " p.p.", { ruimSeSobe: true, sinal: true }) : ""}` });
   }
 
   // Selo da posição da Akad ao lado do nome: medalha para 1º, 2º e 3º; número simples nos demais
@@ -692,6 +684,10 @@
     frente: "Em quantos ramos a Akad está melhor colocada que essa seguradora, contando só os ramos em que as duas vendem.",
     status: "A SUSEP publica os dados de cada mês com cerca de dois meses de atraso e às vezes corrige meses anteriores. Uma vez por dia, às 9h (pode atrasar algumas horas), o painel consulta a base da SUSEP e se atualiza sozinho quando há dados novos.",
     tPeso: "Quanto esse ramo representa do GWP total da Akad no período: GWP da Akad no ramo dividido pelo GWP da Akad em todos os ramos.",
+    cnSeg: "Quantas seguradoras tiveram prêmio no período em pelo menos um dos ramos acompanhados.",
+    cnTop5: "Participação somada das 5 maiores seguradoras no GWP dos ramos acompanhados, no período do filtro. Mostra o quanto o mercado está concentrado.",
+    ufVendas: "Prêmio direto da Akad no estado, somando os ramos e os meses escolhidos nos filtros. A seta compara com o mesmo período do ano anterior. Por estado a SUSEP publica só o prêmio direto, por isso o número pode ser diferente do GWP das outras telas.",
+    sinRamo: "**Sinistralidade** = sinistro incorrido ÷ GWP, no ramo e no período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **Ao lado:** a diferença, em p.p., contra a sinistralidade do mercado no mesmo ramo e período. Vermelho quando a Akad está acima do mercado.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nQuanto menor, melhor.",
     tShare: "Participação da Akad no ramo no período escolhido: GWP da Akad dividido pelo GWP de todas as seguradoras no ramo.",
     tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
     tRank: "Lugar da Akad no ranking de GWP do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
@@ -915,9 +911,9 @@
     const pAk = RT.prev.get(AKAD);
     const sinP = pAk && pAk[0] > 0 ? (pAk[2] / pAk[0]) * 100 : null;
     const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
-    const cardVendas = kCard({ ic: "gwp", rot: "GWP da Akad", help: ajuda("premio", "GWP"), destaque: true, corpo: `<b>${reais(ak.pe)}</b>${kVar(ak.cresc, "%")}`, tip: ak.peP > 0 ? `${reais(ak.peP)} em ${perP}.` : "Sem prêmio no período anterior para comparar." });
-    const cardPart = kCard({ ic: "share", rot: "Participação de mercado", help: `<button type="button" class="ajuda" data-ajuda="shareTot" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button>`, corpo: `<b>${pct(ak.share, 2)}</b>${kVar(ak.dShare, " p.p.")}`, tip: ak.shareP != null ? `${pct(ak.shareP, 2)} em ${perP}.` : "Sem participação no período anterior para comparar." });
-    const cardSin = kCard({ ic: "sin", rot: "Sinistralidade", help: ajuda("sin", "sinistralidade"), corpo: `<b>${pct(ak.sin)}</b>${kVar(dSin, " p.p.", { ruimSeSobe: true })}`, tip: sinP != null ? `${pct(sinP)} em ${perP}.` : "Sem período anterior para comparar." });
+    const cardVendas = kCard({ ic: "gwp", rot: "GWP da Akad", help: ajuda("premio", "GWP"), destaque: true, corpo: `<b>${reais(ak.pe)}</b>${kVar(ak.cresc, "%")}` });
+    const cardPart = kCard({ ic: "share", rot: "Participação de mercado", help: `<button type="button" class="ajuda" data-ajuda="shareTot" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button>`, corpo: `<b>${pct(ak.share, 2)}</b>${kVar(ak.dShare, " p.p.")}` });
+    const cardSin = kCard({ ic: "sin", rot: "Sinistralidade", help: ajuda("sin", "sinistralidade"), corpo: `<b>${pct(ak.sin)}</b>${kVar(dSin, " p.p.", { ruimSeSobe: true })}` });
 
     // A4. Evolução das vendas: mesmo recorte de meses em cada ano
     const hist = [];
@@ -1836,8 +1832,8 @@
     const ppT = (v) => (Math.abs(v) < 0.05 ? "0,0 p.p." : `${sg(v)}${nf1.format(Math.abs(v))} p.p.`);
     const clsV = (v) => (v > 0.05 ? "up" : v < -0.05 ? "dn" : "zero");
     const kAk = ak
-      ? [kCard({ ic: "pos", rot: "Posição da Akad", destaque: true, corpo: kPos(ak.pos, posP, N), tip: `Por GWP, entre ${N} seguradoras. ${kPosTip(ak.pos, posP, perA ? `em ${perA}` : "no período anterior")}` }),
-         kCard({ ic: "share", rot: "Participação da Akad", corpo: `<b>${pct(ak.sh, 2)}</b>${kVar(ak.dsh, " p.p.")}`, tip: ak.dsh != null ? `${pct(ak.sh - ak.dsh, 2)} em ${perA}. Participação no GWP dos ramos da Akad.` : "Participação no GWP dos ramos da Akad. Sem comparativo." })]
+      ? [kCard({ ic: "pos", rot: "Posição da Akad", help: ajuda("pos", "posição"), destaque: true, corpo: kPos(ak.pos, posP, N) }),
+         kCard({ ic: "share", rot: "Participação da Akad", help: ajuda("share", "participação"), corpo: `<b>${pct(ak.sh, 2)}</b>${kVar(ak.dsh, " p.p.")}` })]
       : [kCard({ ic: "pos", rot: "Posição da Akad", destaque: true, corpo: kPos(null) }), kCard({ ic: "share", rot: "Participação da Akad", corpo: "<b>–</b><small>sem prêmio no período</small>" })];
     // ranking: ordenação pelo título da coluna, busca por nome e Akad sempre visível
     if (!S.mkOrd) S.mkOrd = { col: "g", dir: -1 };
@@ -1891,8 +1887,8 @@
     el.innerHTML = `${cab}
       <div class="cn-kpis kn-grid" style="--n:4">
         ${kAk.join("")}
-        ${kCard({ ic: "emp", rot: "Seguradoras", corpo: `<b>${nf0.format(N)}</b><small>com prêmio</small>`, tip: "Seguradoras com prêmio no período nos ramos em que a Akad atua." })}
-        ${kCard({ ic: "top", rot: "5 maiores juntas", corpo: `<b>${pctPart(top5)}</b><small>do GWP</small>`, tip: `Participação somada das 5 maiores seguradoras no GWP dos ramos da Akad: ${rows.slice(0, 5).map((r) => esc(nomeCurtoCia(r.nome))).join(", ")}.` })}
+        ${kCard({ ic: "emp", rot: "Seguradoras", help: ajuda("cnSeg", "seguradoras"), corpo: `<b>${nf0.format(N)}</b><small>com prêmio</small>` })}
+        ${kCard({ ic: "top", rot: "5 maiores juntas", help: `<button type="button" class="ajuda" data-ajuda="cnTop5" data-lista="${esc(rows.slice(0, 5).map((r) => `${nomeCurtoCia(r.nome)}: ${pctPart(r.sh)}`).join("|"))}" aria-label="O que é 5 maiores juntas?">?</button>`, corpo: `<b>${pctPart(top5)}</b><small>do GWP</small>` })}
       </div>
       <div id="mk-quem"></div>
       <section class="cn-card" aria-labelledby="h-mk">
@@ -2255,9 +2251,9 @@
       el.innerHTML = `
         <div class="cab-aba"><div><h2>Desempenho por estado</h2><p>${subtitulo}</p></div></div>
         <div class="uf-kpis kn-grid" style="--n:3">
-          ${kCard({ ic: "pin", rot: "Concentração", help: `<button type="button" class="ajuda" data-ajuda="ufConc" data-lista="${esc(comAkad.slice(0, 5).map((x) => `${x.nome}: ${pct(x.pct)} das vendas da Akad`).join("|"))}" aria-label="O que é concentração?">?</button>`, destaque: true, corpo: `<b>${pct(top3[0]?.pct)}</b><small>em ${top3[0]?.u || "–"}</small>`, tip: `${top3.map((x) => x.u).join(", ")} somam ${pct(top3.reduce((s, x) => s + x.pct, 0))} das vendas da Akad.` })}
-          ${kCard({ ic: "gwp", rot: "Estados em crescimento", help: `<button type="button" class="ajuda" data-ajuda="ufCresc" data-lista="${esc(cresceram.length ? cresceram.map((x) => `${x.nome}: ${cresTxt(x.cres)}`).join("|") : "Nenhum estado")}" aria-label="Quais estados cresceram?">?</button>`, corpo: `<b>${cresceram.length}</b><small>de ${UF.length}</small>`, tip: `Estados com vendas da Akad maiores que em ${perP || "o período anterior"}.` })}
-          ${kCard({ ic: "star", rot: "Maior participação", help: `<button type="button" class="ajuda" data-ajuda="ufMelhor" aria-label="O que é maior participação?">?</button>`, corpo: `<b>${melhor ? pct(melhor.share, 2) : "–"}</b><small>${melhor ? `no ${melhor.u}` : ""}</small>`, tip: `Média da Akad no país: ${pct(MED, 2)}.` })}
+          ${kCard({ ic: "pin", rot: "Concentração", help: `<button type="button" class="ajuda" data-ajuda="ufConc" data-lista="${esc(comAkad.slice(0, 5).map((x) => `${x.nome}: ${pct(x.pct)} das vendas da Akad`).join("|"))}" aria-label="O que é concentração?">?</button>`, destaque: true, corpo: `<b>${pct(top3[0]?.pct)}</b><small>em ${top3[0]?.u || "–"}</small>` })}
+          ${kCard({ ic: "gwp", rot: "Estados em crescimento", help: `<button type="button" class="ajuda" data-ajuda="ufCresc" data-lista="${esc(cresceram.length ? cresceram.map((x) => `${x.nome}: ${cresTxt(x.cres)}`).join("|") : "Nenhum estado")}" aria-label="Quais estados cresceram?">?</button>`, corpo: `<b>${cresceram.length}</b><small>de ${UF.length}</small>` })}
+          ${kCard({ ic: "star", rot: "Maior participação", help: `<button type="button" class="ajuda" data-ajuda="ufMelhor" aria-label="O que é maior participação?">?</button>`, corpo: `<b>${melhor ? pct(melhor.share, 2) : "–"}</b><small>${melhor ? `no ${melhor.u}` : ""}</small>` })}
         </div>
         <div class="uf-meio">
           <section class="card uf-c">
@@ -2332,9 +2328,9 @@
     el.innerHTML = `
       <div class="cab-aba"><div><a href="#uf" class="uf-volta" id="uf-volta"><span aria-hidden="true">←</span> Todos os estados</a><h2>${esc(x.nome)}</h2><p>O que mais se vende no estado, entre os ramos em que a Akad atua, e a posição da Akad em cada um. ${notaBase}</p></div></div>
       <div class="uf-kpis kn-grid" style="--n:3">
-        ${kCard({ ic: "gwp", rot: `Vendas da Akad em ${x.u}`, destaque: true, corpo: `<b>${reais(x.akad)}</b>${kVar(x.cres, "%")}`, tip: `${pct(x.pct)} das vendas da Akad no país.` })}
-        ${kCard({ ic: "share", rot: `Participação em ${x.u}`, corpo: `<b>${pct(x.share, 2)}</b><small class="uf-x ${xCls(x.vsMed)}">${xMed(x.vsMed)} a média</small>`, tip: `Média da Akad no país: ${pct(MED, 2)}.` })}
-        ${kCard({ ic: "pos", rot: "Posição no estado", help: `<button type="button" class="ajuda" data-ajuda="ufPos" aria-label="Como é calculada a posição?">?</button>`, corpo: x.pos ? `${seloPosicao(x.pos)}<b>${x.pos}º</b><small>${x.nRk ? `de ${x.nRk}` : ""}</small>` : "<b>–</b>", tip: `Quem lidera: ${nomeLider(x.lider)} · base ${anoTxt}.` })}
+        ${kCard({ ic: "gwp", rot: `Vendas da Akad em ${x.u}`, help: ajuda("ufVendas", "vendas no estado"), destaque: true, corpo: `<b>${reais(x.akad)}</b>${kVar(x.cres, "%")}` })}
+        ${kCard({ ic: "share", rot: `Participação em ${x.u}`, help: ajuda("ufShareMapa", "participação no estado"), corpo: `<b>${pct(x.share, 2)}</b><small class="uf-x ${xCls(x.vsMed)}">${xMed(x.vsMed)} a média</small>` })}
+        ${kCard({ ic: "pos", rot: "Posição no estado", help: `<button type="button" class="ajuda" data-ajuda="ufPos" aria-label="Como é calculada a posição?">?</button>`, corpo: x.pos ? `${seloPosicao(x.pos)}<b>${x.pos}º</b><small>${x.nRk ? `de ${x.nRk}` : ""}</small>` : "<b>–</b>" })}
       </div>
       <section class="card uf-c">
         <div class="uf-cab"><h2 class="uf-tit">O que mais se vende em ${x.u}</h2>
@@ -2460,9 +2456,9 @@
     const ressP = ab && AKp && AKp[1] > 0 && AKp[6] !== 0 ? (AKp[6] / AKp[1]) * 100 : null;
     const cards = `
       <div class="sn-kpi3 kn-grid" style="--n:3">
-        ${kCard({ ic: "sin", rot: "Sinistralidade da Akad", help: ajuda("sin", "sinistralidade"), destaque: true, corpo: `<b>${pct(sin)}</b>${kVar(sinP != null ? sin - sinP : null, " p.p.", { ruimSeSobe: true })}`, tip: sinP != null ? `${pct(sinP)} em ${perP}.` : "Sem período anterior para comparar." })}
-        ${kCard({ ic: "doc", rot: "Sinistro incorrido", help: ajuda("sinInc", "sinistro incorrido"), corpo: `<b>${reais(AK[1])}</b>${kVar(AKp ? cresc(AK[1], AKp[1]) : null, "%", { neutro: true })}`, tip: AKp && AKp[1] > 0 ? `${reais(AKp[1])} em ${perP}.` : "Sem período anterior para comparar." })}
-        ${kCard({ ic: "umb", rot: "Recuperado do resseguro", help: ajuda("sinRess", "recuperado do resseguro"), corpo: `<b>${pct(ress)}</b>${ress != null ? kVar(ressP != null ? ress - ressP : null, " p.p.") : ""}`, tip: !ab ? "Dado em atualização a partir da base da SUSEP." : `${reais(AK[6])} do sinistro incorrido${ressP != null ? `. ${pct(ressP)} em ${perP}` : ""}.` })}
+        ${kCard({ ic: "sin", rot: "Sinistralidade da Akad", help: ajuda("sin", "sinistralidade"), destaque: true, corpo: `<b>${pct(sin)}</b>${kVar(sinP != null ? sin - sinP : null, " p.p.", { ruimSeSobe: true })}` })}
+        ${kCard({ ic: "doc", rot: "Sinistro incorrido", help: ajuda("sinInc", "sinistro incorrido"), corpo: `<b>${reais(AK[1])}</b>${kVar(AKp ? cresc(AK[1], AKp[1]) : null, "%", { neutro: true })}` })}
+        ${kCard({ ic: "umb", rot: "Recuperado do resseguro", help: ajuda("sinRess", "recuperado do resseguro"), corpo: `<b>${pct(ress)}</b>${ress != null ? kVar(ressP != null ? ress - ressP : null, " p.p.") : ""}` })}
       </div>`;
 
     // B. Onde estamos melhor e pior que o mercado
