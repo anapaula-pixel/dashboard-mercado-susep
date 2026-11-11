@@ -1897,3 +1897,15 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 @media (max-width: 900px) { .kn-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 560px) { .kn-grid[style*="--n:3"] { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 420px) { .kn .kv > b { font-size: 1.4rem; } }
+/* Ramos: ranking com as 10 maiores, GWP do ano anterior e "ver todas" */
+#aba-linhas .rk-tab td.rk-ant { color: var(--ink-2); }
+#aba-linhas .rk-tab tr.rk-fora td { border-top: 1px dashed var(--line); }
+#aba-linhas .rk-tab td.nome { min-width: 0; width: 26%; }
+#aba-linhas .rk-tab th, #aba-linhas .rk-tab td { padding-left: 10px; padding-right: 10px; }
+#aba-linhas .rk-mais { margin-top: 10px; }
+#aba-linhas .rk-tab th.rk-g { text-align: center; color: var(--ink); box-shadow: inset 0 -2px 0 var(--navy); padding-bottom: 6px; }
+#aba-linhas .rk-tab tr.rk-sub th { text-transform: none; letter-spacing: 0; white-space: nowrap; }
+#aba-linhas .rk-tab th.rk-ant { color: var(--muted); }
+#aba-linhas .rk-tab thead th[rowspan] { vertical-align: bottom; }
+#aba-linhas .rk-tab .rk-g1 { border-left: 1px solid var(--line); }
+#aba-linhas .rk-tab th.rk-g + th.rk-g { border-left: 12px solid transparent; background-clip: padding-box; }
