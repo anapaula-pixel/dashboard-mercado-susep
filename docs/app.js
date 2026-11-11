@@ -416,10 +416,10 @@
     // por mês, com até 12 meses no filtro: cada mês ao lado do mesmo mês do ano anterior
     const par = vis === "mes" && P.b - P.a + 1 <= 12 && P.a - 12 >= 0;
     const parAno = par && D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4); // tudo no mesmo ano: o ano sai do eixo e vai para a legenda
-    // RC Profissional, por mês: cada coluna dividida entre E&O e RCPM (proporção dos dados internos da Akad aplicada ao GWP da SUSEP)
-    const frEO = par && S.linha === EO_LINHA && EO ? (i) => EO.fr.get(i) : null;
-    const eoM = !!frEO && (() => { for (let i = P.a; i <= P.b; i++) if (frEO(i) != null || frEO(i - 12) != null) return true; return false; })();
-    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : eoM && !peq ? 48 : par && !peq ? 30 : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
+    // RC Profissional: nos meses com dados do Power BI, a coluna mostra E&O e RCPM exatamente como no Power BI (o total da SUSEP fica no tooltip e no resumo)
+    const comEO = S.linha === EO_LINHA && !!EO;
+    const eoM = par && comEO && (() => { for (let i = P.a; i <= P.b; i++) if (EO.raw.has(i) || EO.raw.has(i - 12)) return true; return false; })();
+    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : par && !peq ? 30 : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
     const fim = P.b;
     // início do gráfico: no acumulado do ano, mostra também o ano anterior inteiro para comparar; nos outros filtros, o período exato
     const ini0 = S.periodo === "ytd" ? Math.max(0, D.meses.indexOf(`${+D.meses[fim].slice(0, 4) - 1}01`)) : P.a;
@@ -457,7 +457,7 @@
         const sh = t > 0 ? (a / t) * 100 : null;
         const meses = m0 === m1 ? MESES_PT[m0 - 1] : `${MESES_PT[m0 - 1]} a ${MESES_PT[m1 - 1]}`;
         itens.push({ l1: `${q}º tri${parc ? "*" : ""}`, l2: q === 1 || itens.length === 0 ? String(y) : "", ano: String(y), v: met === "gwp" ? a : sh, a, sh, parc,
-          cr: ap > 0 ? cresc(a, ap) : null, dsh: tp > 0 && sh != null ? sh - (ap / tp) * 100 : null, tit: `${q}º trimestre de ${y} (${meses}${parc ? ", parcial" : ""})`, refP: `${meses}/${y - 1}` });
+          cr: ap > 0 ? cresc(a, ap) : null, dsh: tp > 0 && sh != null ? sh - (ap / tp) * 100 : null, tit: `${q}º trimestre de ${y} (${meses}${parc ? ", parcial" : ""})`, refP: `${meses}/${y - 1}`, ii: [i0, i1] });
       }
       const anosT = [...new Set(itens.map((x) => x.ano))].reverse();
       itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anosT.indexOf(x.ano), TONS_ANO.length - 1)]; });
@@ -472,10 +472,33 @@
         const sh = t > 0 ? (a / t) * 100 : null;
         const meses = `${MESES_PT[mA - 1]} a ${MESES_PT[mB - 1]}`;
         itens.push({ l1: y + (parc ? "*" : ""), v: met === "gwp" ? a : sh, a, sh, parc, cr: ap > 0 ? cresc(a, ap) : null, dsh: sh != null && tp > 0 ? sh - (ap / tp) * 100 : null,
-          tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFim ? TONS_ANO[0] : "#F5B3CA" });
+          tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFim ? TONS_ANO[0] : "#F5B3CA",
+          ii: [D.meses.indexOf(`${y}${String(mA).padStart(2, "0")}`), D.meses.indexOf(`${y}${String(mB).padStart(2, "0")}`)] });
       }
     }
-    const vals = itens.flatMap((x) => [x.v || 0, x.vp || 0]);
+    // E&O e RCPM do Power BI: no mês (e no mesmo mês do ano anterior) ou somados no trimestre/ano, só quando todos os meses têm dado.
+    // Onde o Power BI só tem E&O, o RCPM é calculado como o GWP da SUSEP menos o E&O (fica hachurado no gráfico).
+    if (comEO) {
+      const somaEO = (a, b) => {
+        let e = 0, r = 0, calc = false;
+        for (let i = a; i <= b; i++) {
+          const v = EO.raw.get(i);
+          if (!v || i < 0) return null;
+          e += v[0];
+          if (v[1] == null) { r += Math.max(0, A[i] - v[0]); calc = true; } else r += v[1];
+        }
+        return { e, r, calc, tot: e + r };
+      };
+      itens.forEach((x) => {
+        let c = null, p = null;
+        if (vis === "mes" && eoM) { const i = D.meses.indexOf(x.ym); c = somaEO(i, i); p = somaEO(i - 12, i - 12); }
+        else if (vis !== "mes" && x.ii && x.ii[0] >= 0 && x.ii[1] >= 0) c = somaEO(x.ii[0], x.ii[1]);
+        if (c) { x.eo = c.e; x.rc = c.r; x.tot = c.tot; x.calc = c.calc; }
+        if (p) { x.eoP = p.e; x.rcP = p.r; x.totP = p.tot; x.calcP = p.calc; }
+      });
+    }
+    const eoT = vis !== "mes" && itens.some((x) => x.eo != null);
+    const vals = itens.flatMap((x) => [x.v || 0, x.vp || 0, x.tot || 0, x.totP || 0]);
     const vMax = Math.max(met === "gwp" ? 1 : 0.5, ...vals) * 1.05;
     const passo = niceMax(vMax / 4);
     const nT = Math.max(1, Math.ceil(vMax / passo));
@@ -484,48 +507,55 @@
     const fmtE = (v) => (v === 0 ? "0" : met === "gwp" ? reaisCurto(v) : nf0.format(v) + "%");
     const fmtV = (v) => (met === "gwp" ? reais(v) : pct(v));
     let g = "";
+    // hachura do RCPM calculado (ano atual e ano anterior)
+    if (eoM || eoT) g += `<defs><pattern id="eo-hach" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--eo-r)"/><rect width="2.5" height="6" fill="var(--eo-r-hach)"/></pattern><pattern id="eo-hach-p" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="var(--eo-r-p)"/><rect width="2.5" height="6" fill="var(--eo-r-p-hach)"/></pattern></defs>`;
     for (let k = 0; k <= nT; k++) { const v = passo * k, y = Y(v); g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${y}" y2="${y}"/><text x="${m.l - 6}" y="${y + 4}" text-anchor="end">${fmtE(v)}</text>`; }
     const bw = (W - m.l - m.r) / itens.length;
     const cada = vis === "mes" ? [1, 2, 3, 4, 6, 12].find((c) => c * bw >= 30) || 12 : 1;
+    // coluna empilhada: E&O embaixo, RCPM em cima (hachurado quando calculado); valores em R$ dentro de cada parte
+    const pilha = (x0, wb, base, eo, cE, cR, cls) => {
+      const yE = Y(eo), yT = Y(base);
+      let o = `<rect x="${x0}" y="${yE}" width="${wb}" height="${Math.max(0, H - m.b - yE)}" fill="${cE}"/><rect x="${x0}" y="${yT}" width="${wb}" height="${Math.max(0, yE - yT)}" fill="${cR}"/>`;
+      if (!peq && wb >= 34 && base > 0) {
+        const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}">${miCurto(v)}</text>`;
+        if (H - m.b - yE > 18) o += rot((yE + H - m.b) / 2, eo);
+        if (yE - yT > 18) o += rot((yT + yE) / 2, base - eo);
+      }
+      return o;
+    };
     // muitos meses: rótulo a cada N meses, sempre incluindo janeiro
     itens.forEach((x, i) => {
       const w = bw * (vis !== "mes" ? 0.6 : par ? 0.74 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
       const barra = (x0, wb, yy, cor) => { const hh = H - m.b - yy, rr = Math.min(3, wb / 2); return hh > 0 ? `<path d="M${x0} ${H - m.b}V${yy + Math.min(rr, hh)}q0 -${rr} ${rr} -${rr}h${wb - 2 * rr}q${rr} 0 ${rr} ${rr}V${H - m.b}Z" fill="${cor}"/>` : ""; };
       if (par) {
-        const gap = Math.min(4, w * 0.06), wb = (w - gap) / 2, yp = Y(x.vp || 0);
-        let yt = Math.min(y, yp);
+        const gap = Math.min(4, w * 0.06), wb = (w - gap) / 2;
+        let yp = Y(x.vp || 0), yt = Math.min(y, yp);
         if (eoM) {
-          // valor de cada produto dentro da coluna (a % fica no tooltip)
-          const iA = D.meses.indexOf(x.ym), fA = frEO(iA), fP = frEO(iA - 12);
-          if (fA != null) { x.eo = x.a * fA; x.rc = x.a - x.eo; }
-          if (fP != null) { x.eoP = x.vp * fP; x.rcP = x.vp - x.eoP; }
-          const pilha = (x0, base, eo, cE, cR, cls) => {
-            const yE = Y(eo), yT = Y(base);
-            let o = `<rect x="${x0}" y="${yE}" width="${wb}" height="${Math.max(0, H - m.b - yE)}" fill="${cE}"/><rect x="${x0}" y="${yT}" width="${wb}" height="${Math.max(0, yE - yT)}" fill="${cR}"/>`;
-            if (!peq && wb >= 34 && base > 0) {
-              const rot = (y0, v) => `<text x="${x0 + wb / 2}" y="${y0 + 4}" text-anchor="middle" class="${cls}">${miCurto(v)}</text>`;
-              if (H - m.b - yE > 18) o += rot((yE + H - m.b) / 2, eo);
-              if (yE - yT > 18) o += rot((yT + yE) / 2, base - eo);
-            }
-            return o;
-          };
+          // a altura é o total do Power BI (ou o da SUSEP quando o RCPM é calculado ou não há divisão)
+          const tA = x.tot != null ? x.tot : x.a, tP = x.totP != null ? x.totP : x.vp, yA = Y(tA || 0);
+          yp = Y(tP || 0);
           g += `<g class="eo-mes">`;
-          g += fP != null ? pilha(bx, x.vp, x.eoP, "var(--eo-e-p)", "var(--eo-r-p)", "eo-in eo-in-p") : barra(bx, wb, yp, x.corP);
-          g += fA != null ? pilha(bx + wb + gap, x.a, x.eo, "var(--eo-e)", "var(--eo-r)", "eo-in") : barra(bx + wb + gap, wb, y, x.cor);
+          g += x.totP != null ? pilha(bx, wb, x.totP, x.eoP, "var(--eo-e-p)", x.calcP ? "url(#eo-hach-p)" : "var(--eo-r-p)", "eo-in eo-in-p") : barra(bx, wb, yp, x.corP);
+          g += x.tot != null ? pilha(bx + wb + gap, wb, x.tot, x.eo, "var(--eo-e)", x.calc ? "url(#eo-hach)" : "var(--eo-r)", "eo-in") : barra(bx + wb + gap, wb, yA, x.cor);
           if (!peq && bw >= 56) {
-            if (x.vp > 0) g += `<text x="${bx + wb / 2}" y="${yp - 6}" text-anchor="middle" class="eo-tot eo-tot-p">${miCurto(x.vp)}</text>`;
-            if (x.a > 0) g += `<text x="${bx + wb + gap + wb / 2}" y="${y - 6}" text-anchor="middle" class="eo-tot">${miCurto(x.a)}</text>`;
-            yt -= 16;
+            if (tP > 0) g += `<text x="${bx + wb / 2}" y="${yp - 6}" text-anchor="middle" class="eo-tot eo-tot-p">${miCurto(tP)}</text>`;
+            if (tA > 0) g += `<text x="${bx + wb + gap + wb / 2}" y="${yA - 6}" text-anchor="middle" class="eo-tot">${miCurto(tA)}</text>`;
           }
         } else g += barra(bx, wb, yp, x.corP) + barra(bx + wb + gap, wb, y, x.cor);
-        if (!peq && bw >= 56 && x.cr != null && isFinite(x.cr)) {
+        if (!eoM && !peq && bw >= 56 && x.cr != null && isFinite(x.cr)) {
           const d = x.cr, txt = d > 999 ? "> +999%" : (d >= 0 ? "+" : "−") + nf0.format(Math.abs(d)) + "%", pw = txt.length * 6.4 + 12;
           g += `<rect x="${bx + w / 2 - pw / 2}" y="${yt - 22}" width="${pw}" height="16" rx="8" class="${d >= 0 ? "pr-up" : "pr-dn"}"/><text x="${bx + w / 2}" y="${yt - 10.5}" text-anchor="middle" class="pr-pill ${d >= 0 ? "pr-up" : "pr-dn"}">${txt}</text>`;
         }
+      } else if (eoT && x.eo != null && x.tot > 0) {
+        g += pilha(bx, w, x.tot, x.eo, "var(--eo-e)", x.calc ? "url(#eo-hach)" : "var(--eo-r)", "eo-in");
       } else if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
       if (cada === 1 || (MESES_PT.indexOf(x.l1) % cada === 0)) g += `<text x="${bx + w / 2}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${esc(x.l1)}</text>`;
       if (x.l2 && !parAno && ((!peq && cada === 1) || i === 0 || x.l1 === "jan")) g += `<text x="${bx + w / 2}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
-      if (vis !== "mes") {
+      if (vis !== "mes" && eoT) {
+        // RC Profissional com divisão: só o total no topo, sem o selo de crescimento
+        const tT = x.tot != null ? x.tot : x.v;
+        if (!peq && tT != null) g += `<text x="${bx + w / 2}" y="${Y(tT) - 6}" text-anchor="middle" class="pr-val">${miCurto(tT)}</text>`;
+      } else if (vis !== "mes") {
         const d = met === "gwp" ? x.cr : x.dsh;
         if (!peq) g += `<text x="${bx + w / 2}" y="${y - (d != null ? 28 : 6)}" text-anchor="middle" class="pr-val">${x.v == null ? "–" : met === "gwp" ? reaisCurto(x.v) : pct(x.v)}</text>`;
         if (d != null && isFinite(d)) {
@@ -539,21 +569,38 @@
     g += `<line class="base" x1="${m.l}" x2="${W - m.r}" y1="${H - m.b}" y2="${H - m.b}"/>`;
     el.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Produção da Akad ${vis === "mes" ? "por mês" : vis === "tri" ? "por trimestre" : "por ano"}">${g}</svg>`;
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
+    // tooltip de RC Profissional: tabela com uma coluna por período (o atual e, na visão por mês, o mesmo mês do ano anterior)
+    const tipEO = (cols, rodape) => {
+      const pc = (v, t) => (t > 0 ? nf0.format((v / t) * 100) + "%" : "");
+      const difC = (c) => { if (c.eo == null || c.calc) return "–"; const d = c.su - c.tot; return Math.abs(d) < 0.5 ? "0" : `${d > 0 ? "+" : "−"}${miCurto(Math.abs(d))}`; };
+      const lin = (rot, f, cls = "") => `<tr class="${cls}"><td>${rot}</td>${cols.map((c) => `<td>${f(c)}</td>`).join("")}</tr>`;
+      const temCalc = cols.some((c) => c.calc);
+      return `<table class="tt-eo"><thead><tr><th></th>${cols.map((c) => `<th>${esc(c.tit)}</th>`).join("")}</tr></thead><tbody>`
+        + lin(`<i class="tt-e"></i>E&amp;O`, (c) => (c.eo == null ? "–" : `${miCurto(c.eo)} <small>${pc(c.eo, c.tot)}</small>`))
+        + lin(`<i class="tt-rc"></i>RCPM`, (c) => (c.eo == null ? "–" : `${miCurto(c.rc)}${c.calc ? "*" : ""} <small>${pc(c.rc, c.tot)}</small>`))
+        + lin("Total Power BI", (c) => (c.eo == null || c.calc ? "–" : miCurto(c.tot)), "tt-sep")
+        + lin("Total SUSEP", (c) => miCurto(c.su))
+        + lin("Diferença", difC, "tt-dif")
+        + `</tbody></table>${temCalc ? `<div class="tt-nota">* calculado: total da SUSEP menos E&amp;O</div>` : ""}${rodape ? `<div class="tt-rod">${rodape}</div>` : ""}`;
+    };
     el.querySelectorAll(".hitb").forEach((r) => {
       const x = itens[+r.dataset.i];
-      const pc = (v, t) => nf0.format((v / t) * 100) + "%";
+      const varT = x.tot != null && x.totP > 0 ? cresc(x.tot, x.totP) : x.cr;
       const html = eoM
-        ? `<b>${esc(x.tit)}</b><div>Total: ${reais(x.a)}</div>${x.eo != null ? `<div>E&amp;O: ${reais(x.eo)} (${pc(x.eo, x.a)})</div><div>RCPM: ${reais(x.rc)} (${pc(x.rc, x.a)})</div>` : `<div class="tip-sub">Sem divisão entre E&amp;O e RCPM neste mês</div>`}`
-          + `<div style="margin-top:6px"><b>${esc(x.refP)}</b></div><div>Total: ${reais(x.vp)}</div>${x.eoP != null ? `<div>E&amp;O: ${reais(x.eoP)} (${pc(x.eoP, x.vp)}) · RCPM: ${reais(x.rcP)} (${pc(x.rcP, x.vp)})</div>` : ""}`
-          + `<div style="margin-top:6px">Variação do total: ${x.cr != null ? sinal(x.cr, "%") : "–"}</div>`
+        ? tipEO([{ tit: x.tit, eo: x.eo, rc: x.rc, tot: x.tot, calc: x.calc, su: x.a }, { tit: x.refP, eo: x.eoP, rc: x.rcP, tot: x.totP, calc: x.calcP, su: x.vp }], `Variação do total: <b>${varT != null ? sinal(varT, "%") : "–"}</b>`)
+        : eoT
+        ? tipEO([{ tit: x.tit, eo: x.eo, rc: x.rc, tot: x.tot, calc: x.calc, su: x.a }], `Market share: <b>${pctPart(x.sh)}</b>`)
         : `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div>${par && x.refP ? `<div>Em ${esc(x.refP)}: ${reais(x.vp)}</div>` : ""}<div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
       r.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
       r.addEventListener("mouseleave", esconderTip);
     });
-    itens.par = par; itens.eoM = eoM;
-    if (eoM) {
+    itens.par = par; itens.eoM = eoM || !!eoT; itens.eoT = !!eoT;
+    if (itens.eoM) {
       const com = itens.filter((x) => x.eo != null);
-      itens.eoRes = com.length ? { sT: com.reduce((t, x) => t + x.a, 0), sE: com.reduce((t, x) => t + x.eo, 0), parcial: com.length < itens.length, de: D.meses.indexOf(com[0].ym), ate: D.meses.indexOf(com[com.length - 1].ym) } : null;
+      const soma = (f) => com.reduce((t, x) => t + f(x), 0);
+      itens.eoRes = com.length ? { sE: soma((x) => x.eo), sR: soma((x) => x.rc), sT: soma((x) => x.tot), sS: soma((x) => x.a), calc: com.some((x) => x.calc), parcial: com.length < itens.length,
+        de: eoT ? com[0].ii[0] : D.meses.indexOf(com[0].ym), ate: eoT ? com[com.length - 1].ii[1] : D.meses.indexOf(com[com.length - 1].ym) } : null;
+      itens.temCalc = itens.some((x) => x.calc || x.calcP);
     }
     if (par) { itens.rotA = parAno ? D.meses[P.b].slice(0, 4) : periodoLabel(P.a, P.b); itens.rotP = parAno ? D.meses[P.b - 12].slice(0, 4) : periodoLabel(P.a - 12, P.b - 12); }
     return itens;
@@ -1342,7 +1389,7 @@
           <div class="pr-leg" id="g-prod-leg"></div>
           <p class="eo-resumo" id="g-prod-eo" hidden></p>
           <div class="graf" id="g-prod"></div>
-          <p class="eo-aviso" id="g-prod-aviso" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span>A SUSEP não separa E&amp;O e RCPM. Os totais são o GWP da SUSEP, como no resto da página. A divisão entre os dois produtos usa a proporção dos dados internos da Akad (Power BI). <span class="eo-aviso-ate"></span></span></p>
+          <p class="eo-aviso" id="g-prod-aviso" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span>A divisão entre E&amp;O e RCPM vem do Power BI da Akad, porque a SUSEP não separa os dois produtos. <span class="eo-aviso-ate"></span></span></p>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
@@ -1471,10 +1518,13 @@
       const itens = graficoProducao($("#g-prod"), sm, P);
       const vis = S.prodVis || "mes", met = "gwp";
       const fimLab = mesLabel(P.b, true);
-      $("#g-prod-nota").textContent = vis === "mes" && itens.par
+      // RC Profissional com E&O e RCPM: sem subtítulo (só a nota de período parcial no trimestre/ano), para limpar o bloco
+      $("#g-prod-nota").textContent = itens.eoM && !itens.eoT ? ""
+        : vis === "mes" && itens.par
         ? `GWP da Akad por mês, de ${itens[0].tit} a ${fimLab}, ao lado dos mesmos meses do ano anterior.`
         : vis === "mes"
         ? `${met === "gwp" ? "GWP" : "Market share"} da Akad por mês, de ${itens[0].tit} a ${fimLab}. Cada cor é um ano.`
+        : itens.eoT ? (itens.some((x) => x.parc) ? `* ${vis === "tri" ? "trimestre" : "ano"} parcial.` : "")
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
@@ -1482,14 +1532,24 @@
       ae.hidden = av.hidden = !itens.eoM;
       if (itens.eoM) {
         const r = itens.eoRes, pc = (v) => nf0.format((v / r.sT) * 100) + "%";
+        const mesExt = (k) => `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+D.meses[k].slice(4) - 1]} de ${D.meses[k].slice(0, 4)}`;
+        const d = r ? r.sS - r.sT : 0;
         ae.innerHTML = !r ? `Ainda não há divisão entre E&amp;O e RCPM para este período.`
-          : `${r.parcial ? `De ${periodoLabel(r.de, r.ate)}` : "No período"}: total <b>${reais(r.sT)}</b> · E&amp;O <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM <b>${reais(r.sT - r.sE)}</b> (${pc(r.sT - r.sE)})`;
-        av.querySelector(".eo-aviso-ate").textContent = `Dados internos disponíveis de ${mesLabel(EO.de, true)} a ${mesLabel(EO.ate, true)}.`;
+          : `${r.parcial ? `De ${periodoLabel(r.de, r.ate)}` : "No período"}, na SUSEP: <b>${reais(r.sS)}</b>. `
+            + (r.calc
+              ? `E&amp;O (Power BI): <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM: <b>${reais(r.sR)}</b> (${pc(r.sR)}), calculado em parte.`
+              : `No Power BI: E&amp;O <b>${reais(r.sE)}</b> (${pc(r.sE)}) · RCPM <b>${reais(r.sR)}</b> (${pc(r.sR)}) · total <b>${reais(r.sT)}</b>${Math.abs(d) < 0.5 ? ", igual à SUSEP." : ` (${reais(Math.abs(d))} a ${d > 0 ? "menos" : "mais"}, ${nf1.format(Math.abs((d / r.sS) * 100))}%).`}`);
+        av.querySelector(".eo-aviso-ate").textContent = EO.deR != null && EO.deR > EO.de
+          ? `E&O disponível desde ${mesExt(EO.de)} e RCPM desde ${mesExt(EO.deR)}. Antes disso, o RCPM é calculado como o total da SUSEP menos o E&O (barras hachuradas).`
+          : `Disponível desde ${mesExt(EO.de)}.`;
         const it = (c, t) => `<span><i style="background:${c}"></i>${t}</span>`;
-        const temA = itens.some((x) => x.eo != null), temP = itens.some((x) => x.eoP != null);
-        $("#g-prod-leg").innerHTML = (temA ? it("var(--eo-e)", `E&amp;O ${itens.rotA}`) + it("var(--eo-r)", `RCPM ${itens.rotA}`) : it(itens[0].cor, `Total ${itens.rotA}`))
+        const hach = (p) => `<span><i class="eo-leg-hach${p ? " p" : ""}"></i>RCPM calculado</span>`;
+        const dica = `<span class="eo-leg-t">Passe o mouse para ver os detalhes e o total da SUSEP</span>`;
+        const temA = itens.some((x) => x.eo != null), temP = itens.some((x) => x.eoP != null), semD = itens.find((x) => x.eo == null);
+        if (itens.eoT) $("#g-prod-leg").innerHTML = it("var(--eo-e)", "E&amp;O") + it("var(--eo-r)", "RCPM") + (itens.temCalc ? hach(false) : "") + (semD ? it(semD.cor, "Total, sem divisão") : "") + dica;
+        else $("#g-prod-leg").innerHTML = (temA ? it("var(--eo-e)", `E&amp;O ${itens.rotA}`) + it("var(--eo-r)", `RCPM ${itens.rotA}`) : it(itens[0].cor, `Total ${itens.rotA}`))
           + (temP ? it("var(--eo-e-p)", `E&amp;O ${itens.rotP}`) + it("var(--eo-r-p)", `RCPM ${itens.rotP}`) : it(itens[0].corP, `Total ${itens.rotP}`))
-          + `<span class="eo-leg-t">Passe o mouse para ver a % de cada produto</span>`;
+          + (itens.temCalc ? hach(false) : "") + dica;
       } else
       $("#g-prod-leg").innerHTML = vis === "mes" && itens.par
         ? `<span><i style="background:${itens[0].cor}"></i>${itens.rotA}</span><span><i style="background:${itens[0].corP}"></i>${itens.rotP}</span>`
@@ -1872,10 +1932,11 @@
       eoPromessa = fetch("data/eo.json", { cache: "no-cache" })
         .then((r) => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
         .then((j) => {
-          const fr = new Map();
-          for (const [ym, [e, r]] of Object.entries(j.meses)) { const i = D.meses.indexOf(ym); if (i >= 0 && e + r > 0) fr.set(i, e / (e + r)); }
-          const idx = [...fr.keys()].sort((a, b) => a - b);
-          EO = { fr, de: idx[0], ate: idx[idx.length - 1] };
+          const raw = new Map();
+          // [E&O, RCPM] em R$ mil; RCPM null = o Power BI só tem o E&O desse mês (o RCPM é calculado com a SUSEP)
+          for (const [ym, [e, r]] of Object.entries(j.meses)) { const i = D.meses.indexOf(ym); if (i >= 0 && e > 0) raw.set(i, [e, r]); }
+          const idx = [...raw.keys()].sort((a, b) => a - b), idxR = idx.filter((i) => raw.get(i)[1] != null);
+          EO = { raw, de: idx[0], ate: idx[idx.length - 1], deR: idxR[0] };
           if (S.aba === "linhas" && S.linha === EO_LINHA) renderLinhas();
         })
         .catch(() => {});
