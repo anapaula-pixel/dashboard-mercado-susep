@@ -406,19 +406,22 @@
     const met = "gwp", vis = S.prodVis || "mes"; // sempre GWP
     const A = Array.from(sm.ent.get(AKAD)), T = Array.from(sm.mercado);
     const W = Math.max(280, el.clientWidth || 600), peq = W < 560, H = peq ? 230 : 280;
-    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
+    // por mês, com até 12 meses no filtro: cada mês ao lado do mesmo mês do ano anterior
+    const par = vis === "mes" && P.b - P.a + 1 <= 12 && P.a - 12 >= 0;
+    const parAno = par && D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4); // tudo no mesmo ano: o ano sai do eixo e vai para a legenda
+    const m = { t: vis !== "mes" ? (peq ? 26 : 46) : par && !peq ? 30 : 14, r: 6, b: vis !== "ano" ? 36 : 22, l: 40 };
     const fim = P.b;
     // início do gráfico: no acumulado do ano, mostra também o ano anterior inteiro para comparar; nos outros filtros, o período exato
     const ini0 = S.periodo === "ytd" ? Math.max(0, D.meses.indexOf(`${+D.meses[fim].slice(0, 4) - 1}01`)) : P.a;
     let itens = [];
     if (vis === "mes") {
-      const ini = ini0;
+      const ini = par ? P.a : ini0;
       for (let i = ini; i <= fim; i++) {
         const ym = D.meses[i];
         const sh = T[i] > 0 ? (A[i] / T[i]) * 100 : null;
         const iP = i - 12;
         itens.push({ ym, l1: MESES_PT[+ym.slice(4) - 1], l2: ym.slice(0, 4), ano: ym.slice(0, 4), v: met === "gwp" ? A[i] : sh, a: A[i], sh,
-          tit: mesLabel(i, true), cr: iP >= 0 ? cresc(A[i], A[iP]) : null, dsh: iP >= 0 && T[iP] > 0 && sh != null ? sh - (A[iP] / T[iP]) * 100 : null, refP: iP >= 0 ? mesLabel(iP, true) : null });
+          tit: mesLabel(i, true), cr: iP >= 0 ? cresc(A[i], A[iP]) : null, dsh: iP >= 0 && T[iP] > 0 && sh != null ? sh - (A[iP] / T[iP]) * 100 : null, refP: iP >= 0 ? mesLabel(iP, true) : null, vp: par ? A[iP] : null, anoP: par ? D.meses[iP].slice(0, 4) : null });
       }
       const anos = [...new Set(itens.map((x) => x.ano))].reverse();
       // até 3 anos: tons fixos; mais anos: degradê do rosa claro ao magenta (mais recente = mais forte)
@@ -427,7 +430,7 @@
         const t = 1 - k / (anos.length - 1), c0 = [0xFB, 0xD9, 0xE5], c1 = [0xE3, 0x17, 0x5E];
         return "#" + c0.map((v, j) => Math.round(v + (c1[j] - v) * t).toString(16).padStart(2, "0")).join("");
       };
-      itens.forEach((x) => { x.cor = tom(anos.indexOf(x.ano)); });
+      itens.forEach((x) => { x.cor = par ? TONS_ANO[0] : tom(anos.indexOf(x.ano)); x.corP = "#F5B3CA"; });
     } else if (vis === "tri") {
       // trimestres do calendário dentro do período do filtro; um trimestre cortado pelo período fica parcial (comparado com os mesmos meses)
       const somaM = (y, m0, m1) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= m0 && mm <= m1) { a += A[i]; t += T[i]; } }); return [a, t]; };
@@ -462,7 +465,7 @@
           tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFim ? TONS_ANO[0] : "#F5B3CA" });
       }
     }
-    const vals = itens.map((x) => x.v || 0);
+    const vals = itens.flatMap((x) => [x.v || 0, x.vp || 0]);
     const vMax = Math.max(met === "gwp" ? 1 : 0.5, ...vals) * 1.05;
     const passo = niceMax(vMax / 4);
     const nT = Math.max(1, Math.ceil(vMax / passo));
@@ -476,10 +479,18 @@
     const cada = vis === "mes" ? [1, 2, 3, 4, 6, 12].find((c) => c * bw >= 30) || 12 : 1;
     // muitos meses: rótulo a cada N meses, sempre incluindo janeiro
     itens.forEach((x, i) => {
-      const w = bw * (vis !== "mes" ? 0.6 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
-      if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
+      const w = bw * (vis !== "mes" ? 0.6 : par ? 0.74 : 0.7), bx = m.l + i * bw + (bw - w) / 2, y = Y(x.v || 0), h = H - m.b - y;
+      const barra = (x0, wb, yy, cor) => { const hh = H - m.b - yy, rr = Math.min(3, wb / 2); return hh > 0 ? `<path d="M${x0} ${H - m.b}V${yy + Math.min(rr, hh)}q0 -${rr} ${rr} -${rr}h${wb - 2 * rr}q${rr} 0 ${rr} ${rr}V${H - m.b}Z" fill="${cor}"/>` : ""; };
+      if (par) {
+        const gap = Math.min(4, w * 0.06), wb = (w - gap) / 2, yp = Y(x.vp || 0);
+        g += barra(bx, wb, yp, x.corP) + barra(bx + wb + gap, wb, y, x.cor);
+        if (!peq && bw >= 56 && x.cr != null && isFinite(x.cr)) {
+          const d = x.cr, txt = d > 999 ? "> +999%" : (d >= 0 ? "+" : "−") + nf0.format(Math.abs(d)) + "%", pw = txt.length * 6.4 + 12, yt = Math.min(y, yp);
+          g += `<rect x="${bx + w / 2 - pw / 2}" y="${yt - 22}" width="${pw}" height="16" rx="8" class="${d >= 0 ? "pr-up" : "pr-dn"}"/><text x="${bx + w / 2}" y="${yt - 10.5}" text-anchor="middle" class="pr-pill ${d >= 0 ? "pr-up" : "pr-dn"}">${txt}</text>`;
+        }
+      } else if (h > 0) g += `<path d="M${bx} ${H - m.b}V${y + Math.min(3, h)}q0 -3 3 -3h${w - 6}q3 0 3 3V${H - m.b}Z" fill="${x.cor}"/>`;
       if (cada === 1 || (MESES_PT.indexOf(x.l1) % cada === 0)) g += `<text x="${bx + w / 2}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${esc(x.l1)}</text>`;
-      if (x.l2 && ((!peq && cada === 1) || i === 0 || x.l1 === "jan")) g += `<text x="${bx + w / 2}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
+      if (x.l2 && !parAno && ((!peq && cada === 1) || i === 0 || x.l1 === "jan")) g += `<text x="${bx + w / 2}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
       if (vis !== "mes") {
         const d = met === "gwp" ? x.cr : x.dsh;
         if (!peq) g += `<text x="${bx + w / 2}" y="${y - (d != null ? 28 : 6)}" text-anchor="middle" class="pr-val">${x.v == null ? "–" : met === "gwp" ? reaisCurto(x.v) : pct(x.v)}</text>`;
@@ -496,10 +507,12 @@
     const sinal = (v, suf, d = 1) => (v > 999 && suf === "%" ? "> +999%" : (v > 0 ? "+" : v < 0 ? "−" : "") + (d ? nf1 : nf0).format(Math.abs(v)) + suf);
     el.querySelectorAll(".hitb").forEach((r) => {
       const x = itens[+r.dataset.i];
-      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div><div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
+      const html = `<b>${esc(x.tit)}</b><div>GWP da Akad: ${reais(x.a)}</div>${par && x.refP ? `<div>Em ${esc(x.refP)}: ${reais(x.vp)}</div>` : ""}<div>Market share: ${pctPart(x.sh)}</div>${x.refP ? `<div>vs. ${esc(x.refP)}: ${x.cr != null ? sinal(x.cr, "%") : "–"} no GWP${x.dsh != null ? `, ${sinal(x.dsh, " p.p.")} no share` : ""}</div>` : ""}`;
       r.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
       r.addEventListener("mouseleave", esconderTip);
     });
+    itens.par = par;
+    if (par) { itens.rotA = parAno ? D.meses[P.b].slice(0, 4) : periodoLabel(P.a, P.b); itens.rotP = parAno ? D.meses[P.b - 12].slice(0, 4) : periodoLabel(P.a - 12, P.b - 12); }
     return itens;
   }
 
@@ -1342,18 +1355,23 @@
       const qs = [];
       for (let i = P.a; i <= P.b; i += N) {
         const j = Math.min(i + N - 1, P.b);
-        qs.push({ i, j, parc: j - i + 1 < N, a: [0, 0], t: [0, 0] });
+        qs.push({ i, j, parc: j - i + 1 < N, a: [0, 0], t: [0, 0], ap: [0, 0] });
       }
       const qDe = new Map();
-      qs.forEach((x, k) => { for (let i = x.i; i <= x.j; i++) qDe.set(i, k); });
+      const qDeP = new Map();
+      qs.forEach((x, k) => { for (let i = x.i; i <= x.j; i++) { qDe.set(i, k); if (i - 12 >= 0) qDeP.set(i - 12, k); } });
       for (const ri of ramos) for (const r of IDX.porRamo[ri]) {
-        const k = qDe.get(r[0]); if (k == null) continue;
         const si = r[11] != null ? r[11] : r[5];
+        const kp = qDeP.get(r[0]);
+        if (kp != null && IDX.chave[r[1]] === AKAD) { qs[kp].ap[0] += r[3]; qs[kp].ap[1] += si; }
+        const k = qDe.get(r[0]); if (k == null) continue;
         const x = qs[k]; x.t[0] += r[3]; x.t[1] += si;
         if (IDX.chave[r[1]] === AKAD) { x.a[0] += r[3]; x.a[1] += si; }
       }
       const mesC = (i) => MESES_PT[+D.meses[i].slice(4) - 1], anoC = (i) => D.meses[i].slice(0, 4);
       qs.forEach((x, k) => {
+        x.sap = x.ap[0] > 0 ? (x.ap[1] / x.ap[0]) * 100 : null;
+        x.titP = x.i - 12 < 0 ? null : x.i === x.j ? mesLabel(x.i - 12, true) : `${mesC(x.i)} a ${mesC(x.j)}/${+anoC(x.j) - 1}`;
         x.sa = x.a[0] > 0 ? (x.a[1] / x.a[0]) * 100 : null; x.sm = x.t[0] > 0 ? (x.t[1] / x.t[0]) * 100 : null;
         x.l1 = x.i === x.j ? mesC(x.i) : `${mesC(x.i)}–${mesC(x.j)}`;
         x.l2 = k === 0 || anoC(x.i) !== anoC(qs[k - 1].i) ? anoC(x.i) : "";
@@ -1364,7 +1382,10 @@
       host.hidden = false;
       const sA = (totA[1] / totA[0]) * 100, sM = totM[0] > 0 ? (totM[1] / totM[0]) * 100 : null;
       const W = Math.max(280, host.clientWidth - 40 || 600), peq = W < 560, H = peq ? 220 : 260, m = { t: 18, r: 12, b: 36, l: 40 };
-      const vals = qs.flatMap((x) => [x.sa, x.sm]).filter((v) => v != null);
+      const temAnt = qs.some((x) => x.sap != null);
+      const totAP = qs.reduce((t, x) => [t[0] + x.ap[0], t[1] + x.ap[1]], [0, 0]), sAP = totAP[0] > 0 ? (totAP[1] / totAP[0]) * 100 : null;
+      const umAno = anoC(P.a) === anoC(P.b), rotAnt = umAno ? `Akad ${+anoC(P.a) - 1}` : "Akad, 12 meses antes";
+      const vals = qs.flatMap((x) => [x.sa, x.sap]).filter((v) => v != null);
       const vMax = Math.max(100, ...vals.map((v) => Math.min(v, 250))) * 1.08, vMin = Math.min(0, ...vals);
       const passo = niceMax((vMax - vMin) / 4), max = Math.ceil(vMax / passo) * passo, min = Math.floor(vMin / passo) * passo;
       const bw = (W - m.l - m.r) / qs.length;
@@ -1373,11 +1394,11 @@
       const comVal = !peq && bw >= 36;
       let g = "";
       for (let v = min; v <= max + 0.001; v += passo) g += `<line class="grid" x1="${m.l}" x2="${W - m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l - 6}" y="${Y(v) + 4}" text-anchor="end">${nf0.format(v)}%</text>`;
-      if (max >= 100) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(100)}" y2="${Y(100)}" stroke="var(--ruim)" stroke-dasharray="4 3" opacity=".5"/>`;
+      if (max >= 100) g += `<line x1="${m.l}" x2="${W - m.r}" y1="${Y(100)}" y2="${Y(100)}" class="sn-lim"/><text x="${W - m.r}" y="${Y(100) - 6}" text-anchor="end" class="sn-lim-t">Acima de 100%, o sinistro supera o prêmio</text>`;
       const linha = (key, cor, w) => { let d = "", on = false; qs.forEach((x, i) => { const v = x[key]; if (v == null) { on = false; return; } d += `${on ? "L" : "M"}${X(i)} ${Y(v)}`; on = true; }); return `<path d="${d}" fill="none" stroke="${cor}" stroke-width="${w}" stroke-linejoin="round" stroke-linecap="round"/>`; };
-      g += linha("sm", "var(--axis)", 2.5) + linha("sa", "var(--akad)", 2.5);
+      g += linha("sap", "var(--akad)", 2.5).replace("<path ", '<path class="sn-ant" ') + linha("sa", "var(--akad)", 2.5);
       qs.forEach((x, i) => {
-        if (x.sm != null) g += `<circle cx="${X(i)}" cy="${Y(x.sm)}" r="3" fill="var(--axis)"/>`;
+        if (x.sap != null) g += `<circle cx="${X(i)}" cy="${Y(x.sap)}" r="3" class="sn-ant-p"/>`;
         if (x.sa != null) g += `<circle cx="${X(i)}" cy="${Y(x.sa)}" r="4" fill="var(--akad)"/>${comVal ? `<text x="${X(i)}" y="${Y(x.sa) - 9}" text-anchor="middle" class="sn-val">${nf0.format(x.sa)}%</text>` : ""}`;
         if (i % cada === 0) g += `<text x="${X(i)}" y="${H - m.b + 15}" text-anchor="middle" class="pr-l1">${x.l1}${x.parc ? "*" : ""}</text>`;
         if (x.l2 && (i % cada === 0 || i === 0)) g += `<text x="${X(i)}" y="${H - m.b + 28}" text-anchor="middle" class="pr-l2">${x.l2}</text>`;
@@ -1385,16 +1406,16 @@
       });
       const nomeVis = vis === "mes" ? "mês" : vis === "bim" ? "bimestre" : "trimestre";
       host.innerHTML = `
-        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro incorrido ÷ GWP por ${nomeVis}, da Akad e do mercado no ramo, em ${periodoLabel(P.a, P.b)}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
+        <div class="bloco-cab pr-cab"><div><h2>Sinistralidade ${ajuda("sinTri", "sinistralidade")}</h2><p class="nota">Sinistro incorrido ÷ GWP da Akad por ${nomeVis}, em ${periodoLabel(P.a, P.b)}${temAnt ? ", comparado com o mesmo período do ano anterior" : ""}.${qs.some((x) => x.parc) ? ` * ${nomeVis} incompleto no período.` : ""}</p></div>
           <div class="pr-btns"><div class="seg-ctrl" role="group" aria-label="Agrupar por">${[["mes", "Mês"], ["bim", "Bimestre"], ["tri", "Trimestre"]].map(([k, r]) => `<button type="button" data-svis="${k}" aria-pressed="${vis === k}">${r}</button>`).join("")}</div></div>
         </div>
-        <p class="sn-resumo">No período: Akad <b class="${sM != null && sA > sM + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>, mercado <b>${sM != null ? nf0.format(sM) + "%" : "–"}</b>.</p>
-        <div class="pr-leg"><span><i style="background:var(--akad)"></i>Akad</span><span><i style="background:var(--axis)"></i>Mercado do ramo</span>${max >= 100 ? '<span><i class="sn-100"></i>100%</span>' : ""}</div>
-        <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad e do mercado por ${nomeVis}">${g}</svg></div>`;
+        <p class="sn-resumo">No período: Akad <b class="${sAP != null && sA > sAP + 0.5 ? "ruim" : "bom"}">${nf0.format(sA)}%</b>${sAP != null ? `, contra <b>${nf0.format(sAP)}%</b> em ${periodoLabel(P.a - 12, P.b - 12)}` : ""}.</p>
+        <div class="pr-leg"><span><i style="background:var(--akad)"></i>Akad${umAno ? " " + anoC(P.a) : ""}</span>${temAnt ? `<span><i class="sn-ant-l"></i>${rotAnt}</span>` : ""}</div>
+        <div class="graf" id="g-sin"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Sinistralidade da Akad por ${nomeVis}, comparada com o ano anterior">${g}</svg></div>`;
       host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
       host.querySelectorAll(".hits").forEach((rc) => {
         const x = qs[+rc.dataset.i];
-        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem GWP" : pct(x.sa)}</div><div>Mercado: ${pct(x.sm)}</div>${x.sa != null && x.sm != null ? `<div>Diferença: ${x.sa - x.sm > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sm))} p.p.</div>` : ""}`;
+        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem GWP" : pct(x.sa)}</div>${temAnt && x.titP ? `<div>Akad em ${x.titP}: ${x.sap == null ? "sem GWP" : pct(x.sap)}</div>` : ""}${x.sa != null && x.sap != null ? `<div>Diferença: ${x.sa - x.sap > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sap))} p.p.</div>` : ""}`;
         rc.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
         rc.addEventListener("mouseleave", esconderTip);
       });
@@ -1404,12 +1425,16 @@
       const itens = graficoProducao($("#g-prod"), sm, P);
       const vis = S.prodVis || "mes", met = "gwp";
       const fimLab = mesLabel(P.b, true);
-      $("#g-prod-nota").textContent = vis === "mes"
+      $("#g-prod-nota").textContent = vis === "mes" && itens.par
+        ? `GWP da Akad por mês, de ${itens[0].tit} a ${fimLab}, ao lado dos mesmos meses do ano anterior.`
+        : vis === "mes"
         ? `${met === "gwp" ? "GWP" : "Market share"} da Akad por mês, de ${itens[0].tit} a ${fimLab}. Cada cor é um ano.`
         : vis === "tri" ? `${met === "gwp" ? "GWP" : "Market share"} por trimestre, comparado com o mesmo trimestre do ano anterior.${itens.some((x) => x.parc) ? " * trimestre parcial, comparado com os mesmos meses." : ""}`
         : `${met === "gwp" ? "GWP" : "Market share"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
-      $("#g-prod-leg").innerHTML = anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
+      $("#g-prod-leg").innerHTML = vis === "mes" && itens.par
+        ? `<span><i style="background:${itens[0].cor}"></i>${itens.rotA}</span><span><i style="background:${itens[0].corP}"></i>${itens.rotP}</span>`
+        : anos.map((y) => `<span><i style="background:${itens.find((x) => x.ano === y).cor}"></i>${y}</span>`).join("");
     };
     desenharProd();
     el.querySelectorAll("[data-pmet],[data-pvis]").forEach((b) => b.addEventListener("click", () => {
