@@ -1863,3 +1863,4 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 #aba-linhas button.gp-li:hover .gp-nm { text-decoration-color: currentColor; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-linhas .rk-tab tr.clic .nome-in > span:first-child, :root:not([data-theme="light"]) #aba-linhas button.gp-li .gp-nm { color: #9DB4D1; text-decoration-color: rgba(157, 180, 209, .35); } }
 :root[data-theme="dark"] #aba-linhas .rk-tab tr.clic .nome-in > span:first-child, :root[data-theme="dark"] #aba-linhas button.gp-li .gp-nm { color: #9DB4D1; text-decoration-color: rgba(157, 180, 209, .35); }
+#aba-linhas #g-prod text.eo-mini { font-size: 10px; }
