@@ -358,9 +358,10 @@ def processar(zip_path):
         if any(v) or inc.get((m, c, r)) or any(x):
             q = aq.get((m, c, r))
             # comissão e outros custos de aquisição (null quando a SUSEP não abriu), sinistro incorrido
+            # (null quando a seguradora não tem o quadro 6 do FIP; aí o painel usa o sinistro ocorrido da SES)
             # e a abertura do sinistro no fim da linha
             seg_rows.append([mi[m], ci[c], ri[r]] + v + ([mil(q[0]), mil(q[1])] if q else [None, None])
-                            + [mil(inc.get((m, c, r), 0.0))] + x)
+                            + [mil(inc[(m, c, r)]) if (m, c, r) in inc else None] + x)
 
     ufm_rows = []
     for (m, r, u), a in ufm.items():
@@ -411,7 +412,7 @@ def processar(zip_path):
 
 def montar_conc(zf, segc, incc, aqc, nomes):
     """Arquivo da ficha do concorrente: todos os ramos de todas as seguradoras, por mês (desde CONC_DESDE).
-    Linha: [mês, seguradora, ramo, GWP, prêmio ganho, sinistro incorrido, despesa comercial, comissão, outros custos]
+    Linha: [mês, seguradora, ramo, GWP, prêmio ganho, sinistro ocorrido, despesa comercial, comissão, outros custos]
     (comissão e outros custos ficam null quando a SUSEP não abriu o custo). Valores em R$ mil."""
     nr = {}
     try:
@@ -429,8 +430,8 @@ def montar_conc(zf, segc, incc, aqc, nomes):
     rows = []
     for (m, c, r), a in segc.items():
         k = (m, c, r)
-        # sinistro incorrido no padrão da Akad; sem ele, cai no sinistro ocorrido (como no painel)
-        sin = incc[k] if k in incc else a[2]
+        # sinistro ocorrido da SES: a sinistralidade do painel é sinistro ocorrido ÷ prêmio ganho, a conta que a SUSEP publica
+        sin = a[2]
         q = aqc.get(k)
         v = [mil(a[0]), mil(a[1]), mil(sin), mil(a[3])]
         if any(v):
@@ -468,7 +469,7 @@ def checar(d):
     # abertura do sinistro: indenizações + despesas - salvados deve bater com o sinistro incorrido
     if "202601" in mi:
         lin = [r for r in d["seg"] if r[1] == ci[AKAD] and mi["202601"] <= r[0] <= mi["202608"] and len(r) > 16]
-        inc_t = sum(r[11] for r in lin)
+        inc_t = sum(r[11] or 0 for r in lin)
         ab = sum(r[12] + r[13] + r[14] - r[15] for r in lin)
         rs = sum(r[16] for r in lin)
         print(f"Checagem sinistro Akad jan-ago/2026: incorrido {inc_t/1000:.1f} mi; abertura {ab/1000:.1f} mi (esperado ~313,8); "
