@@ -1864,7 +1864,7 @@
     const temP = P.pa != null;
     const perC = periodoLabel(P.a, P.b), perA = temP ? periodoLabel(P.pa, P.pb) : null;
     const { rows, posP } = mkDados(P);
-    const cab = `<header class="cn-cab"><p class="c2-fk">Visão do mercado</p><h2 class="c2-fn">Concorrentes</h2><p class="c2-fs">Quem disputa com a Akad nos ramos que ela acompanha, em ${perC}${perA ? ` contra ${perA}` : ""}.</p></header>`;
+    const cab = `<header class="cn-cab"><p class="c2-fk">Visão do mercado</p><h2 class="c2-fn">Concorrentes</h2></header>`;
     if (!rows.length) { el.innerHTML = `${cab}<p class="carregando">Sem prêmio nos ramos acompanhados em ${perC}.</p>`; return; }
     if (!CC) carregarConc().then(() => { if (S.aba === "concorrentes") { renderConcorrentes(); renderConc(); } }).catch(() => { /* a coluna de peso fica sem valor */ });
     const pesos = CC ? mkPesos(P) : null;
