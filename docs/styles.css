@@ -216,6 +216,21 @@ select:hover { border-color: var(--axis); }
 .dp-atl button:hover { box-shadow: inset 0 0 0 1px var(--navy); }
 .dp-atl button[aria-pressed="true"] { background: var(--navy); color: #fff; }
 .dp-rot-anos { margin-top: 14px; }
+/* Personalizado recolhível e seleção em azul-marinho */
+.dp-tog { display: flex; align-items: center; justify-content: space-between; width: 100%; background: none; border: 0; padding: 2px 0; margin: 0 0 8px; cursor: pointer; color: var(--ink); font: inherit; }
+.dp-tog .dp-rot { margin: 0; }
+.dp-tog .dp-tog-r { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); }
+.dp-tog svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.dp-tog:hover .dp-tog-r { color: var(--ink); }
+#pop-periodo .pp-aplicar { background: var(--navy); }
+#pop-periodo .pp-aplicar:hover { background: var(--navy-deep); }
+#pop-periodo .dp-m.sel i { background: var(--navy); }
+#pop-periodo .dp-m.meio { background: #E3EBF5; }
+#pop-periodo .dp-m.ini { background: linear-gradient(90deg, transparent 50%, #E3EBF5 50%); }
+#pop-periodo .dp-m.fim { background: linear-gradient(90deg, #E3EBF5 50%, transparent 50%); }
+#pop-periodo .dp-campo.at { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(28, 65, 115, .12); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #pop-periodo .dp-m.meio { background: #22344F; } :root:not([data-theme="light"]) #pop-periodo .dp-m.ini { background: linear-gradient(90deg, transparent 50%, #22344F 50%); } :root:not([data-theme="light"]) #pop-periodo .dp-m.fim { background: linear-gradient(90deg, #22344F 50%, transparent 50%); } :root:not([data-theme="light"]) #pop-periodo .dp-m.sel i, :root:not([data-theme="light"]) #pop-periodo .pp-aplicar { background: #3A5F8F; } }
+:root[data-theme="dark"] #pop-periodo .dp-m.meio { background: #22344F; } :root[data-theme="dark"] #pop-periodo .dp-m.ini { background: linear-gradient(90deg, transparent 50%, #22344F 50%); } :root[data-theme="dark"] #pop-periodo .dp-m.fim { background: linear-gradient(90deg, #22344F 50%, transparent 50%); } :root[data-theme="dark"] #pop-periodo .dp-m.sel i, :root[data-theme="dark"] #pop-periodo .pp-aplicar { background: #3A5F8F; }
 .dp-anos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dp-acoes { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 14px; }
 .dp-cancel { background: none; border: 0; color: var(--navy); font-weight: 600; font-size: .86rem; cursor: pointer; padding: 8px 10px; }
