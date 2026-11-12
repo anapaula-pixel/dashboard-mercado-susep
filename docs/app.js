@@ -637,7 +637,7 @@
     umb: '<path d="M3 12a9 9 0 0 1 18 0zM12 12v7a2 2 0 0 0 4 0"/>',
   };
   const kCard = ({ ic, rot, help = "", corpo, tip = "", destaque = false }) =>
-    `<div class="kn${destaque ? " destaque" : ""}"><div class="kr"><span class="rot">${rot}${help ? " " + help : ""}</span><svg class="kic" viewBox="0 0 24 24" aria-hidden="true">${ICO_KPI[ic]}</svg></div><div class="kv">${corpo}</div></div>`;
+    `<div class="kn${destaque ? " destaque" : ""}"><div class="kr"><span class="rot">${rot}</span>${help}</div><div class="kv">${corpo}</div></div>`; // sem ícone: o "?" fica no canto direito
   // variação ao lado do número: ▲/▼, verde quando é bom, vermelho quando é ruim, cinza quando é neutro
   function kVar(x, suf, o = {}) {
     if (x == null || !isFinite(x) || Math.abs(x) < 0.05) return "";
@@ -710,7 +710,7 @@
     ufVs: "Market share da Akad no estado dividido pela média dela no país. 2,0x = o dobro da média; abaixo de 1,0x = mais fraca que a média.",
     ufPos: "Lugar da Akad entre as seguradoras com prêmio no estado, nos ramos selecionados. A SUSEP publica esse ranking por estado só em base anual.",
     trBcg: "Matriz de posicionamento, inspirada na matriz BCG e adaptada ao ranking da Akad. Cada ramo é classificado por dois critérios objetivos. Linha vertical, limite do Top 5: à esquerda dela, a Akad está entre as 5 maiores seguradoras do ramo. Linha horizontal, crescimento médio do mercado: quanto o prêmio do conjunto dos ramos acompanhados cresceu nos últimos 12 meses contra os 12 meses anteriores; acima dela, o mercado do ramo cresce mais que a média. Usamos o Top 5, e não só a liderança, porque os ramos da Akad são fragmentados, com 20 a 60 seguradoras. A posição e o tamanho da bolha seguem o período escolhido no filtro.",
-    ccTipos: "**Market share:** a fatia do mercado que é da seguradora, considerando o GWP de todas as seguradoras nos ramos acompanhados. Mesma conta da Akad: GWP dela nesses ramos ÷ GWP de todas as seguradoras nesses ramos, no período escolhido.\n**Variação:** diferença desse market share contra o mesmo período do ano anterior, em p.p.\n**Confronto direto:** aparecem no top 5 junto com a Akad em mais ramos.\n**Em expansão:** maiores ganhos de market share.\n**Perfil parecido:** carteira com distribuição entre os ramos acompanhados parecida com a da Akad.",
+    ccTipos: "**Market share:** a fatia do mercado que é da seguradora, considerando o GWP de todas as seguradoras nos ramos acompanhados. Mesma conta da Akad: GWP dela nesses ramos ÷ GWP de todas as seguradoras nesses ramos, no período escolhido.\n**Variação:** diferença desse market share contra o mesmo período do ano anterior, em p.p.\n**Confronto direto:** aparecem no top 5 junto com a Akad em mais ramos.\n**Em expansão:** maiores ganhos de market share.\n**Perfil parecido:** seguradoras com a carteira dividida entre os ramos de forma parecida com a da Akad. A conta compara quanto cada ramo pesa no GWP de cada uma (semelhança de 0 a 1; entram as de 0,45 ou mais, da mais parecida para a menos). Só entram seguradoras com pelo menos R$ 5 mi de GWP por mês no período, somando os ramos acompanhados, e que não aparecem em Confronto direto.",
     ccTop5: "Em quantos dos ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que o market share da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença do market share da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de market share: a seguradora que mais aumentou o market share no ramo.",
@@ -1718,8 +1718,10 @@
     const tomar = (lst, n, min = minWs) => { const r = lst.filter((x) => !usados.has(x.k) && x.ws >= min).slice(0, n); r.forEach((x) => usados.add(x.k)); return r; };
     const direto = tomar([...info].sort((p, q) => (q.h2h - p.h2h) || (q.ws - p.ws)), 4);
     const ganhando = tomar(info.filter((x) => x.dws > 0.05).sort((p, q) => q.dws - p.dws), 4);
-    // perfil parecido aceita seguradoras um pouco menores (share a partir de 0,5%)
-    const parecido = tomar(info.filter((x) => x.sim >= 0.45).sort((p, q) => q.sim - p.sim), 4, 0.5);
+    // perfil parecido: corte por tamanho em reais (R$ 5 mi de GWP por mês do período nos ramos acompanhados),
+    // para não depender do tamanho do mercado, que muda quando entram ramos novos
+    const minParecido = 5000 * (b - a0 + 1);
+    const parecido = tomar(info.filter((x) => x.sim >= 0.45 && x.g >= minParecido).sort((p, q) => q.sim - p.sim), 4, 0);
     // Quem disputa espaço com a Akad: mesmo desenho dos "Destaques do período" da Visão geral
     const ICO_C = {
       direto: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".6" fill="currentColor"/>',
@@ -1742,7 +1744,7 @@
         <p class="mq-sub">Seguradoras em destaque pela disputa nos rankings, semelhança de carteira ou avanço de market share.</p>
         <div class="mq-card"><div class="mv-grade">
           ${colQ("Confronto direto", "direto", "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.")}
-          ${colQ("Perfil parecido", "parecido", "Carteiras com distribuição semelhante à da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
+          ${colQ("Perfil parecido", "parecido", "Carteira dividida entre os ramos de forma parecida com a da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
           ${colQ("Em expansão", "ganhando", "Mais ganharam market share nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
         </div></div>
       </section>`;
