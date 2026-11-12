@@ -3112,8 +3112,9 @@
         <div class="dp-atl">
           <button type="button" data-p="ytd">Acumulado de ${anoUlt}</button>
           <button type="button" data-p="12m">Últimos 12 meses</button>
-          ${anoFech ? `<button type="button" data-p="ano" data-ano="${anoFech}">Ano de ${anoFech}</button>` : ""}
         </div>
+        ${fechados.length ? `<p class="dp-rot dp-rot-anos">Ano inteiro</p>
+        <div class="dp-atl dp-anos">${[...fechados].reverse().map((y) => `<button type="button" data-p="ano" data-ano="${y}">${y}</button>`).join("")}</div>` : ""}
         <div class="dp-sep"></div>
         <p class="dp-rot">Personalizado</p>
         <div class="dp-de">
