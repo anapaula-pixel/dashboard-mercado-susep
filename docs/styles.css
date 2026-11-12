@@ -1822,7 +1822,8 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 #aba-linhas .eo-tot { font-size: 11px; font-weight: 600; fill: var(--ink); }
 #aba-linhas .eo-tot-p { fill: var(--muted); font-weight: 500; }
 #aba-linhas .eo-aviso { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
-#aba-linhas .eo-aviso-i { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid currentColor; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; font-style: italic; margin-top: 1px; }
+#aba-linhas .eo-aviso-ic { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; }
+#aba-linhas .eo-av-tx b { color: var(--ink); }
 @media (max-width: 760px) { #aba-linhas .eo-leg-t { display: none; } }
 #aba-linhas #g-prod-nota:empty { display: none; }
 #aba-linhas { --eo-r-hach: #5B7BA8; --eo-r-p-hach: #E2E9F3; }
