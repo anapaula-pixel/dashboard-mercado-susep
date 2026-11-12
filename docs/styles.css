@@ -1824,6 +1824,18 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 #aba-linhas .eo-aviso { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0 0; padding: 10px 14px; border-radius: 8px; background: var(--surface-2); color: var(--ink-2); font-size: .82rem; line-height: 1.45; }
 #aba-linhas .eo-aviso-ic { flex: none; width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; margin-top: 1px; }
 #aba-linhas .eo-av-tx b { color: var(--ink); }
+/* Faixa do acumulado (E&O e RCPM), embaixo do gráfico de produção */
+#aba-linhas .eo-acc { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 0; padding: 10px 14px; border-radius: 8px; background: #F5F5F5; font-size: .8rem; color: var(--ink-2); }
+#aba-linhas .eo-acc[hidden] { display: none; }
+#aba-linhas .eo-acc .ac-t { font-family: var(--font-display); font-size: .68rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+#aba-linhas .eo-acc .ac-it { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+#aba-linhas .eo-acc .ac-it i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+#aba-linhas .eo-acc .ac-it b { color: var(--ink); font-variant-numeric: tabular-nums; }
+#aba-linhas .eo-acc .ac-d { font-size: .76rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+#aba-linhas .eo-acc .ac-d.up { color: var(--bom); }
+#aba-linhas .eo-acc .ac-d.down { color: var(--ruim); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) #aba-linhas .eo-acc { background: #2E2E2E; } }
+:root[data-theme="dark"] #aba-linhas .eo-acc { background: #2E2E2E; }
 @media (max-width: 760px) { #aba-linhas .eo-leg-t { display: none; } }
 #aba-linhas #g-prod-nota:empty { display: none; }
 #aba-linhas { --eo-r-hach: #5B7BA8; --eo-r-p-hach: #E2E9F3; }
