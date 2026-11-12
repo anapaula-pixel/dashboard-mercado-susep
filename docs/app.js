@@ -206,7 +206,7 @@
         const k = IDX.chave[r[1]];
         let x = m.get(k);
         if (!x) { x = [0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
-        x[0] += r[3]; x[1] += r[4]; x[2] += r[11] != null ? r[11] : r[5]; x[3] += r[6];
+        x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6];
         // comissão e outros custos de aquisição (colunas 9 e 10; nulas quando a SUSEP não abriu o custo)
         if (r[9] != null) { x[4] += r[9]; x[5] += r[10] || 0; x[6] += r[4]; }
       }
@@ -241,7 +241,7 @@
       cresc: cresc(c[0], p[0]),
       share, shareP, dShare: share != null && shareP != null ? share - shareP : null,
       pos: pos >= 0 ? pos + 1 : null, posP: posP >= 0 ? posP + 1 : null,
-      sin: c[0] > 0 ? (c[2] / c[0]) * 100 : null, // sinistro incorrido ÷ GWP
+      sin: c[1] > 0 ? (c[2] / c[1]) * 100 : null, // sinistro ocorrido ÷ prêmio ganho (a mesma conta que a SUSEP publica)
       com: c[1] > 0 ? (c[3] / c[1]) * 100 : null, // despesa comercial ÷ prêmio ganho (é apropriada ao longo da vigência)
       comis: c[6] > 0 ? (c[4] / c[6]) * 100 : null,
       outros: c[6] > 0 ? (c[5] / c[6]) * 100 : null,
@@ -677,7 +677,7 @@
     cresc: "Crescimento: quanto o GWP da Akad subiu ou caiu contra os mesmos meses do ano anterior. Olha só para a Akad, sem comparar com o mercado.",
     pos: "Posição: lugar da Akad no ranking de GWP entre as seguradoras com prêmio positivo no ramo e no período. \"de N\" é o número dessas seguradoras.",
     mov: "Movimento: quantas posições a Akad subiu (▲) ou caiu (▼) no ranking em relação ao mesmo período do ano anterior.",
-    sin: "**Sinistralidade** = sinistro incorrido ÷ GWP, no mesmo período.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nQuanto menor, melhor.",
+    sin: "**Sinistralidade** = sinistro ocorrido ÷ prêmio ganho, no mesmo período. É a mesma conta que a SUSEP publica.\n• **Sinistro ocorrido:** sinistros avisados no período (indenizações + despesas com sinistros − salvados e ressarcidos) mais a variação das reservas de sinistros, como o IBNR. Líquido de cosseguro, sem descontar resseguro.\n• **Prêmio ganho:** parte do prêmio que corresponde ao período já decorrido das apólices, líquido de cosseguro.\n• **Fonte:** SUSEP (SES).\n\nQuanto menor, melhor.",
     lider: "Ramos em que a Akad tem o maior GWP no período.",
     ref: "A seguradora com o maior GWP no ramo no período. Quando é a Akad, passe o mouse no nome para ver quem vem em 2º.",
     vsMerc: "Compara o crescimento do prêmio da Akad com o do mercado. Quando a Akad cresce mais que o mercado, a participação sobe; quando cresce menos, cai.",
@@ -687,7 +687,7 @@
     cnSeg: "Quantas seguradoras tiveram prêmio no período em pelo menos um dos ramos acompanhados.",
     cnTop5: "Participação somada das 5 maiores seguradoras no GWP dos ramos acompanhados, no período do filtro. Mostra o quanto o mercado está concentrado.",
     ufVendas: "Prêmio direto da Akad no estado, somando os ramos e os meses escolhidos nos filtros. A seta compara com o mesmo período do ano anterior. Por estado a SUSEP publica só o prêmio direto, por isso o número pode ser diferente do GWP das outras telas.",
-    sinRamo: "**Sinistralidade** = sinistro incorrido ÷ GWP, no ramo e no período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **Ao lado:** a diferença, em p.p., contra a sinistralidade do mercado no mesmo ramo e período. Vermelho quando a Akad está acima do mercado.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nQuanto menor, melhor.",
+    sinRamo: "**Sinistralidade** = sinistro ocorrido ÷ prêmio ganho, no ramo e no período do filtro. É a mesma conta que a SUSEP publica.\n• **Sinistro ocorrido:** sinistros avisados no período (indenizações + despesas com sinistros − salvados e ressarcidos) mais a variação das reservas de sinistros, como o IBNR. Líquido de cosseguro, sem descontar resseguro.\n• **Prêmio ganho:** parte do prêmio que corresponde ao período já decorrido das apólices, líquido de cosseguro.\n• **Ao lado:** a diferença, em p.p., contra a sinistralidade do mercado no mesmo ramo e período. Vermelho quando a Akad está acima do mercado.\n• **Fonte:** SUSEP (SES).\n\nQuanto menor, melhor.",
     tShare: "Participação da Akad no ramo no período escolhido: GWP da Akad dividido pelo GWP de todas as seguradoras no ramo.",
     tPP: "Quanto a fatia da Akad mudou contra os mesmos meses do ano anterior, em pontos percentuais. Ex.: de 10% para 12% = +2 p.p.",
     tRank: "Lugar da Akad no ranking de GWP do ramo. \"de N\" é quantas seguradoras venderam no ramo no período.",
@@ -712,21 +712,22 @@
     ccTop5: "Em quantos dos ramos acompanhados a Akad está entre as 5 maiores seguradoras por GWP no período do filtro. Cada quadrado é um desses ramos, com a posição da Akad, em ordem de peso na carteira. Passe o mouse para ver os detalhes.",
     ccPerdeu: "Ramos em que a participação da Akad caiu mais de 0,05 p.p. no período do filtro contra o mesmo período do ano anterior. A porcentagem soma o peso desses ramos no GWP da Akad, para mostrar se a perda está nos ramos que mais importam.",
     ccGanho: "Diferença da participação da Akad em cada ramo no período do filtro contra o mesmo período do ano anterior, em pontos percentuais (p.p.). Peso na carteira: quanto o ramo representa do GWP da Akad. Maior ganho de participação: a seguradora que mais aumentou a participação no ramo.",
-    mkRank: "Todas as seguradoras com prêmio nos ramos que a Akad acompanha, do maior para o menor GWP. Participação sobre o GWP de todas as seguradoras nesses ramos, crescimento do GWP contra o mesmo período do ano anterior, sinistralidade (sinistro incorrido ÷ GWP), em quantos dos ramos acompanhados a seguradora tem prêmio e quanto esses ramos pesam no GWP total dela.",
-    ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, participação e variação em p.p., crescimento do GWP, sinistralidade (sinistro incorrido ÷ GWP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
+    mkRank: "Todas as seguradoras com prêmio nos ramos que a Akad acompanha, do maior para o menor GWP. Participação sobre o GWP de todas as seguradoras nesses ramos, crescimento do GWP contra o mesmo período do ano anterior, sinistralidade (sinistro ocorrido ÷ prêmio ganho, a conta da SUSEP), em quantos dos ramos acompanhados a seguradora tem prêmio e quanto esses ramos pesam no GWP total dela.",
+    ccFicha: "Os ramos em que a seguradora tem prêmio no período, do maior para o menor GWP. O filtro mostra todos ou só os que a Akad também acompanha. Posição e variação no ranking do ramo, participação e variação em p.p., crescimento do GWP, sinistralidade (sinistro ocorrido ÷ prêmio ganho, a conta da SUSEP, com a do mercado no ramo ao lado), comissão e outros custos de aquisição (sobre o prêmio ganho) e a posição da Akad no mesmo ramo.",
     ccRes: "Parte do GWP repassada a resseguradoras (prêmio de resseguro cedido ÷ GWP). Quanto maior, mais a seguradora depende de resseguro para aceitar o risco.",
     trCresc: "Quanto o mercado do ramo cresceu nos últimos 12 meses até o fim do período escolhido, contra os 12 meses anteriores. É o crescimento usado para posicionar o ramo na matriz.",
-    sinTri: "**Sinistralidade** = sinistro incorrido ÷ GWP, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro.\n• **Sinistro incorrido:** indenizações avisadas + despesas com sinistros − salvados e ressarcidos. Líquido de cosseguro, sem descontar resseguro, sem IBNR e sem IBNER.\n• **GWP:** prêmio emitido, líquido de cosseguro.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).\n\nA linha contínua é o período do filtro e a tracejada, o mesmo período do ano anterior. A linha de 100% marca o ponto em que os sinistros igualam o prêmio. Mês a mês o índice oscila mais, e em ramos pequenos um sinistro grande mexe muito no número.",
+    sinTri: "**Sinistralidade** = sinistro ocorrido ÷ prêmio ganho, somando os meses de cada grupo (mês, bimestre ou trimestre) dentro do período do filtro. É a mesma conta que a SUSEP publica.\n• **Sinistro ocorrido:** sinistros avisados no período (indenizações + despesas com sinistros − salvados e ressarcidos) mais a variação das reservas de sinistros, como o IBNR. Líquido de cosseguro, sem descontar resseguro.\n• **Prêmio ganho:** parte do prêmio que corresponde ao período já decorrido das apólices, líquido de cosseguro.\n• **Fonte:** SUSEP (SES).\n\nA linha contínua é o período do filtro e a tracejada, o mesmo período do ano anterior. A linha de 100% marca o ponto em que os sinistros igualam o prêmio. Mês a mês o índice oscila mais: em ramos pequenos um sinistro grande mexe muito no número, e quando as reservas caem o índice pode até ficar negativo.",
     trRel: "GWP da Akad dividido pelo GWP do maior concorrente no ramo. 1x = mesmo tamanho; acima de 1x, a Akad lidera; 0,25x = a Akad tem um quarto do tamanho do maior concorrente.",
     shareTot: "Participação de mercado: GWP da Akad somado nos ramos em que ela atua, dividido pelo GWP de todas as seguradoras nesses mesmos ramos, no período escolhido.",
-    sinInc: "**Sinistro incorrido**\nSinistros já comunicados à seguradora no período.[[Indenizações + despesas com sinistros − salvados e ressarcimentos]]• Só a parte da Akad (líquido de cosseguro)\n• Sem desconto do que o resseguro devolve\n• Sem IBNR (sinistros ocorridos e ainda não comunicados) nem IBNER (ajuste das reservas dos já comunicados)",
-    sinRess: "**Recuperado do resseguro** = o que o resseguro devolveu sobre os sinistros avisados ÷ sinistro incorrido da Akad, no mesmo período.\n• Não entra na sinistralidade, que é calculada antes do resseguro.\n• Não inclui a parte do resseguro ligada a IBNR e IBNER.\n• **Fonte:** SUSEP (FIP, quadro 6).",
-    sinComp: "Como o sinistro se divide entre indenização administrativa, indenização judicial e despesas com sinistros. As três somam 100%. Salvados e ressarcimentos aparecem à parte, porque reduzem o sinistro.\n\nEm todos os ramos, a composição do mercado (ou da seguradora escolhida) é calculada ramo a ramo e ponderada pelo peso de cada ramo no sinistro da Akad. Assim a comparação usa a mesma mistura de ramos da Akad.\n\n**Fonte:** SUSEP (FIP, quadro 6).",
-    sinCompRamo: "Como o sinistro do ramo se divide entre indenização administrativa, indenização judicial e despesas com sinistros. As três somam 100%. Salvados e ressarcimentos aparecem à parte, porque reduzem o sinistro.\n\n**Fonte:** SUSEP (FIP, quadro 6).",
+    sinOco: "**Sinistro ocorrido**\nCusto dos sinistros do período, como a SUSEP publica.[[Indenizações + despesas com sinistros − salvados e ressarcimentos + variação das reservas de sinistros]]• Só a parte da Akad (líquido de cosseguro)\n• Sem desconto do que o resseguro devolve\n• Inclui o aumento das reservas, como o IBNR (sinistros que já aconteceram e ainda não foram avisados). Quando as reservas são liberadas, o valor cai.",
+    sinRess: "**Recuperado do resseguro** = o que o resseguro devolveu sobre os sinistros avisados ÷ sinistro ocorrido da Akad, no mesmo período.\n• Não entra na sinistralidade, que é calculada antes do resseguro.\n• Não inclui a parte do resseguro ligada às reservas, como o IBNR.\n• **Fonte:** SUSEP (FIP, quadro 6, e SES).",
+    sinComp: "Como o sinistro se divide entre indenização administrativa, indenização judicial, despesas com sinistros e variação de reservas. As quatro somam 100%. Salvados e ressarcimentos aparecem à parte, porque reduzem o sinistro. Quando as reservas caem, a liberação também aparece à parte.\n\nEm todos os ramos, a composição do mercado (ou da seguradora escolhida) é calculada ramo a ramo e ponderada pelo peso de cada ramo no sinistro da Akad. Assim a comparação usa a mesma mistura de ramos da Akad.\n\nSeguradoras que não entregam o quadro 6 do FIP à SUSEP ficam fora da composição.\n\n**Fonte:** SUSEP (FIP, quadro 6, e SES).",
+    sinCompRamo: "Como o sinistro do ramo se divide entre indenização administrativa, indenização judicial, despesas com sinistros e variação de reservas. As quatro somam 100%. Salvados e ressarcimentos aparecem à parte, porque reduzem o sinistro. Quando as reservas caem, a liberação também aparece à parte.\n\n**Fonte:** SUSEP (FIP, quadro 6, e SES).",
     sinAdm: "**Indenização administrativa:** valor das indenizações de sinistros avisados que correm pela via administrativa, sem processo na Justiça.",
     sinJud: "**Indenização judicial:** valor das indenizações de sinistros avisados que estão em discussão na Justiça.",
     sinDesp: "**Despesas com sinistros:** gastos para regular os sinistros além da indenização, como perícia, vistoria, honorários e custas.",
-    sinSalv: "**Salvados e ressarcimentos:** o que a seguradora recupera depois de indenizar, como a venda de bens salvados ou o valor cobrado de quem causou o dano. Reduzem o sinistro incorrido.\nO percentual é sobre o sinistro antes dessa recuperação.",
+    sinRes: "**Variação de reservas:** diferença entre o sinistro ocorrido e o sinistro avisado (indenizações + despesas − salvados). Mostra quanto a seguradora aumentou as reservas de sinistros no período, como o IBNR (sinistros que já aconteceram e ainda não foram avisados) e o ajuste dos sinistros já avisados. Quando é negativa, as reservas foram liberadas.",
+    sinSalv: "**Salvados e ressarcimentos:** o que a seguradora recupera depois de indenizar, como a venda de bens salvados ou o valor cobrado de quem causou o dano. Reduzem o sinistro.\nO percentual é sobre o sinistro antes dessa recuperação.",
   };
   const ajuda = (k, rot) => `<button type="button" class="ajuda" data-ajuda="${k}" aria-label="O que é ${esc(rot)}?">?</button>`;
   function ligarAjuda() {
@@ -816,7 +817,7 @@
   function dadosGeral(P) {
     const RT = resumo(IDX.todos, P);
     const ak = infoEnt(RT, AKAD);
-    const sinM = RT.tc[0] > 0 ? (RT.tc[2] / RT.tc[0]) * 100 : null;
+    const sinM = RT.tc[1] > 0 ? (RT.tc[2] / RT.tc[1]) * 100 : null;
     const linhas = IDX.linhas.map((l) => {
       const R = resumo(l.idx, P);
       const a = infoEnt(R, AKAD);
@@ -825,7 +826,7 @@
       const ref = lider === AKAD ? vice : lider;
       const refInfo = ref ? infoEnt(R, ref) : null;
       return { l, R, a, lider, ref, refInfo, mercado: R.tc[0], mercadoP: R.tp[0], n: R.rk.length,
-        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[0] > 0 ? (R.tc[2] / R.tc[0]) * 100 : null,
+        crescM: cresc(R.tc[0], R.tp[0]), sinM: R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null,
         temAkad: a.pe > 0, dPos: a.pos && a.posP ? a.posP - a.pos : null,
         dPe: R.tp[0] > 0 && ((a.pe || 0) > 0 || (a.peP || 0) > 0) ? (a.pe || 0) - (a.peP || 0) : null };
     });
@@ -909,7 +910,7 @@
     };
 
     const pAk = RT.prev.get(AKAD);
-    const sinP = pAk && pAk[0] > 0 ? (pAk[2] / pAk[0]) * 100 : null;
+    const sinP = pAk && pAk[1] > 0 ? (pAk[2] / pAk[1]) * 100 : null;
     const dSin = ak.sin != null && sinP != null ? ak.sin - sinP : null;
     const cardVendas = kCard({ ic: "gwp", rot: "GWP da Akad", help: ajuda("premio", "GWP"), destaque: true, corpo: `<b>${reais(ak.pe)}</b>${kVar(ak.cresc, "%")}` });
     const cardPart = kCard({ ic: "share", rot: "Participação de mercado", help: `<button type="button" class="ajuda" data-ajuda="shareTot" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é participação de mercado?">?</button>`, corpo: `<b>${pct(ak.share, 2)}</b>${kVar(ak.dShare, " p.p.")}` });
@@ -1372,7 +1373,7 @@
     const ramos = ramosDaSel(S.linha);
     const R = resumo(ramos, P);
     const ak = infoEnt(R, AKAD);
-    const sinM = R.tc[0] > 0 ? (R.tc[2] / R.tc[0]) * 100 : null;
+    const sinM = R.tc[1] > 0 ? (R.tc[2] / R.tc[1]) * 100 : null;
     const comM = R.tc[1] > 0 ? (R.tc[3] / R.tc[1]) * 100 : null;
     const top = R.rk.filter((k) => k !== AKAD).slice(0, 4);
 
@@ -1417,6 +1418,7 @@
     const akFora = !rkTodas && !visTab.some((x) => x.k === AKAD) ? linhasTab.find((x) => x.k === AKAD) : null;
     if (akFora) visTab.push(akFora);
     const perA = periodoLabel(P.a, P.b);
+    const rsSin = (v) => (v == null ? "–" : v < 0 ? "−" + reais(-v) : reais(v)); // ocorrido pode ser negativo (reservas liberadas)
 
     el.innerHTML = `
       <div class="cab-aba">
@@ -1432,20 +1434,22 @@
           <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
               <th class="rk-seg" rowspan="2"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
-              <th class="rk-g" colspan="3">GWP</th><th class="rk-g" colspan="2">Participação</th><th class="rk-g" colspan="2" title="Sinistralidade: sinistro incorrido ÷ GWP. Comissão: sobre o prêmio ganho.">Índices</th>
+              <th class="rk-g" colspan="2">GWP</th><th class="rk-g">Participação</th><th class="rk-g" colspan="3">Sinistro</th><th class="rk-g" colspan="2">Comercialização</th>
             </tr>
-            <tr class="rk-sub"><th class="n ord rk-g1" data-col="pe">${perA}</th><th class="n ord rk-ant" data-col="peP">${perR}</th><th class="n ord" data-col="cresc" title="Crescimento do GWP contra o mesmo período do ano anterior">Variação</th>
-              <th class="n ord rk-g1" data-col="share">Atual</th><th class="n ord" data-col="dShare" title="Variação da participação contra o mesmo período do ano anterior">Variação</th>
-              <th class="n ord rk-g1" data-col="sin">Sinistralidade</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
+            <tr class="rk-sub"><th class="n ord rk-g1" data-col="pe">${perA}</th><th class="n ord rk-ant" data-col="peP">${perR}</th>
+              <th class="n ord rk-g1" data-col="share">Atual</th>
+              <th class="n ord rk-g1" data-col="pg" title="Parte do prêmio que corresponde ao período já decorrido das apólices">Prêmio ganho</th><th class="n ord" data-col="so" title="Sinistros do período, incluindo a variação das reservas (como IBNR)">Sinistro ocorrido</th><th class="n ord" data-col="sin" title="Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica">Sinistralidade</th>
+              <th class="n ord rk-g1" data-col="dc" title="Custos de aquisição do período, como comissão de corretagem e agenciamento">Despesa comercial</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
             <tbody>${visTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}${x === akFora ? " rk-fora" : ""}" data-ent="${esc(x.k)}">
                 <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
                 <td class="n rk-g1">${reais(x.pe)}</td>
                 <td class="n rk-ant">${x.peP > 0 ? reais(x.peP) : "–"}</td>
-                <td class="n">${varHtml(x.cresc)}</td>
                 <td class="n rk-g1">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
-                <td class="n">${ppHtml(x.dShare)}</td>
-                <td class="n rk-g1">${pct(x.sin)}</td>
+                <td class="n rk-g1">${rsSin(x.pg)}</td>
+                <td class="n">${rsSin(x.so)}</td>
+                <td class="n">${pct(x.sin)}</td>
+                <td class="n rk-g1">${rsSin(x.dc)}</td>
                 <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
               </tr>`).join("")}
             </tbody>
@@ -1491,7 +1495,7 @@
     // gráficos
     const chaves = [AKAD, ...top];
     const sm = serieMensal(ramos, chaves);
-    // ----- sinistralidade: Akad x mercado (sinistro incorrido ÷ GWP), no período do filtro, por mês, bimestre ou trimestre
+    // ----- sinistralidade: Akad x mercado (sinistro ocorrido ÷ prêmio ganho), no período do filtro, por mês, bimestre ou trimestre
     const desenharSin = () => {
       const host = $("#b-sin");
       const vis = S.sinVis || "mes", N = vis === "mes" ? 1 : vis === "bim" ? 2 : 3;
@@ -1504,12 +1508,12 @@
       const qDeP = new Map();
       qs.forEach((x, k) => { for (let i = x.i; i <= x.j; i++) { qDe.set(i, k); if (i - 12 >= 0) qDeP.set(i - 12, k); } });
       for (const ri of ramos) for (const r of IDX.porRamo[ri]) {
-        const si = r[11] != null ? r[11] : r[5];
+        const si = r[5], pg = r[4]; // sinistro ocorrido e prêmio ganho
         const kp = qDeP.get(r[0]);
-        if (kp != null && IDX.chave[r[1]] === AKAD) { qs[kp].ap[0] += r[3]; qs[kp].ap[1] += si; }
+        if (kp != null && IDX.chave[r[1]] === AKAD) { qs[kp].ap[0] += pg; qs[kp].ap[1] += si; }
         const k = qDe.get(r[0]); if (k == null) continue;
-        const x = qs[k]; x.t[0] += r[3]; x.t[1] += si;
-        if (IDX.chave[r[1]] === AKAD) { x.a[0] += r[3]; x.a[1] += si; }
+        const x = qs[k]; x.t[0] += pg; x.t[1] += si;
+        if (IDX.chave[r[1]] === AKAD) { x.a[0] += pg; x.a[1] += si; }
       }
       const mesC = (i) => MESES_PT[+D.meses[i].slice(4) - 1], anoC = (i) => D.meses[i].slice(0, 4);
       qs.forEach((x, k) => {
@@ -1557,7 +1561,7 @@
       host.querySelectorAll("[data-svis]").forEach((b) => b.addEventListener("click", () => { S.sinVis = b.dataset.svis; desenharSin(); }));
       host.querySelectorAll(".hits").forEach((rc) => {
         const x = qs[+rc.dataset.i];
-        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem GWP" : pct(x.sa)}</div>${temAnt && x.titP ? `<div>Akad em ${x.titP}: ${x.sap == null ? "sem GWP" : pct(x.sap)}</div>` : ""}${x.sa != null && x.sap != null ? `<div>Diferença: ${x.sa - x.sap > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sap))} p.p.</div>` : ""}`;
+        const html = `<b>${x.tit}${x.parc ? " (incompleto)" : ""}</b><div>Akad: ${x.sa == null ? "sem prêmio ganho" : pct(x.sa)}</div>${temAnt && x.titP ? `<div>Akad em ${x.titP}: ${x.sap == null ? "sem prêmio ganho" : pct(x.sap)}</div>` : ""}${x.sa != null && x.sap != null ? `<div>Diferença: ${x.sa - x.sap > 0 ? "+" : "−"}${nf1.format(Math.abs(x.sa - x.sap))} p.p.</div>` : ""}`;
         rc.addEventListener("mousemove", (ev) => mostrarTip(html, ev));
         rc.addEventListener("mouseleave", esconderTip);
       });
@@ -1624,7 +1628,7 @@
   const bolinha = (i) => `<i class="bol" style="background:${corEnt(i)}" aria-hidden="true"></i>`;
 
   // Concorrentes: quem disputa com a Akad, quem ganhou espaço, comparação lado a lado e estados
-  // Agrega 12 meses por seguradora: [GWP, prêmio ganho, sinistro, despesa comercial, resseguro cedido]
+  // Agrega 12 meses por seguradora: [GWP, prêmio ganho, sinistro ocorrido, despesa comercial, resseguro cedido]
   function agg5(ramos, a, b) {
     const m = new Map();
     if (a < 0) return m;
@@ -1632,7 +1636,7 @@
       if (r[0] < a || r[0] > b) continue;
       const k = IDX.chave[r[1]];
       let x = m.get(k); if (!x) { x = [0, 0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
-      x[0] += r[3]; x[1] += r[4]; x[2] += r[11] != null ? r[11] : r[5]; x[3] += r[6]; x[4] += r[7] || 0;
+      x[0] += r[3]; x[1] += r[4]; x[2] += r[5]; x[3] += r[6]; x[4] += r[7] || 0;
       if (r[9] != null) { x[5] += r[9]; x[6] += r[10] || 0; x[7] += r[4]; }
     }
     return m;
@@ -1803,7 +1807,7 @@
       const gp = Math.max(0, (p.get(k) || [0])[0]);
       const sh = T > 0 ? (x[0] / T) * 100 : 0, shp = temP && Tp > 0 ? (gp / Tp) * 100 : null;
       return { k, nome: nomeC(k), busca: norm(nomeC(k) + " " + nomeEnt(k)), g: x[0], sh, dsh: shp == null ? null : sh - shp, cr: temP ? cresc(x[0], gp) : null,
-        sin: (x[2] / x[0]) * 100, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, nr: presenca.get(k) || 0 };
+        sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, com: x[1] > 0 ? (x[3] / x[1]) * 100 : null, nr: presenca.get(k) || 0 };
     }).sort((u, v) => v.g - u.g);
     rows.forEach((r, i) => { r.pos = i + 1; });
     const rkP = temP ? [...p.entries()].filter(([, x]) => x[0] > 0).sort((u, v) => v[1][0] - u[1][0]).map(([k]) => k) : [];
@@ -1878,7 +1882,7 @@
       const eAk = r.k === AKAD;
       return `<tr class="${eAk ? "mk-ak" : "clic"}"${eAk ? "" : ` data-ficha="${esc(r.k)}" tabindex="0"`}><td class="n mk-pos">${r.pos}º</td><td class="c2-atn">${esc(r.nome)}</td><td class="n">${reais(r.g)}</td><td class="n">${pctPart(r.sh)}</td>
         <td class="n ${r.cr == null ? "" : r.cr < 0 ? "dn" : "up"}">${r.cr == null ? (temP ? "novo" : "–") : r.cr > 999 ? "> +999%" : Math.abs(r.cr) < 0.5 ? "0%" : sg(r.cr) + nf0.format(Math.abs(r.cr)) + "%"}</td>
-        <td class="n">${nf0.format(r.sin)}%</td><td class="n">${r.nr} de ${nL}</td><td class="n mk-peso">${pesoCel(r)}</td></tr>`;
+        <td class="n">${r.sin == null ? "–" : nf0.format(r.sin) + "%"}</td><td class="n">${r.nr} de ${nL}</td><td class="n mk-peso">${pesoCel(r)}</td></tr>`;
     };
     const corpo = () => {
       const q = norm((S.mkBusca || "").trim());
@@ -1918,7 +1922,7 @@
         <div class="cn-pe" id="mk-pe">${rodape(cp)}</div>
       </section>
       ${temP ? `<div class="mk-2">${cardGP("Quem mais ganhou espaço", gan, "Nenhuma seguradora ganhou espaço relevante.")}${cardGP("Quem mais perdeu espaço", per, "Nenhuma seguradora perdeu espaço relevante.")}</div>` : ""}
-      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Participação sobre o GWP de todas as seguradoras nos ${nL} ramos acompanhados. Sinistralidade é o sinistro incorrido sobre o GWP. Peso na seguradora: quanto esses ramos representam do GWP total dela${pesos === null && CC ? " (disponível para períodos a partir de " + mesLabel(D.meses.indexOf(CC.desde), true) + ")" : ""}.</p>`;
+      <p class="c2-fnota">${perC}${perA ? ` contra ${perA}` : ""}. Participação sobre o GWP de todas as seguradoras nos ${nL} ramos acompanhados. Sinistralidade é o sinistro ocorrido sobre o prêmio ganho, a mesma conta que a SUSEP publica. Peso na seguradora: quanto esses ramos representam do GWP total dela${pesos === null && CC ? " (disponível para períodos a partir de " + mesLabel(D.meses.indexOf(CC.desde), true) + ")" : ""}.</p>`;
     // eventos
     const ligarLinhas = () => el.querySelectorAll("[data-ficha]").forEach((n) => {
       if (n.dataset.lig) return; n.dataset.lig = "1";
@@ -2054,23 +2058,23 @@
       const ac = codAkad.has(cod);
       Gp.todos += gp; if (ac) Gp.akad += gp;
       if (!x || x[0] <= 0) return;
-      let tc = 0, ti = 0, tp = 0;
-      for (const y of c[ri].values()) { tc += y[0]; ti += y[2]; }
+      let tc = 0, ti = 0, tp = 0, tgn = 0;
+      for (const y of c[ri].values()) { tc += y[0]; ti += y[2]; tgn += y[1]; }
       for (const y of p[ri].values()) tp += y[0];
       const rk = rkDe2(c[ri]), rkp = rkDe2(p[ri]);
       const sh = tc > 0 ? (x[0] / tc) * 100 : null;
       const shp = tp > 0 ? (gp / tp) * 100 : null;
       const l = linhaDe.get(cod);
-      todas.push({ ri, cod, ac, l, nome: l ? l.nome : (NOMES_RAMO_OUT[cod] || nomeRamoSusep(nomeS)), mi: ti, mg: tc, g: x[0], gp, ganho: x[1], inc: x[2], desp: x[3],
+      todas.push({ ri, cod, ac, l, nome: l ? l.nome : (NOMES_RAMO_OUT[cod] || nomeRamoSusep(nomeS)), mi: ti, mg: tc, mgn: tgn, g: x[0], gp, ganho: x[1], inc: x[2], desp: x[3],
         pos: rk.indexOf(ki) + 1, posP: temP ? rkp.indexOf(ki) + 1 : 0, sh, dsh: temP && sh != null && shp != null && tp > 0 ? sh - shp : null,
-        cr: temP ? cresc(x[0], gp) : null, sin: (x[2] / x[0]) * 100, msin: tc > 0 ? (ti / tc) * 100 : null,
+        cr: temP ? cresc(x[0], gp) : null, sin: x[1] > 0 ? (x[2] / x[1]) * 100 : null, msin: tgn > 0 ? (ti / tgn) * 100 : null, // sinistro ocorrido ÷ prêmio ganho
         comis: x[6] > 0 ? (x[4] / x[6]) * 100 : null, outros: x[6] > 0 ? (x[5] / x[6]) * 100 : null, akPos: ai == null ? 0 : rk.indexOf(ai) + 1 });
     });
     if (!todas.length) { el.innerHTML = `${cab}<p class="carregando">${esc(nomeC(k))} não tem prêmio em ${perC}.</p>`; return; }
     const doAkad = todas.filter((r) => r.ac);
     const vis = S.fichaVis === "akad" ? doAkad : todas;
     const soma = (l, f) => l.reduce((t, r) => t + (f(r) || 0), 0);
-    const MI = soma(vis, (r) => r.mi), MG = soma(vis, (r) => r.mg), GPV = soma(vis, (r) => r.gp);
+    const MI = soma(vis, (r) => r.mi), MG = soma(vis, (r) => r.mg), MGN = soma(vis, (r) => r.mgn), GPV = soma(vis, (r) => r.gp);
     const G = soma(vis, (r) => r.g), INC = soma(vis, (r) => r.inc), GAN = soma(vis, (r) => r.ganho), DSP = soma(vis, (r) => r.desp);
     const GpV = S.fichaVis === "akad" ? Gp.akad : Gp.todos;
     const crG = temP ? cresc(G, GpV) : null;
@@ -2092,6 +2096,7 @@
     };
     const th = () => COLS.map(([col, rot, cls]) => `<th class="ord ${cls}" data-col="${col}"${S.fichaOrd.col === col ? ` aria-sort="${S.fichaOrd.dir < 0 ? "descending" : "ascending"}"` : ""}><button type="button">${rot}</button></th>`).join("");
     const sinCel = (r) => {
+      if (r.sin == null) return `<span>–</span> <span class="c2-mm">${r.msin == null ? "" : nf0.format(r.msin) + "%"}</span>`;
       const cl = r.msin == null ? "" : r.sin > r.msin + 5 ? "dn" : r.sin < r.msin - 5 ? "up" : "";
       return `<span class="${cl}">${nf0.format(r.sin)}%</span> <span class="c2-mm">${r.msin == null ? "" : nf0.format(r.msin) + "%"}</span>`;
     };
@@ -2112,7 +2117,7 @@
       <div class="cn-kpis">
         ${kpi("GWP no período", reais(G), perC)}
         ${kpi("Crescimento", crTxt, perA ? `contra ${reais(GpV)} em ${perA}` : "sem comparativo", crG == null ? "" : crG < 0 ? "dn" : "up")}
-        ${kpi("Sinistralidade", G > 0 ? nf0.format((INC / G) * 100) + "%" : "–", MG > 0 ? `mercado nesses ramos: ${nf0.format((MI / MG) * 100)}%` : "")}
+        ${kpi("Sinistralidade", GAN > 0 ? nf0.format((INC / GAN) * 100) + "%" : "–", MGN > 0 ? `mercado nesses ramos: ${nf0.format((MI / MGN) * 100)}%` : "")}
         ${kpi("Comercialização", GAN > 0 ? nf0.format((DSP / GAN) * 100) + "%" : "–", "sobre o prêmio ganho")}
       </div>
       <section class="cn-card" aria-label="Ramos da ${esc(nome)}">
@@ -2379,9 +2384,15 @@
     { nome: "Indenização administrativa", cor: "#1C4173", tx: "#FFFFFF", aj: "sinAdm" },
     { nome: "Indenização judicial", cor: "#E5A91A", tx: "#2B2000", aj: "sinJud" },
     { nome: "Despesas com sinistros", curto: "Despesas", cor: "#8FB0DA", tx: "#12233D", aj: "sinDesp" },
+    { nome: "Variação de reservas", curto: "Reservas", cor: "#B9BEC6", tx: "#1E2229", aj: "sinRes" },
   ];
+  // posição de cada parte da composição no registro de baseSin (indenização adm., judicial, despesas, variação de reservas)
+  const COMP_IDX = [2, 3, 4, 8];
   // Soma por ramo e por seguradora no intervalo:
-  // [GWP, sinistro incorrido, ind. administrativa, ind. judicial, despesas, salvados, recuperação de resseguro]
+  // [GWP, sinistro ocorrido, ind. administrativa, ind. judicial, despesas, salvados, recuperação de resseguro,
+  //  prêmio ganho, variação de reservas]
+  // A variação de reservas é o sinistro ocorrido menos o incorrido (IBNR, IBNER e outros ajustes). Só entra quando a
+  // seguradora tem o quadro 6 do FIP; sem ele não há abertura, e o sinistro ocorrido fica fora da composição.
   const cacheSin = new Map();
   function baseSin(a, b) {
     const ch = `${a}|${b}`;
@@ -2393,45 +2404,50 @@
         if (r[0] < a || r[0] > b) continue;
         const k = IDX.chave[r[1]];
         let x = m.get(k);
-        if (!x) { x = [0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
-        x[0] += r[3]; x[1] += r[11] != null ? r[11] : r[5];
-        x[2] += r[12] || 0; x[3] += r[13] || 0; x[4] += r[14] || 0; x[5] += r[15] || 0; x[6] += r[16] || 0;
+        if (!x) { x = [0, 0, 0, 0, 0, 0, 0, 0, 0]; m.set(k, x); }
+        x[0] += r[3]; x[1] += r[5]; x[7] += r[4];
+        if (r[11] != null) { x[2] += r[12] || 0; x[3] += r[13] || 0; x[4] += r[14] || 0; x[5] += r[15] || 0; x[8] += r[5] - r[11]; }
+        x[6] += r[16] || 0;
       }
     });
     if (cacheSin.size > 6) cacheSin.clear();
     cacheSin.set(ch, v);
     return v;
   }
-  const somaSin = (lista) => lista.reduce((t, x) => { if (x) for (let i = 0; i < 7; i++) t[i] += x[i]; return t; }, [0, 0, 0, 0, 0, 0, 0]);
+  const somaSin = (lista) => lista.reduce((t, x) => { if (x) for (let i = 0; i < 9; i++) t[i] += x[i]; return t; }, [0, 0, 0, 0, 0, 0, 0, 0, 0]);
   // Um registro por ramo: Akad (A) e mercado inteiro (M), com a sinistralidade de cada um
   function ramosSin(B) {
     return IDX.linhas.map((l, li) => {
-      const m = B[li], M = somaSin([...m.values()]), A = m.get(AKAD) || [0, 0, 0, 0, 0, 0, 0];
-      return { l, li, A, M, sinA: A[0] > 0 ? (A[1] / A[0]) * 100 : null, sinM: M[0] > 0 ? (M[1] / M[0]) * 100 : null, share: M[0] > 0 ? (A[0] / M[0]) * 100 : null };
+      const m = B[li], M = somaSin([...m.values()]), A = m.get(AKAD) || [0, 0, 0, 0, 0, 0, 0, 0, 0];
+      // sinistralidade = sinistro ocorrido ÷ prêmio ganho (a mesma conta que a SUSEP publica)
+      return { l, li, A, M, sinA: A[7] > 0 ? (A[1] / A[7]) * 100 : null, sinM: M[7] > 0 ? (M[1] / M[7]) * 100 : null, share: M[0] > 0 ? (A[0] / M[0]) * 100 : null };
     });
   }
-  // Composição: as três partes somam 100%; salvados e ressarcidos à parte, sobre a mesma soma
+  // Composição: as quatro partes (indenização adm., judicial, despesas e variação de reservas, quando positiva) somam 100%;
+  // salvados e ressarcidos à parte, sobre a mesma soma. Quando as reservas caem, a variação fica à parte, como os salvados.
+  const partesDe = (x) => COMP_IDX.map((i) => Math.max(0, x[i]));
+  const baseComp = (x) => partesDe(x).reduce((t, v) => t + v, 0);
   function compDe(x) {
     if (!x) return null;
-    const p = [Math.max(0, x[2]), Math.max(0, x[3]), Math.max(0, x[4])];
-    const t = p[0] + p[1] + p[2];
+    const p = partesDe(x), t = baseComp(x);
     if (!(t > 0)) return null;
-    return { p: p.map((v) => (v / t) * 100), salv: (x[5] / t) * 100 };
+    return { p: p.map((v) => (v / t) * 100), salv: (x[5] / t) * 100, resNeg: x[8] < 0 ? (x[8] / t) * 100 : 0 };
   }
   // Todos os ramos: a composição de cada ramo é ponderada pelo sinistro da Akad no ramo,
   // para o mercado (ou a concorrente) ser comparado na mesma mistura de ramos da Akad
-  const incDe = (x) => x[2] + x[3] + x[4] - x[5];
+  const incDe = (x) => baseComp(x);
   function compMix(ramos, pegar) {
     let w = 0;
-    const acc = [0, 0, 0, 0];
+    const acc = [0, 0, 0, 0], extra = [0, 0];
     for (const x of ramos) {
-      const peso = incDe(x.A), y = pegar(x);
-      if (!(peso > 0) || !y || !(incDe(y) > 0)) continue;
-      const iy = incDe(y);
+      const peso = baseComp(x.A), y = pegar(x);
+      if (!(peso > 0) || !y || !(baseComp(y) > 0)) continue;
+      const iy = baseComp(y), py = partesDe(y);
       w += peso;
-      for (let j = 0; j < 4; j++) acc[j] += (peso * y[2 + j]) / iy;
+      for (let j = 0; j < 4; j++) acc[j] += (peso * py[j]) / iy;
+      extra[0] += (peso * y[5]) / iy; extra[1] += (peso * Math.min(0, y[8])) / iy;
     }
-    return w > 0 ? compDe([0, 0, acc[0] / w, acc[1] / w, acc[2] / w, acc[3] / w]) : null;
+    return w > 0 ? { p: acc.map((v) => (v / w) * 100), salv: (extra[0] / w) * 100, resNeg: (extra[1] / w) * 100 } : null;
   }
   const ppTxt = (x) => (x == null || !isFinite(x) ? "–" : (x > 0.05 ? "+" : x < -0.05 ? "−" : "") + nf1.format(Math.abs(x)) + " p.p.");
 
@@ -2467,14 +2483,15 @@
       const cls = ruimSeSobe == null ? "zero" : (ruimSeSobe ? x < 0 : x > 0) ? "bom" : "ruim";
       return `<span class="kc-var ${cls}">${x > 0 ? "↑" : "↓"} ${v}</span>`;
     };
-    const sin = (AK[1] / AK[0]) * 100;
-    const sinP = AKp && AKp[0] > 0 ? (AKp[1] / AKp[0]) * 100 : null;
+    // sinistralidade = sinistro ocorrido ÷ prêmio ganho; o resseguro recuperado é sobre o mesmo sinistro ocorrido
+    const sin = AK[7] > 0 ? (AK[1] / AK[7]) * 100 : null;
+    const sinP = AKp && AKp[7] > 0 ? (AKp[1] / AKp[7]) * 100 : null;
     const ress = ab && AK[1] > 0 ? (AK[6] / AK[1]) * 100 : null;
     const ressP = ab && AKp && AKp[1] > 0 && AKp[6] !== 0 ? (AKp[6] / AKp[1]) * 100 : null;
     const cards = `
       <div class="sn-kpi3 kn-grid" style="--n:3">
-        ${kCard({ ic: "sin", rot: "Sinistralidade da Akad", help: ajuda("sin", "sinistralidade"), destaque: true, corpo: `<b>${pct(sin)}</b>${kVar(sinP != null ? sin - sinP : null, " p.p.", { ruimSeSobe: true })}` })}
-        ${kCard({ ic: "doc", rot: "Sinistro incorrido", help: ajuda("sinInc", "sinistro incorrido"), corpo: `<b>${reais(AK[1])}</b>${kVar(AKp ? cresc(AK[1], AKp[1]) : null, "%", { neutro: true })}` })}
+        ${kCard({ ic: "sin", rot: "Sinistralidade da Akad", help: ajuda("sin", "sinistralidade"), destaque: true, corpo: `<b>${pct(sin)}</b>${kVar(sin != null && sinP != null ? sin - sinP : null, " p.p.", { ruimSeSobe: true })}` })}
+        ${kCard({ ic: "doc", rot: "Sinistro ocorrido", help: ajuda("sinOco", "sinistro ocorrido"), corpo: `<b>${reais(AK[1])}</b>${kVar(AKp ? cresc(AK[1], AKp[1]) : null, "%", { neutro: true })}` })}
         ${kCard({ ic: "umb", rot: "Recuperado do resseguro", help: ajuda("sinRess", "recuperado do resseguro"), corpo: `<b>${pct(ress)}</b>${ress != null ? kVar(ressP != null ? ress - ressP : null, " p.p.") : ""}` })}
       </div>`;
 
@@ -2530,7 +2547,7 @@
       if (!ab) return '<span class="sub-i">–</span>';
       const c = compDe(x.A);
       if (!c) return '<span class="sub-i">sem sinistro avisado</span>';
-      const tip = `<b>${esc(x.l.nome)}: sinistro da Akad</b>${COMP_SIN.map((k, j) => `<div class="lin"><span><i style="background:${k.cor}"></i>${k.nome}</span><b>${pct(c.p[j])}</b></div>`).join("")}<div>Salvados e ressarcimentos: ${pct(c.salv)} do sinistro</div>`;
+      const tip = `<b>${esc(x.l.nome)}: sinistro da Akad</b>${COMP_SIN.map((k, j) => `<div class="lin"><span><i style="background:${k.cor}"></i>${k.nome}</span><b>${pct(c.p[j])}</b></div>`).join("")}${c.resNeg < -0.05 ? `<div>Reservas liberadas: ${pct(-c.resNeg)} do sinistro</div>` : ""}<div>Salvados e ressarcimentos: ${pct(c.salv)} do sinistro</div>`;
       return `<span class="sn-stk sn-stk-p" data-tip="${esc(tip)}" role="img" aria-label="${esc(COMP_SIN.map((k, j) => `${k.nome} ${pct(c.p[j])}`).join(", "))}">${c.p.map((v, j) => `<i style="width:${v}%;background:${COMP_SIN[j].cor};color:${COMP_SIN[j].tx}">${v >= 7 ? nf0.format(v) + "%" : ""}</i>`).join("")}</span>`;
     };
     const linhaT = (x) => `
@@ -2608,7 +2625,7 @@
     const nomeCmp = cmp === "mercado" ? "mercado" : nomeCurtoCia(nomeEnt(cmp));
     const nomeR = ramo ? ramo.l.nome : null;
     const titulo = ramo ? `Composição do sinistro em ${esc(nomeR)}` : "Composição do sinistro";
-    const sub = `Quanto do sinistro da Akad${ramo ? ` em ${esc(nomeR)}` : ""} é indenização e quanto é despesa, comparado com ${cmp === "mercado" ? "o mercado" : `a ${esc(nomeCmp)}`} ${ramo ? (cmp === "mercado" ? "do ramo" : "no ramo") : "nos mesmos ramos"}.`;
+    const sub = `Quanto do sinistro da Akad${ramo ? ` em ${esc(nomeR)}` : ""} é indenização, despesa e aumento de reservas, comparado com ${cmp === "mercado" ? "o mercado" : `a ${esc(nomeCmp)}`} ${ramo ? (cmp === "mercado" ? "do ramo" : "no ramo") : "nos mesmos ramos"}.`;
     // valores da Akad (R$) e composições
     const Aval = ramo ? ramo.A : somaSin(Rc.map((x) => x.A));
     const cA = ab ? compDe(Aval) : null;
@@ -2616,25 +2633,27 @@
     const cC = !ab ? null : ramo ? compDe(pegar(ramo)) : compMix(Rc, pegar);
     const rotC = cmp === "mercado" ? "Mercado" : nomeCmp;
     // valores em R$ do comparado, nos mesmos ramos (o total soma as três partes; salvados ficam à parte)
-    const Cval = ramo ? (pegar(ramo) || [0, 0, 0, 0, 0, 0, 0]) : somaSin(Rc.map(pegar));
-    const totA = Aval[2] + Aval[3] + Aval[4], totC = Cval[2] + Cval[3] + Cval[4];
-    const rot = (nome, tot) => `<span class="sn-cb-rot cn-rt" title="${esc(nome)}${tot > 0 ? ": indenizações e despesas, antes dos salvados e ressarcimentos" : ""}"><b>${esc(nome)}</b>${tot > 0 ? `<small>${reais(tot)}</small>` : ""}</span>`;
+    const Cval = ramo ? (pegar(ramo) || [0, 0, 0, 0, 0, 0, 0, 0, 0]) : somaSin(Rc.map(pegar));
+    const totA = baseComp(Aval), totC = baseComp(Cval);
+    const rs = (v) => (v < 0 ? "−" + reais(-v) : reais(v));
+    const extraTip = (c) => `${c.resNeg < -0.05 ? `<div>Reservas liberadas: ${pct(-c.resNeg)} do sinistro</div>` : ""}<div>Salvados e ressarcimentos: ${pct(c.salv)} do sinistro</div>`;
+    const rot = (nome, tot) => `<span class="sn-cb-rot cn-rt" title="${esc(nome)}${tot > 0 ? ": indenizações, despesas e aumento de reservas, antes dos salvados e ressarcimentos" : ""}"><b>${esc(nome)}</b>${tot > 0 ? `<small>${reais(tot)}</small>` : ""}</span>`;
     const barra = (c, quem) => !c
       ? `<span class="sn-stk vazio">${quem === "Akad" ? "A Akad não teve sinistro avisado" : "Sem sinistro avisado"} no período</span>`
-      : `<span class="sn-stk sn-stk-g" data-tip="${esc(`<b>${esc(quem)}</b>${COMP_SIN.map((k, j) => `<div class="lin"><span><i style="background:${k.cor}"></i>${k.nome}</span><b>${pct(c.p[j])}</b></div>`).join("")}<div>Salvados e ressarcimentos: ${pct(c.salv)} do sinistro</div>`)}" role="img" aria-label="${esc(`${quem}: ${COMP_SIN.map((k, j) => `${k.nome} ${pct(c.p[j])}`).join(", ")}`)}">${c.p.map((v, j) => `<i style="width:${v}%;background:${COMP_SIN[j].cor};color:${COMP_SIN[j].tx}">${v >= 6 ? pct(v) : ""}</i>`).join("")}</span>`;
+      : `<span class="sn-stk sn-stk-g" data-tip="${esc(`<b>${esc(quem)}</b>${COMP_SIN.map((k, j) => `<div class="lin"><span><i style="background:${k.cor}"></i>${k.nome}</span><b>${pct(c.p[j])}</b></div>`).join("")}${extraTip(c)}`)}" role="img" aria-label="${esc(`${quem}: ${COMP_SIN.map((k, j) => `${k.nome} ${pct(c.p[j])}`).join(", ")}`)}">${c.p.map((v, j) => `<i style="width:${v}%;background:${COMP_SIN[j].cor};color:${COMP_SIN[j].tx}">${v >= 6 ? pct(v) : ""}</i>`).join("")}</span>`;
     const col = (j) => {
       const k = COMP_SIN[j];
       return `<div class="sn-c4-it"><h3><span class="sn-sw" style="background:${k.cor}" aria-hidden="true"></span>${k.nome} ${ajuda(k.aj, k.nome.toLowerCase())}</h3>
-        <b class="sn-c4-v">${reais(Aval[2 + j])}</b>
+        <b class="sn-c4-v">${rs(Aval[COMP_IDX[j]])}</b>
         <span class="sn-c4-s">${cA && cC ? `${ppTxt(cA.p[j] - cC.p[j])} vs ${esc(nomeCmp)}` : "–"}</span>
-        ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${Cval[2 + j] < 0 ? "−" + reais(-Cval[2 + j]) : reais(Cval[2 + j])}</span>` : ""}</div>`;
+        ${cC ? `<span class="sn-c4-s sn-c4-c">${esc(rotC)}: ${rs(Cval[COMP_IDX[j]])}</span>` : ""}</div>`;
     };
     const corpo = !ab
       ? '<p class="vazio">A abertura do sinistro está sendo carregada da base da SUSEP. Ela aparece aqui na próxima atualização do painel.</p>'
       : !cA
         ? `<p class="vazio">A Akad não teve sinistro avisado${ramo ? ` em ${esc(nomeR)}` : ""} no período.</p>`
         : `<div class="sn-cb">${rot("Akad", totA)}${barra(cA, "Akad")}${rot(rotC, totC)}${barra(cC, rotC)}</div>
-          <div class="sn-c4">${[0, 1, 2].map(col).join("")}
+          <div class="sn-c4">${[0, 1, 2, 3].map(col).join("")}
             <div class="sn-c4-it"><h3><span class="sn-sw vazado" aria-hidden="true"></span>Salvados e ressarcimentos ${ajuda("sinSalv", "salvados e ressarcimentos")}</h3>
               <b class="sn-c4-v">${Aval[5] ? "−" + reais(Aval[5]) : reais(0)}</b>
               <span class="sn-c4-s">${pct(cA.salv)} do sinistro${cC ? ` · ${ppTxt(cA.salv - cC.salv)} vs ${esc(nomeCmp)}` : ""}</span>
@@ -3174,7 +3193,7 @@
           <p>SUSEP, Sistema de Estatísticas (SES), base completa. <a href="https://www2.susep.gov.br/menuestatistica/ses/principal.aspx" target="_blank" rel="noopener">Abrir o SES no site da SUSEP <span aria-hidden="true">↗</span></a></p>
           <ul>
             <li>GWP = prêmio emitido. Por estado, a SUSEP só publica o prêmio direto.</li>
-            <li>Sinistralidade = sinistro incorrido (sem IBNR/IBNER) ÷ GWP.</li>
+            <li>Sinistralidade = sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica.</li>
             <li>Valores em reais correntes, sem correção pela inflação.</li>
           </ul>
         </div>
@@ -3183,7 +3202,7 @@
         <summary>Como calculamos cada indicador</summary>
         <div class="tab-wrap"><table>
           <thead><tr><th>Indicador</th><th>Conta</th><th>Base da SUSEP</th><th>O que fica de fora</th></tr></thead>
-          <tbody><tr><th scope="row">GWP</th><td>Prêmio emitido, líquido de cosseguro.</td><td>SES (Ses_seguros)</td><td>Correção pela inflação.</td></tr><tr><th scope="row">Participação</th><td>GWP da seguradora ÷ GWP de todas as seguradoras, no mesmo ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Participação de mercado (total)</th><td>GWP da Akad nos ramos acompanhados ÷ GWP do mercado nesses mesmos ramos.</td><td>SES (Ses_seguros)</td><td>Ramos em que a Akad não atua.</td></tr><tr><th scope="row">Posição no ranking</th><td>Ordem das seguradoras pelo GWP no ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Crescimento</th><td>GWP do período ÷ GWP dos mesmos meses do ano anterior, menos 1.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Sinistralidade</th><td>Sinistro incorrido ÷ GWP. Sinistro incorrido = indenizações avisadas + despesas com sinistros − salvados e ressarcidos, líquido de cosseguro.</td><td>FIP, quadro 6 (sinistro) e SES (prêmio)</td><td>IBNR, IBNER e recuperação de resseguro.</td></tr><tr><th scope="row">Despesa comercial</th><td>Despesa de comercialização ÷ prêmio ganho. Usa o prêmio ganho porque essa despesa é apropriada ao longo da vigência da apólice, no mesmo ritmo do prêmio ganho.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Comissão e outros custos</th><td>Custos de aquisição ligados à vigência (comissão e agenciamento) e demais custos de aquisição, ÷ prêmio ganho.</td><td>FIP, quadro 8</td><td>Ramos em que a SUSEP não abre o custo.</td></tr><tr><th scope="row">Composição do sinistro</th><td>Indenização administrativa, indenização judicial e despesas com sinistros, cada uma ÷ a soma das três. Salvados e ressarcidos aparecem à parte, ÷ a mesma soma. Em todos os ramos, a composição do mercado ou da concorrente é ponderada pelo sinistro da Akad em cada ramo.</td><td>FIP, quadro 6</td><td>IBNR, IBNER e recuperação de resseguro.</td></tr><tr><th scope="row">Recuperado do resseguro</th><td>Receita com resseguro sobre os sinistros avisados ÷ sinistro incorrido da Akad.</td><td>FIP, quadro 6</td><td>Parte do resseguro ligada a IBNR e IBNER.</td></tr><tr><th scope="row">Prêmio por estado</th><td>Prêmio direto da seguradora no estado.</td><td>SES (SES_UF2)</td><td>Cosseguro aceito: a SUSEP só publica o prêmio direto por UF.</td></tr><tr><th scope="row">Participação dos concorrentes</th><td>GWP da seguradora nos ramos acompanhados ÷ GWP do mercado nesses ramos.</td><td>SES (Ses_seguros)</td><td>–</td></tr></tbody>
+          <tbody><tr><th scope="row">GWP</th><td>Prêmio emitido, líquido de cosseguro.</td><td>SES (Ses_seguros)</td><td>Correção pela inflação.</td></tr><tr><th scope="row">Participação</th><td>GWP da seguradora ÷ GWP de todas as seguradoras, no mesmo ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Participação de mercado (total)</th><td>GWP da Akad nos ramos acompanhados ÷ GWP do mercado nesses mesmos ramos.</td><td>SES (Ses_seguros)</td><td>Ramos em que a Akad não atua.</td></tr><tr><th scope="row">Posição no ranking</th><td>Ordem das seguradoras pelo GWP no ramo e período.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Crescimento</th><td>GWP do período ÷ GWP dos mesmos meses do ano anterior, menos 1.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Sinistralidade</th><td>Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica. Sinistro ocorrido = sinistros avisados (indenizações + despesas com sinistros − salvados e ressarcidos) + variação das reservas de sinistros, como o IBNR. Prêmio ganho = parte do prêmio que corresponde ao período já decorrido das apólices. Ambos líquidos de cosseguro.</td><td>SES (Ses_seguros)</td><td>Recuperação de resseguro.</td></tr><tr><th scope="row">Despesa comercial</th><td>Despesa de comercialização ÷ prêmio ganho. Usa o prêmio ganho porque essa despesa é apropriada ao longo da vigência da apólice, no mesmo ritmo do prêmio ganho.</td><td>SES (Ses_seguros)</td><td>–</td></tr><tr><th scope="row">Comissão e outros custos</th><td>Custos de aquisição ligados à vigência (comissão e agenciamento) e demais custos de aquisição, ÷ prêmio ganho.</td><td>FIP, quadro 8</td><td>Ramos em que a SUSEP não abre o custo.</td></tr><tr><th scope="row">Composição do sinistro</th><td>Indenização administrativa, indenização judicial, despesas com sinistros e variação de reservas (sinistro ocorrido − sinistro avisado), cada uma ÷ a soma das quatro. Salvados e ressarcidos aparecem à parte, ÷ a mesma soma, assim como a liberação de reservas. Em todos os ramos, a composição do mercado ou da concorrente é ponderada pelo sinistro da Akad em cada ramo.</td><td>FIP, quadro 6, e SES</td><td>Seguradoras sem o quadro 6 e recuperação de resseguro.</td></tr><tr><th scope="row">Recuperado do resseguro</th><td>Receita com resseguro sobre os sinistros avisados ÷ sinistro ocorrido da Akad.</td><td>FIP, quadro 6, e SES</td><td>Parte do resseguro ligada a IBNR e IBNER.</td></tr><tr><th scope="row">Prêmio por estado</th><td>Prêmio direto da seguradora no estado.</td><td>SES (SES_UF2)</td><td>Cosseguro aceito: a SUSEP só publica o prêmio direto por UF.</td></tr><tr><th scope="row">Participação dos concorrentes</th><td>GWP da seguradora nos ramos acompanhados ÷ GWP do mercado nesses ramos.</td><td>SES (Ses_seguros)</td><td>–</td></tr></tbody>
         </table></div>
         <p>Na SUSEP, RC Profissional (ramo 0378) reúne os produtos E&amp;O e RCPM, que a Akad acompanha separados internamente.</p>
       </details>`;
