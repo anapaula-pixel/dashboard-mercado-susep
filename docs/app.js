@@ -1464,7 +1464,7 @@
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
           <div class="graf" id="g-prod"></div>
-          <div class="eo-aviso" id="g-prod-aviso" role="note" hidden><span class="eo-aviso-i" aria-hidden="true">i</span><span class="eo-av-tx"><b>Como ler este gráfico</b><ul><li><b>Total da coluna:</b> GWP da SUSEP, a mesma base do restante da página.</li><li><b>E&amp;O e RCPM:</b> vêm do Power BI interno da Akad, porque a SUSEP não divulga os dois produtos separados.</li><li><b>Variação:</b> há uma ligeira diferença entre o dado da SUSEP e o nosso dado interno. Quando a SUSEP fica acima, essa diferença aparece em cinza no topo da coluna.</li><li><b>Antes de 2024:</b> o Power BI não tem RCPM, então ele é calculado como o total da SUSEP menos o E&amp;O (barras hachuradas).</li></ul></span></div>
+          <div class="eo-aviso" id="g-prod-aviso" role="note" hidden><svg class="eo-aviso-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg><span class="eo-av-tx"><b>Fontes dos dados</b><br>A SUSEP divulga apenas o total do ramo. Os valores de E&amp;O e RCPM vêm do Power BI interno da Akad. O total da SUSEP pode diferir ligeiramente da soma dos dois produtos. Passe o mouse sobre as barras para ver essa diferença.</span></div>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
