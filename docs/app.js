@@ -1434,12 +1434,12 @@
           <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
               <th class="rk-seg" rowspan="2"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
-              <th class="rk-g" colspan="2">GWP</th><th class="rk-g">Participação</th><th class="rk-g" colspan="3">Sinistro</th><th class="rk-g" colspan="2">Comercialização</th>
+              <th class="rk-g" colspan="2">GWP</th><th class="rk-g">Participação</th><th class="rk-g">Prêmio ganho</th><th class="rk-g" colspan="2">Sinistro</th><th class="rk-g" colspan="2">Comercialização</th>
             </tr>
             <tr class="rk-sub"><th class="n ord rk-g1" data-col="pe">${perA}</th><th class="n ord rk-ant" data-col="peP">${perR}</th>
               <th class="n ord rk-g1" data-col="share">Atual</th>
-              <th class="n ord rk-g1" data-col="pg" title="Parte do prêmio que corresponde ao período já decorrido das apólices">Prêmio ganho</th><th class="n ord" data-col="so" title="Sinistros do período, incluindo a variação das reservas (como IBNR)">Sinistro ocorrido</th><th class="n ord" data-col="sin" title="Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica">Sinistralidade</th>
-              <th class="n ord rk-g1" data-col="dc" title="Custos de aquisição do período, como comissão de corretagem e agenciamento">Despesa comercial</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
+              <th class="n ord rk-g1" data-col="pg" title="Parte do prêmio que corresponde ao período já decorrido das apólices">${perA}</th><th class="n ord rk-g1" data-col="so" title="Sinistro ocorrido: sinistros do período, incluindo a variação das reservas (como IBNR)">Ocorrido</th><th class="n ord" data-col="sin" title="Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica">Sinistralidade</th>
+              <th class="n ord rk-g1" data-col="dc" title="Despesa comercial: custos de aquisição do período, como comissão de corretagem e agenciamento">Despesa</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
             <tbody>${visTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}${x === akFora ? " rk-fora" : ""}" data-ent="${esc(x.k)}">
                 <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
@@ -1447,7 +1447,7 @@
                 <td class="n rk-ant">${x.peP > 0 ? reais(x.peP) : "–"}</td>
                 <td class="n rk-g1">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
                 <td class="n rk-g1">${rsSin(x.pg)}</td>
-                <td class="n">${rsSin(x.so)}</td>
+                <td class="n rk-g1">${rsSin(x.so)}</td>
                 <td class="n">${pct(x.sin)}</td>
                 <td class="n rk-g1">${rsSin(x.dc)}</td>
                 <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
