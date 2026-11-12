@@ -498,6 +498,8 @@
         if (c) { x.eo = c.e; x.rc = c.r; x.tot = c.tot; x.calc = c.calc; x.bi = c.bi; x.dif = c.dif; }
         if (p) { x.eoP = p.e; x.rcP = p.r; x.totP = p.tot; x.calcP = p.calc; x.biP = p.bi; x.difP = p.dif; }
       });
+      // acumulado do período do filtro (total da SUSEP, E&O e RCPM) e o mesmo período do ano anterior, para a faixa embaixo do gráfico
+      itens.acc = { c: somaEO(P.a, P.b), p: P.pa != null ? somaEO(P.pa, P.pb) : null };
     }
     // eoT: colunas únicas divididas entre E&O e RCPM (trimestre, ano ou mês a mês em períodos de mais de 12 meses)
     const eoT = (vis !== "mes" || !par) && itens.some((x) => x.eo != null);
@@ -1464,6 +1466,7 @@
           </div>
           <div class="pr-leg" id="g-prod-leg"></div>
           <div class="graf" id="g-prod"></div>
+          <div class="eo-acc" id="g-prod-acc" hidden></div>
           <div class="eo-aviso" id="g-prod-aviso" role="note" hidden><svg class="eo-aviso-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg><span class="eo-av-tx"><b>Fontes dos dados</b><br>A SUSEP divulga apenas o total do ramo. Os valores de E&amp;O e RCPM vêm do Power BI interno da Akad. O total da SUSEP pode diferir ligeiramente da soma dos dois produtos. Passe o mouse sobre as barras para ver essa diferença.</span></div>
         </div>
         <div class="bloco c12" id="b-sin"></div>
@@ -1582,6 +1585,19 @@
         : `${met === "gwp" ? "GWP" : "Participação"} por ano.${itens.some((x) => x.parc) ? ` * ano parcial, comparado com os mesmos meses do ano anterior.` : ""}`;
       const anos = vis !== "ano" ? [...new Set(itens.map((x) => x.ano))] : [];
       $("#g-prod-aviso").hidden = !itens.eoM;
+      // faixa do acumulado: total da SUSEP, E&O e RCPM no período do filtro, com a variação contra o mesmo período do ano anterior
+      const accEl = $("#g-prod-acc"), accC = itens.eoM && itens.acc ? itens.acc.c : null, accP = accC ? itens.acc.p : null;
+      accEl.hidden = !accC;
+      if (accC) {
+        const dv = (a, b) => {
+          const x = b > 0 ? cresc(a, b) : null;
+          if (x == null || !isFinite(x)) return "";
+          return `<span class="ac-d ${x >= 0 ? "up" : "down"}">${x >= 0 ? "▲" : "▼"} ${nf1.format(Math.abs(x))}%</span>`;
+        };
+        const item = (cor, rot, v, vp) => `<span class="ac-it">${cor ? `<i style="background:${cor}"></i>` : ""}<span class="ac-l">${rot}</span><b>${reais(v)}</b>${accP ? dv(v, vp) : ""}</span>`;
+        accEl.title = accP ? `Variação contra ${periodoLabel(P.pa, P.pb)}` : "";
+        accEl.innerHTML = `<span class="ac-t">Acumulado ${periodoLabel(P.a, P.b)}</span>${item("", "Total", accC.tot, accP && accP.tot)}${item("var(--eo-e)", "E&amp;O", accC.e, accP && accP.e)}${item("var(--eo-r)", "RCPM", accC.r, accP && accP.r)}`;
+      }
       if (itens.eoM) {
         const mesExt = (k) => `${["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"][+D.meses[k].slice(4) - 1]} de ${D.meses[k].slice(0, 4)}`;
         AJUDA.eoCalc = `**E&O e RCPM** vêm do Power BI da Akad, porque a SUSEP não separa os dois produtos.\n• **E&O:** disponível desde ${mesExt(EO.de)}.\n• **RCPM:** disponível desde ${mesExt(EO.deR != null ? EO.deR : EO.de)}.${EO.deR != null && EO.deR > EO.de ? " Antes disso, é calculado como o total da SUSEP menos o E&O (barras hachuradas)." : ""}\n• **Total:** a altura da coluna é o GWP da SUSEP. Quando a SUSEP fica acima do Power BI, a diferença aparece em cinza; o detalhe de cada coluna mostra a variação.`;
