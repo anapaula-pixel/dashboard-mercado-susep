@@ -215,6 +215,8 @@ select:hover { border-color: var(--axis); }
 .dp-atl button { flex: 1 1 auto; white-space: nowrap; background: var(--surface-2); border: 0; border-radius: 8px; padding: 8px 8px; font-size: .76rem; font-weight: 500; color: var(--ink); cursor: pointer; }
 .dp-atl button:hover { box-shadow: inset 0 0 0 1px var(--navy); }
 .dp-atl button[aria-pressed="true"] { background: var(--navy); color: #fff; }
+.dp-rot-anos { margin-top: 14px; }
+.dp-anos { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .dp-acoes { display: flex; justify-content: flex-end; align-items: center; gap: 10px; margin-top: 14px; }
 .dp-cancel { background: none; border: 0; color: var(--navy); font-weight: 600; font-size: .86rem; cursor: pointer; padding: 8px 10px; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .dp-m.meio { background: #4A2433; } :root:not([data-theme="light"]) .dp-m.ini { background: linear-gradient(90deg, transparent 50%, #4A2433 50%); } :root:not([data-theme="light"]) .dp-m.fim { background: linear-gradient(90deg, #4A2433 50%, transparent 50%); } :root:not([data-theme="light"]) .dp-cancel { color: #9DB4D1; } :root:not([data-theme="light"]) .dp-atl button[aria-pressed="true"] { background: #DEE7F1; color: #1C4173; } }
