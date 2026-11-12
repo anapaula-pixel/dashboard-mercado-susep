@@ -1436,12 +1436,13 @@
           <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
               <th class="rk-seg" rowspan="2"><div class="th-ramo"><span>Seguradora</span><span class="th-pos"><button type="button" class="th-pos-btn" data-col="pos"${o.col === "pos" ? ` aria-sort="${o.dir < 0 ? "descending" : "ascending"}"` : ""}>Posição${o.col === "pos" ? (o.dir < 0 ? " ↓" : " ↑") : ""}</button></span></div></th>
-              <th class="rk-g" colspan="2">GWP</th><th class="rk-g">Market share</th><th class="rk-g">Prêmio ganho</th><th class="rk-g" colspan="2">Sinistro</th><th class="rk-g" colspan="2">Comercialização</th>
+              <th class="rk-g" colspan="2">GWP</th><th class="rk-g">Market share</th><th class="rk-g">Prêmio ganho</th><th class="rk-g" colspan="2">Comercialização</th><th class="rk-g" colspan="2">Sinistro</th>
             </tr>
             <tr class="rk-sub"><th class="n ord rk-g1" data-col="pe">${perA}</th><th class="n ord rk-ant" data-col="peP">${perR}</th>
               <th class="n ord rk-g1" data-col="share">Atual</th>
-              <th class="n ord rk-g1" data-col="pg" title="Parte do prêmio que corresponde ao período já decorrido das apólices">${perA}</th><th class="n ord rk-g1" data-col="so" title="Sinistro ocorrido: sinistros do período, incluindo a variação das reservas (como IBNR)">Ocorrido</th><th class="n ord" data-col="sin" title="Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica">Sinistralidade</th>
-              <th class="n ord rk-g1" data-col="dc" title="Despesa comercial: custos de aquisição do período, como comissão de corretagem e agenciamento">Despesa</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th></tr></thead>
+              <th class="n ord rk-g1" data-col="pg" title="Parte do prêmio que corresponde ao período já decorrido das apólices">${perA}</th>
+              <th class="n ord rk-g1" data-col="dc" title="Despesa comercial: custos de aquisição do período, como comissão de corretagem e agenciamento">Despesa</th><th class="n ord" data-col="comis" title="Custos de aquisição ligados à vigência da apólice (na prática, comissão de corretagem e agenciamento), sobre o prêmio ganho">Comissão</th>
+             <th class="n ord rk-g1" data-col="so" title="Sinistro ocorrido: sinistros do período, incluindo a variação das reservas (como IBNR)">Ocorrido</th><th class="n ord" data-col="sin" title="Sinistro ocorrido ÷ prêmio ganho, a mesma conta que a SUSEP publica">Sinistralidade</th></tr></thead>
             <tbody>${visTab.map((x) => `
               <tr class="${x.k === AKAD ? "akad" : "clic"}${x === akFora ? " rk-fora" : ""}" data-ent="${esc(x.k)}">
                 <td class="nome"><div class="nome-in"><span>${esc(nomeEnt(x.k))}</span>${x.pos ? `<span class="pos-grp" data-tip="${esc(`<b>${x.pos}º de ${R.rk.length}</b><div>${!x.posP ? `Sem prêmio em ${perR}` : x.posP === x.pos ? `Mesma posição de ${perR}` : `${x.posP > x.pos ? "Subiu" : "Caiu"} ${Math.abs(x.posP - x.pos)} ${Math.abs(x.posP - x.pos) === 1 ? "posição" : "posições"} contra ${perR} (era ${x.posP}º)`}</div>`)}">${seloPosicao(x.pos)}${movHtml(x.pos, x.posP).replace(/ title="[^"]*"/, "")}</span>` : ""}</div></td>
@@ -1449,10 +1450,10 @@
                 <td class="n rk-ant">${x.peP > 0 ? reais(x.peP) : "–"}</td>
                 <td class="n rk-g1">${pct(x.share)}<span class="barrinha" style="width:${Math.max(2, Math.min(60, (x.share || 0) * 1.2))}px;${x.k === AKAD ? "" : "background:var(--axis)"}"></span></td>
                 <td class="n rk-g1">${rsSin(x.pg)}</td>
-                <td class="n rk-g1">${rsSin(x.so)}</td>
-                <td class="n">${pct(x.sin)}</td>
                 <td class="n rk-g1">${rsSin(x.dc)}</td>
                 <td class="n">${x.comis == null ? '<span class="sub-i" title="A SUSEP não abriu o custo para esta seguradora">–</span>' : pct(x.comis)}</td>
+                <td class="n rk-g1">${rsSin(x.so)}</td>
+                <td class="n">${pct(x.sin)}</td>
               </tr>`).join("")}
             </tbody>
           </table></div>
@@ -3105,7 +3106,7 @@
     const anoFech = fechados[fechados.length - 1];
     const btn = $("#pp-btn"), pop = $("#pop-periodo");
     // estado do calendário enquanto o popover está aberto: início, fim, qual campo está sendo editado e o ano exibido
-    const ed = { de: 0, ate: ult, alvo: "de", ano: anoUlt };
+    const ed = { de: 0, ate: ult, alvo: "de", ano: anoUlt, aberto: false }; // aberto: seção "Personalizado" expandida
     const anosCal = anos;
     const desenharPop = (foco) => {
       const lo = Math.min(ed.de, ed.ate), hi = Math.max(ed.de, ed.ate), ia = anosCal.indexOf(ed.ano);
@@ -3118,8 +3119,8 @@
         ${fechados.length ? `<p class="dp-rot dp-rot-anos">Ano inteiro</p>
         <div class="dp-atl dp-anos">${[...fechados].reverse().map((y) => `<button type="button" data-p="ano" data-ano="${y}">${y}</button>`).join("")}</div>` : ""}
         <div class="dp-sep"></div>
-        <p class="dp-rot">Personalizado</p>
-        <div class="dp-de">
+        <button type="button" class="dp-tog" aria-expanded="${ed.aberto}"><span class="dp-rot">Personalizado</span><span class="dp-tog-r">${ed.aberto ? "" : "Escolher mês a mês"}<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ed.aberto ? "M6 15l6-6 6 6" : "M6 9l6 6 6-6"}"/></svg></span></button>
+        ${ed.aberto ? `<div class="dp-de">
           <button type="button" class="dp-campo${ed.alvo === "de" ? " at" : ""}" data-alvo="de" aria-pressed="${ed.alvo === "de"}"><span>De</span><b>${mesLabel(lo, true)}</b></button>
           <button type="button" class="dp-campo${ed.alvo === "ate" ? " at" : ""}" data-alvo="ate" aria-pressed="${ed.alvo === "ate"}"><span>Até</span><b>${mesLabel(hi, true)}</b></button>
         </div>
@@ -3131,16 +3132,16 @@
           return `<button type="button" class="dp-m${cls}" data-i="${i}" aria-label="${nm}/${ed.ano}" aria-pressed="${i === lo || i === hi}"><i>${nm}</i></button>`;
         }).join("")}</div>
         <p class="dp-res">Período: <b>${mesLabel(lo, true)} a ${mesLabel(hi, true)}</b> (${nM} ${nM === 1 ? "mês" : "meses"})</p>
-        <div class="dp-acoes"><button type="button" class="dp-cancel" id="pp-cancelar">Cancelar</button><button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button></div>`;
+        <div class="dp-acoes"><button type="button" class="dp-cancel" id="pp-cancelar">Cancelar</button><button type="button" class="pp-aplicar" id="pp-aplicar">Aplicar</button></div>` : ""}`;
       pop.querySelectorAll("[data-p]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.p === S.periodo && (S.periodo !== "ano" || b.dataset.ano === String(S.ano)))));
       if (foco) pop.querySelector(foco)?.focus();
     };
     const abrir = () => {
       const P = periodo();
-      ed.de = P.a; ed.ate = P.b; ed.alvo = "de"; ed.ano = D.meses[P.a].slice(0, 4);
+      ed.de = P.a; ed.ate = P.b; ed.alvo = "de"; ed.ano = D.meses[P.a].slice(0, 4); ed.aberto = S.periodo === "custom";
       desenharPop();
       pop.hidden = false; btn.setAttribute("aria-expanded", "true");
-      pop.querySelector(".dp-m.sel, .dp-m:not([disabled])")?.focus();
+      pop.querySelector(ed.aberto ? ".dp-m.sel, .dp-m:not([disabled])" : ".dp-atl button")?.focus();
     };
     const fechar = (foco) => { pop.hidden = true; btn.setAttribute("aria-expanded", "false"); if (foco) btn.focus(); };
     btn.addEventListener("click", () => (pop.hidden ? abrir() : fechar(false)));
@@ -3150,6 +3151,7 @@
     pop.addEventListener("click", (e) => {
       const t = e.target.closest("button");
       if (!t || !pop.contains(t)) return;
+      if (t.classList.contains("dp-tog")) { ed.aberto = !ed.aberto; desenharPop(".dp-tog"); return; }
       if (t.dataset.alvo) { ed.alvo = t.dataset.alvo; ed.ano = D.meses[ed.alvo === "de" ? Math.min(ed.de, ed.ate) : Math.max(ed.de, ed.ate)].slice(0, 4); desenharPop(`[data-alvo="${ed.alvo}"]`); return; }
       if (t.dataset.d) { ed.ano = anosCal[anosCal.indexOf(ed.ano) + +t.dataset.d]; desenharPop(`.dp-seta[data-d="${t.dataset.d}"]`); return; }
       if (t.dataset.i != null && t.classList.contains("dp-m")) {
