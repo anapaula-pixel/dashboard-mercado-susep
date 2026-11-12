@@ -1802,7 +1802,7 @@ body[data-aba="uf"] #status { display: none; }
 body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 
 /* Ramos > Sinistralidade: Akad no mesmo período do ano anterior (rosa tracejado) e linha de 100% com rótulo */
-#b-sin { --sn-ant: #EE7EA5; }
+#b-sin { --sn-ant: #9E9E9E; }
 #g-sin .sn-ant { stroke: var(--sn-ant); stroke-dasharray: 6 4; stroke-linecap: butt; }
 #g-sin .sn-ant-p { fill: var(--sn-ant); }
 #g-sin .sn-lim { stroke: var(--ruim); stroke-width: 1; opacity: .45; }
