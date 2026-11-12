@@ -462,17 +462,18 @@
       const anosT = [...new Set(itens.map((x) => x.ano))].reverse();
       itens.forEach((x) => { x.cor = TONS_ANO[Math.min(anosT.indexOf(x.ano), TONS_ANO.length - 1)]; });
     } else {
-      // anos dentro do período do filtro; o primeiro e o último podem ser parciais (comparados com os mesmos meses do ano anterior)
-      const yIni = +D.meses[ini0].slice(0, 4), yFim = +D.meses[fim].slice(0, 4);
+      // visão por ano: sempre todos os anos da base, independente do filtro; o ano mais recente pode ser parcial
+      // (comparado com os mesmos meses do ano anterior). O ano em que o filtro termina fica destacado.
+      const ultI = D.meses.length - 1, yIni = +D.meses[0].slice(0, 4), yFim = +D.meses[ultI].slice(0, 4), yFiltro = +D.meses[fim].slice(0, 4);
       const soma = (y, mA, mB) => { let a = 0, t = 0; D.meses.forEach((ym, i) => { const mm = +ym.slice(4); if (+ym.slice(0, 4) === y && mm >= mA && mm <= mB) { a += A[i]; t += T[i]; } }); return [a, t]; };
       for (let y = yIni; y <= yFim; y++) {
-        const mA = y === yIni ? +D.meses[ini0].slice(4) : 1, mB = y === yFim ? +D.meses[fim].slice(4) : 12;
+        const mA = y === yIni ? +D.meses[0].slice(4) : 1, mB = y === yFim ? +D.meses[ultI].slice(4) : 12;
         const parc = mA > 1 || mB < 12;
         const [a, t] = soma(y, mA, mB), [ap, tp] = soma(y - 1, mA, mB);
         const sh = t > 0 ? (a / t) * 100 : null;
         const meses = `${MESES_PT[mA - 1]} a ${MESES_PT[mB - 1]}`;
         itens.push({ l1: y + (parc ? "*" : ""), v: met === "gwp" ? a : sh, a, sh, parc, cr: ap > 0 ? cresc(a, ap) : null, dsh: sh != null && tp > 0 ? sh - (ap / tp) * 100 : null,
-          tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFim ? TONS_ANO[0] : "#F5B3CA",
+          tit: parc ? `${y} (${meses})` : String(y), refP: parc ? `${meses}/${y - 1}` : String(y - 1), cor: y === yFiltro ? TONS_ANO[0] : "#F5B3CA",
           ii: [D.meses.indexOf(`${y}${String(mA).padStart(2, "0")}`), D.meses.indexOf(`${y}${String(mB).padStart(2, "0")}`)] });
       }
     }
@@ -920,14 +921,16 @@
 
     // A4. Evolução das vendas: mesmo recorte de meses em cada ano
     const hist = [];
-    // período maior que 12 meses: uma barra por ano-calendário dentro do período (anos incompletos com *)
+    // período maior que 12 meses: uma barra por ano-calendário, sempre com todos os anos da base (independente do filtro);
+    // o ano mais recente pode ser parcial (*) e os anos dentro do período do filtro ficam destacados
     const longo = P.b - P.a + 1 > 12;
     if (longo) {
-      for (let y = +D.meses[P.a].slice(0, 4); y <= +D.meses[P.b].slice(0, 4); y++) {
+      const uM = D.meses.length - 1, yA = +D.meses[P.a].slice(0, 4), yB = +D.meses[P.b].slice(0, 4);
+      for (let y = +D.meses[0].slice(0, 4); y <= +D.meses[uM].slice(0, 4); y++) {
         const ini = D.meses.indexOf(`${y}01`), fim = D.meses.indexOf(`${y}12`);
-        const a = Math.max(P.a, ini < 0 ? P.a : ini), b = Math.min(P.b, fim < 0 ? P.b : fim);
+        const a = ini < 0 ? 0 : ini, b = fim < 0 ? uM : fim;
         const m = agg(IDX.todos, a, b).get(AKAD);
-        hist.push({ a, b, v: m ? m[0] : 0, sel: y === +D.meses[P.b].slice(0, 4), parc: b - a + 1 < 12 });
+        hist.push({ a, b, v: m ? m[0] : 0, sel: y >= yA && y <= yB, parc: b - a + 1 < 12 });
       }
     }
     for (let k = 0; !longo && P.a - 12 * k >= 0; k++) {
@@ -946,7 +949,7 @@
     const mesmoAno = D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4);
     const rotH = (h) => (longo ? D.meses[h.b].slice(0, 4) + (h.parc ? "*" : "") : mesmoAno ? D.meses[h.b].slice(0, 4) : `até ${mesLabel(h.b)}`);
     const parcs = hist.filter((h) => h.parc).map((h) => `${D.meses[h.b].slice(0, 4)}: ${MESES_PT[+D.meses[h.a].slice(4) - 1]} a ${MESES_PT[+D.meses[h.b].slice(4) - 1]}`);
-    const recorte = longo ? `por ano, dentro do período escolhido${parcs.length ? ` (* ${parcs.join("; ")})` : ""}` : S.periodo === "12m" ? `12 meses até ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
+    const recorte = longo ? `por ano, todos os anos da base; em destaque, os anos do período escolhido${parcs.length ? ` (* ${parcs.join("; ")})` : ""}` : S.periodo === "12m" ? `12 meses até ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
       : mesmoAno && !(D.meses[P.a].endsWith("01") && D.meses[P.b].endsWith("12")) ? `${MESES_PT[+D.meses[P.a].slice(4) - 1]} a ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
       : mesmoAno ? "ano completo" : "mesmo intervalo de meses, ano a ano";
     const maxH = Math.max(1, ...hist.map((h) => h.v));
