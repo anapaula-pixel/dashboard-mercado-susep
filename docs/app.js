@@ -1435,6 +1435,17 @@
       <div class="kn-grid kpis-ramo" style="--n:4">${kpisRamo(ak, R.rk.length, sinM)}</div>
       <div class="grade">
         <div class="bloco c12">
+          <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
+            <div class="pr-btns">
+              <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
+            </div>
+          </div>
+          <div class="pr-leg" id="g-prod-leg"></div>
+          <div class="graf" id="g-prod"></div>
+          <div class="eo-acc" id="g-prod-acc" hidden></div>
+          <div class="eo-aviso" id="g-prod-aviso" role="note" hidden><svg class="eo-aviso-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg><span class="eo-av-tx"><b>Fontes dos dados</b><br>A SUSEP divulga apenas o total do ramo. Os valores de E&amp;O e RCPM vêm do Power BI interno da Akad. O total da SUSEP pode diferir ligeiramente da soma dos dois produtos. Passe o mouse sobre as barras para ver essa diferença.</span></div>
+        </div>
+        <div class="bloco c12">
           <div class="bloco-cab"><h2>Ranking de seguradoras</h2></div>
           <div class="tab-wrap"><table class="rk-tab">
             <thead><tr>
@@ -1461,17 +1472,6 @@
             </tbody>
           </table></div>
           ${linhasTab.length > RK_LIM + 1 ? `<button type="button" class="c2-mais2 rk-mais" id="rk-mais" aria-expanded="${rkTodas}">${rkTodas ? "Mostrar menos ↑" : `Ver as outras ${linhasTab.length - visTab.length} seguradoras ↓`}</button>` : ""}
-        </div>
-        <div class="bloco c12">
-          <div class="bloco-cab pr-cab"><div><h2>Produção da Akad</h2><p class="nota" id="g-prod-nota"></p></div>
-            <div class="pr-btns">
-              <div class="seg-ctrl" role="group" aria-label="Período">${[["mes", "Por mês"], ["tri", "Por trimestre"], ["ano", "Por ano"]].map(([k, r]) => `<button type="button" data-pvis="${k}" aria-pressed="${(S.prodVis || "mes") === k}">${r}</button>`).join("")}</div>
-            </div>
-          </div>
-          <div class="pr-leg" id="g-prod-leg"></div>
-          <div class="graf" id="g-prod"></div>
-          <div class="eo-acc" id="g-prod-acc" hidden></div>
-          <div class="eo-aviso" id="g-prod-aviso" role="note" hidden><svg class="eo-aviso-ic" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="7.8" r=".6" fill="currentColor"/></svg><span class="eo-av-tx"><b>Fontes dos dados</b><br>A SUSEP divulga apenas o total do ramo. Os valores de E&amp;O e RCPM vêm do Power BI interno da Akad. O total da SUSEP pode diferir ligeiramente da soma dos dois produtos. Passe o mouse sobre as barras para ver essa diferença.</span></div>
         </div>
         <div class="bloco c12" id="b-sin"></div>
         <div class="bloco c12">
@@ -2982,10 +2982,9 @@
     desenharChips();
   }
 
-  // Grupos de ramos (atalhos no filtro)
-  const GRUPOS_RAMOS = [
-    { id: "transportador", nome: "Transportador", ids: ["rctrc", "rcdc"] },
-  ];
+  // Grupos de ramos (atalhos no filtro): nenhum por enquanto; cada ramo aparece individual
+  // (o atalho "Transportador" = RCTR-C + RC-DC saiu em nov/2026; dá para combinar os dois na seleção múltipla)
+  const GRUPOS_RAMOS = [];
   // Seleção de ramos: "todas", um id de ramo, ou "m:id1,id2,..." para vários
   function idsDaSel(sel) {
     if (!sel || sel === "todas") return [];
@@ -3000,14 +2999,16 @@
   const grupoDaSel = (sel) => { const ids = idsDaSel(sel); return GRUPOS_RAMOS.find((g) => g.ids.length === ids.length && g.ids.every((x) => ids.includes(x))); };
 
   // Ordem do filtro de ramos: por família de produto, começando por RC Profissional
+  // Famílias do filtro de ramos: seguem os grupos da SUSEP (dois primeiros dígitos do código), com nomes claros.
+  // Exceção: RC Facultativa de Veículos (grupo 05, Automóvel) fica em Transportes, porque a Akad vende para transportadoras.
   const FAMILIAS_RAMOS = [
-    { nome: "Responsabilidade civil", ids: ["rcpro", "do", "rcg", "rcamb"] },
-    { nome: "Transportes", ids: ["transpnac", "transpint", "rctrc", "rcdc", "rcv", "rctrvi", "rctfc", "rctac", "rcac", "dpem"] },
-    { nome: "Patrimonial e engenharia", ids: ["emp", "rno", "equip", "eng", "cyber", "lucros"] },
+    { nome: "Responsabilidade civil", ids: ["rcpro", "do", "rcg", "rcamb", "cyber"] },
+    { nome: "Transportes", ids: ["transpnac", "transpint", "rctrc", "rcdc", "rcv", "rctrvi", "rctfc", "rctac", "rcac", "rcfv"] },
+    { nome: "Patrimonial", ids: ["emp", "rno", "equip", "eng", "lucros"] },
     { nome: "Garantia e fiança", ids: ["garpub", "garpriv", "fianca"] },
-    { nome: "Pessoas", ids: ["prestcol", "prestind", "vg", "apcol", "apind", "vidarural", "doencas", "funeral"] },
-    { nome: "Automóvel e aeronáutico", ids: ["rcfv", "autocasco", "rcfa", "aerocasco", "reta"] },
-    { nome: "Rural", ids: ["agro", "penhor"] },
+    { nome: "Pessoas", ids: ["prestcol", "prestind", "vg", "apcol", "apind", "doencas", "funeral"] },
+    { nome: "Rural", ids: ["agro", "penhor", "vidarural"] },
+    { nome: "Aeronáutico e marítimo", ids: ["rcfa", "aerocasco", "reta", "dpem"] },
   ];
   function opcoesLinhaFiltro() {
     const op = [{ v: "todas", t: `Todos os ${IDX.linhas.length} ramos` }];
