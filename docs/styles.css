@@ -1938,3 +1938,11 @@ body[data-aba="uf"] .lk-copiar { margin-left: auto; }
 /* Botões de "ver os outros / mostrar menos": mesmo visual em todas as telas */
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .c2-mais2 { color: #9DB4D1; } }
 :root[data-theme="dark"] .c2-mais2 { color: #9DB4D1; }
+/* Visão geral > Evolução do GWP: botões Ano inteiro / mesmo período e ano parcial hachurado */
+#aba-geral .kc-evo .kc-cab { align-items: flex-start; flex-wrap: nowrap; }
+#aba-geral .kc-evo .kc-cab .kc-aux { display: block; margin-top: 2px; }
+#aba-geral .kc-evo .seg-ctrl { flex: none; }
+#aba-geral .kc-evo .seg-ctrl button { padding: 5px 10px; font-size: .76rem; white-space: nowrap; }
+#aba-geral .ev.parc .ev-trilho i { background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, .4) 0 4px, transparent 4px 8px); }
+#aba-geral .ev-nota { margin-top: 10px; }
+@media (max-width: 600px) { #aba-geral .kc-evo .kc-cab { flex-wrap: wrap; } }
