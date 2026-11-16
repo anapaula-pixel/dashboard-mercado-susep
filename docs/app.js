@@ -1772,7 +1772,7 @@
         <p class="mq-sub">Seguradoras em destaque pela disputa nos rankings, semelhança de carteira ou avanço de market share.</p>
         <div class="mq-card"><div class="mv-grade">
           ${colQ("Confronto direto", "direto", "Mais disputam o Top 5 com a Akad.", direto, "Nenhuma seguradora no top 5 junto com a Akad.")}
-          ${colQ("Perfil parecido", "parecido", "Carteira dividida entre os ramos de forma parecida com a da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
+          ${colQ("Perfil parecido", "parecido", "Mix de ramos parecido com o da Akad.", parecido, "Nenhuma seguradora com carteira parecida.")}
           ${colQ("Em expansão", "ganhando", "Mais ganharam market share nos ramos da Akad.", ganhando, "Nenhuma seguradora relevante ganhou espaço.")}
         </div></div>
       </section>`;
