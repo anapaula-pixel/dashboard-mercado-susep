@@ -919,18 +919,24 @@
     const cardPart = kCard({ ic: "share", rot: "Market share", help: `<button type="button" class="ajuda" data-ajuda="shareTot" data-lista="${esc(`Tamanho do mercado nos ${nL} ramos em que a Akad atua: ${reais(RT.tc[0])}${crescMerc != null ? ` (${crescMerc > 0 ? "+" : crescMerc < 0 ? "−" : ""}${nf1.format(Math.abs(crescMerc))}% contra ${perP})` : ""}. Não inclui ramos em que a Akad não atua.`)}" aria-label="O que é market share?">?</button>`, corpo: `<b>${pct(ak.share, 2)}</b>${kVar(ak.dShare, " p.p.")}` });
     const cardSin = kCard({ ic: "sin", rot: "Sinistralidade", help: ajuda("sin", "sinistralidade"), corpo: `<b>${pct(ak.sin)}</b>${kVar(dSin, " p.p.", { ruimSeSobe: true })}` });
 
-    // A4. Evolução das vendas: mesmo recorte de meses em cada ano
+    // A4. Evolução das vendas
+    // Padrão "Ano inteiro": uma barra por ano-calendário, com todos os anos da base; o ano em andamento é parcial (*)
+    // e o crescimento dele compara os mesmos meses do ano anterior. O botão com os meses do filtro (ex.: "jan–set")
+    // mostra o mesmo recorte de meses em cada ano; ele some quando o filtro já é um ano fechado ou passa de 12 meses.
     const hist = [];
-    // período maior que 12 meses: uma barra por ano-calendário, sempre com todos os anos da base (independente do filtro);
-    // o ano mais recente pode ser parcial (*) e os anos dentro do período do filtro ficam destacados
-    const longo = P.b - P.a + 1 > 12;
+    const nP = P.b - P.a + 1, mA = +D.meses[P.a].slice(4), mB = +D.meses[P.b].slice(4);
+    const yA0 = +D.meses[P.a].slice(0, 4), yB0 = +D.meses[P.b].slice(0, 4);
+    const anoFechado = yA0 === yB0 && mA === 1 && mB === 12;
+    const botEvo = nP > 12 || anoFechado ? null : nP === 12 ? `12 meses até ${MESES_PT[mB - 1]}` : P.a === P.b ? MESES_PT[mA - 1] : `${MESES_PT[mA - 1]}–${MESES_PT[mB - 1]}`;
+    const longo = !(botEvo && S.evoVis === "per");
     if (longo) {
-      const uM = D.meses.length - 1, yA = +D.meses[P.a].slice(0, 4), yB = +D.meses[P.b].slice(0, 4);
+      const uM = D.meses.length - 1;
       for (let y = +D.meses[0].slice(0, 4); y <= +D.meses[uM].slice(0, 4); y++) {
         const ini = D.meses.indexOf(`${y}01`), fim = D.meses.indexOf(`${y}12`);
         const a = ini < 0 ? 0 : ini, b = fim < 0 ? uM : fim;
         const m = agg(IDX.todos, a, b).get(AKAD);
-        hist.push({ a, b, v: m ? m[0] : 0, sel: y >= yA && y <= yB, parc: b - a + 1 < 12 });
+        // em destaque: o ano em que o filtro termina (filtro de mais de 12 meses: todos os anos dele)
+        hist.push({ a, b, v: m ? m[0] : 0, sel: nP > 12 ? y >= yA0 && y <= yB0 : y === yB0, parc: b - a + 1 < 12 });
       }
     }
     for (let k = 0; !longo && P.a - 12 * k >= 0; k++) {
@@ -946,17 +952,25 @@
     }
     // crescimento só entre barras com o mesmo número de meses
     hist.forEach((h, i) => { h.cr = i > 0 && h.b - h.a === hist[i - 1].b - hist[i - 1].a ? cresc(h.v, hist[i - 1].v) : null; });
+    // ano parcial (o mais recente): crescimento contra os mesmos meses do ano anterior
+    if (longo) hist.forEach((h, i) => {
+      if (!h.parc || i === 0 || h.a - 12 < 0) return;
+      const m = agg(IDX.todos, h.a - 12, h.b - 12).get(AKAD);
+      h.cr = cresc(h.v, m ? m[0] : 0);
+    });
     const mesmoAno = D.meses[P.a].slice(0, 4) === D.meses[P.b].slice(0, 4);
     const rotH = (h) => (longo ? D.meses[h.b].slice(0, 4) + (h.parc ? "*" : "") : mesmoAno ? D.meses[h.b].slice(0, 4) : `até ${mesLabel(h.b)}`);
-    const parcs = hist.filter((h) => h.parc).map((h) => `${D.meses[h.b].slice(0, 4)}: ${MESES_PT[+D.meses[h.a].slice(4) - 1]} a ${MESES_PT[+D.meses[h.b].slice(4) - 1]}`);
-    const recorte = longo ? `por ano, todos os anos da base; em destaque, os anos do período escolhido${parcs.length ? ` (* ${parcs.join("; ")})` : ""}` : S.periodo === "12m" ? `12 meses até ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
-      : mesmoAno && !(D.meses[P.a].endsWith("01") && D.meses[P.b].endsWith("12")) ? `${MESES_PT[+D.meses[P.a].slice(4) - 1]} a ${MESES_PT[+D.meses[P.b].slice(4) - 1]} de cada ano`
-      : mesmoAno ? "ano completo" : "mesmo intervalo de meses, ano a ano";
+    const notaParc = longo ? hist.filter((h) => h.parc).map((h) => {
+      const y = D.meses[h.b].slice(0, 4), mi = MESES_PT[+D.meses[h.a].slice(4) - 1], mf = MESES_PT[+D.meses[h.b].slice(4) - 1];
+      return h.cr != null ? `* ${y}: ${mi} a ${mf}. O crescimento compara com ${mi} a ${mf} de ${+y - 1}.` : `* ${y}: ${mi} a ${mf}.`;
+    }).join(" ") : "";
+    const recorte = longo ? "por ano, de janeiro a dezembro" : nP === 12 ? `12 meses até ${MESES_PT[mB - 1]} de cada ano`
+      : "mesmo período do filtro, em cada ano";
     const maxH = Math.max(1, ...hist.map((h) => h.v));
     const barrasH = hist.map((h, i) => {
       const atual = h.sel;
       const crTxt = h.cr == null ? "–" : h.cr > 999 ? "> +999%" : `${h.cr > 0 ? "+" : h.cr < 0 ? "−" : ""}${nf1.format(Math.abs(h.cr))}%`;
-      return `<li class="ev${atual ? " atual" : ""}${+D.meses[h.b].slice(0, 4) >= 2022 ? " ak" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
+      return `<li class="ev${atual ? " atual" : ""}${+D.meses[h.b].slice(0, 4) >= 2022 ? " ak" : ""}${longo && h.parc ? " parc" : ""}" aria-label="${esc(periodoLabel(h.a, h.b))}: ${reais(h.v)}, crescimento ${crTxt}">
         <span class="ev-trilho" aria-hidden="true"><i style="height:${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}%"></i>${h.cr == null ? "" : `<span class="ev-cr ${h.cr >= 0 ? "sobe" : "cai"}" style="bottom:calc(${Math.max(h.v > 0 ? 2 : 0, (h.v / maxH) * 100)}% + 6px)">${crTxt}</span>`}</span>
         <span class="ev-val" aria-hidden="true">${reaisCurto(h.v)}</span>
         <span class="ev-rot" aria-hidden="true">${rotH(h)}</span>
@@ -964,8 +978,11 @@
     }).join("");
     const cardEvo = `
       <section class="card kc kc-evo" aria-label="Evolução do GWP da Akad">
-        <div class="kc-cab"><h2 class="kc-tit">Evolução do GWP da Akad</h2><span class="kc-aux">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}.</span></div>
+        <div class="kc-cab"><div><h2 class="kc-tit">Evolução do GWP da Akad</h2><span class="kc-aux">${recorte.charAt(0).toUpperCase() + recorte.slice(1)}.</span></div>
+          ${botEvo ? `<div class="seg-ctrl" role="group" aria-label="Recorte dos anos">${[["ano", "Ano inteiro"], ["per", botEvo]].map(([k, r]) => `<button type="button" data-evo="${k}" aria-pressed="${(longo ? "ano" : "per") === k}">${r}</button>`).join("")}</div>` : ""}
+        </div>
         <ol class="ev-lista" aria-label="GWP da Akad por ano">${barrasH}</ol>
+        ${notaParc ? `<p class="kc-aux ev-nota">${notaParc}</p>` : ""}
         ${hist.some((h) => +D.meses[h.b].slice(0, 4) < 2022) ? `<p class="ev-leg"><span><i class="ev-li-ar"></i>Argo (até 2021)</span><span><i class="ev-li-ak"></i>Akad (desde 2022)</span></p>` : ""}
       </section>`;
 
@@ -1151,6 +1168,14 @@
       n.addEventListener("focusin", () => hl(n.dataset.linha, true));
       n.addEventListener("focusout", () => hl(n.dataset.linha, false));
     });
+    el.querySelectorAll("[data-evo]").forEach((b) => b.addEventListener("click", () => {
+      S.evoVis = b.dataset.evo;
+      ga("trocar_visao", { grafico: "Evolução do GWP da Akad", visao: b.dataset.evo === "ano" ? "ano inteiro" : "mesmo período" });
+      const y = window.scrollY;
+      renderGeral();
+      window.scrollTo(0, y);
+      el.querySelector(`[data-evo="${b.dataset.evo}"]`)?.focus();
+    }));
     el.querySelector("#vg-mais")?.addEventListener("click", () => { S.geralTodos = !S.geralTodos; renderGeral(); el.querySelector("#vg-mais")?.focus(); });
     el.querySelectorAll(".ctrl-modo button").forEach((b) => b.addEventListener("click", () => { S.geralModo = b.dataset.modo; renderGeral(); el.querySelector(`.ctrl-modo [data-modo="${b.dataset.modo}"]`)?.focus(); }));
     const porColuna = (c, foco) => {
@@ -2553,7 +2578,8 @@
     const composicao = `<section class="card sec sn-comp" id="sn-comp" aria-labelledby="h-sn-comp"></section>`;
 
     // D. Todos os ramos
-    const o = S.sinOrd || (S.sinOrd = { col: "sinA", dir: -1 });
+    // todos os ramos aparecem; a ordem padrão é o peso na carteira, para os ramos pequenos (sinistralidade instável) ficarem no fim
+    const o = S.sinOrd || (S.sinOrd = { col: "peso", dir: -1 });
     const val = (x, c) => (c === "nome" ? x.l.nome : x[c]);
     const ordenar = (lst) => [...lst].sort((p, q) => {
       const a = val(p, o.col), b = val(q, o.col);
@@ -2563,8 +2589,7 @@
       if (b == null) return -1;
       return (a - b) * o.dir;
     });
-    const principais = ordenar(Rc.filter((x) => x.peso != null && x.peso >= 1));
-    const menores = ordenar(Rc.filter((x) => !(x.peso != null && x.peso >= 1)));
+    const todosR = ordenar(Rc);
     const barraComp = (x) => {
       if (!ab) return '<span class="sub-i">–</span>';
       const c = compDe(x.A);
@@ -2586,17 +2611,15 @@
     const tabela = `
       <section class="card sec" aria-labelledby="h-sn-tab">
         <div class="sn-tab-cab">
-          <div><h2 id="h-sn-tab" class="sec-tit">Todos os ramos</h2><p class="sec-sub">Ramos com pelo menos 1% da carteira da Akad.</p></div>
+          <div><h2 id="h-sn-tab" class="sec-tit">Todos os ramos</h2><p class="sec-sub">Os ${Rc.length} ramos em que a Akad atua. Em ramos com peso pequeno, a sinistralidade varia muito de um período para outro.</p></div>
           ${ab ? `<p class="sn-leg">${COMP_SIN.map((k) => `<span><i style="background:${k.cor}"></i>${k.curto || k.nome}</span>`).join("")}</p>` : ""}
         </div>
         <div class="tab-wrap"><table class="sn-tab">
           <thead><tr>${thO("nome", "Ramo")}${thO("peso", "Peso na carteira", "n")}${thO("sinA", "Sinistralidade Akad", "n")}${thO("sinM", "Mercado", "n")}${thO("dif", "Diferença", "n")}<th class="cmp">Composição do sinistro (Akad)</th><th class="chev"><span class="sr">Abrir</span></th></tr></thead>
           <tbody>
-            ${principais.map(linhaT).join("")}
-            ${S.sinTodos ? menores.map(linhaT).join("") : ""}
+            ${todosR.map(linhaT).join("")}
           </tbody>
         </table></div>
-        ${menores.length ? `<button type="button" class="c2-mais2 sn-mais" aria-expanded="${!!S.sinTodos}" title="Ramos com menos de 1% da carteira da Akad">${S.sinTodos ? "Mostrar menos ↑" : `Ver os outros ${menores.length} ramos ↓`}</button>` : ""}
       </section>`;
 
     el.innerHTML = cab + cards + melhorPior + composicao + tabela;
@@ -2616,12 +2639,6 @@
       renderSin();
       el.querySelector(`.sn-tab th[data-col="${c}"] button`)?.focus();
     }));
-    el.querySelector(".sn-mais")?.addEventListener("click", () => {
-      S.sinTodos = !S.sinTodos;
-      ga("trocar_visao", { grafico: "Sinistros: todos os ramos", visao: S.sinTodos ? "todos os ramos" : "ramos com 1% ou mais" });
-      renderSin();
-      el.querySelector(".sn-mais")?.focus();
-    });
   }
 
   // Composição do sinistro: Akad contra o mercado ou uma concorrente, em todos os ramos ou num ramo
