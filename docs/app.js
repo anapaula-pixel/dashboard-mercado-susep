@@ -2611,7 +2611,7 @@
     const tabela = `
       <section class="card sec" aria-labelledby="h-sn-tab">
         <div class="sn-tab-cab">
-          <div><h2 id="h-sn-tab" class="sec-tit">Todos os ramos</h2><p class="sec-sub">Os ${Rc.length} ramos em que a Akad atua. Em ramos com peso pequeno, a sinistralidade varia muito de um período para outro.</p></div>
+          <div><h2 id="h-sn-tab" class="sec-tit">Todos os ramos</h2></div>
           ${ab ? `<p class="sn-leg">${COMP_SIN.map((k) => `<span><i style="background:${k.cor}"></i>${k.curto || k.nome}</span>`).join("")}</p>` : ""}
         </div>
         <div class="tab-wrap"><table class="sn-tab">
