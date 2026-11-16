@@ -1758,13 +1758,12 @@
       ganhando: '<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
     };
     const itemQ = (x) => `
-      <li><button type="button" class="mv-item" data-ficha="${esc(x.k)}" aria-label="${esc(nomeC(x.k))}: GWP ${reais(x.g)}, abrir a página da seguradora">
+      <li><button type="button" class="mv-item" data-ficha="${esc(x.k)}" aria-label="${esc(nomeC(x.k))}: abrir a página da seguradora">
         <span class="mv-nome">${esc(nomeC(x.k))}</span>
-        <span class="mv-var mv-gwp">${reais(x.g)}</span>
       </button></li>`;
     const colQ = (tit, ico, crit, lst, vz) => `
       <div class="mv-col">
-        <h3><span class="mq-ico mq-${ico}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span><span class="mv-tit">${tit}<small class="mq-crit">${crit}</small></span><span class="mv-col-rot" title="GWP da seguradora nos ramos da Akad em ${perC}">GWP</span></h3>
+        <h3><span class="mq-ico mq-${ico}" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${ICO_C[ico]}</svg></span><span class="mv-tit">${tit}<small class="mq-crit">${crit}</small></span></h3>
         ${lst.length ? `<ul>${lst.map(itemQ).join("")}</ul>` : `<p class="mv-vazio">${vz}</p>`}
       </div>`;
     const bQuem = `
